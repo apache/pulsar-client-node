@@ -38,133 +38,133 @@ static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
 Napi::FunctionReference Client::constructor;
 
 Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
-    Napi::HandleScope scope(env);
+  Napi::HandleScope scope(env);
 
-    Napi::Function func = DefineClass(
-        env, "Client",
-        {InstanceMethod("createProducer", &Client::CreateProducer),
-         InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("close", &Client::Close)});
+  Napi::Function func =
+      DefineClass(env, "Client",
+                  {InstanceMethod("createProducer", &Client::CreateProducer),
+                   InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("close", &Client::Close)});
 
-    constructor = Napi::Persistent(func);
-    constructor.SuppressDestruct();
+  constructor = Napi::Persistent(func);
+  constructor.SuppressDestruct();
 
-    exports.Set("Client", func);
-    return exports;
+  exports.Set("Client", func);
+  return exports;
 }
 
 Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) {
-    Napi::Env env = info.Env();
-    Napi::HandleScope scope(env);
-    Napi::Object clientConfig = info[0].As<Napi::Object>();
+  Napi::Env env = info.Env();
+  Napi::HandleScope scope(env);
+  Napi::Object clientConfig = info[0].As<Napi::Object>();
 
-    if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString()) {
-        if (clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
-            Napi::Error::New(env, "Service URL is required and must be specified as a string")
-                .ThrowAsJavaScriptException();
-            return;
-        }
+  if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString()) {
+    if (clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
+      Napi::Error::New(env, "Service URL is required and must be specified as a string")
+          .ThrowAsJavaScriptException();
+      return;
     }
-    Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
+  }
+  Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
-    pulsar_client_configuration_t *cClientConfig = pulsar_client_configuration_create();
+  pulsar_client_configuration_t *cClientConfig = pulsar_client_configuration_create();
 
-    if (clientConfig.Has(CFG_OP_TIMEOUT) && clientConfig.Get(CFG_OP_TIMEOUT).IsNumber()) {
-        int32_t operationTimeoutSeconds = clientConfig.Get(CFG_OP_TIMEOUT).ToNumber().Int32Value();
-        if (operationTimeoutSeconds > 0) {
-            pulsar_client_configuration_set_operation_timeout_seconds(cClientConfig, operationTimeoutSeconds);
-        }
+  if (clientConfig.Has(CFG_OP_TIMEOUT) && clientConfig.Get(CFG_OP_TIMEOUT).IsNumber()) {
+    int32_t operationTimeoutSeconds = clientConfig.Get(CFG_OP_TIMEOUT).ToNumber().Int32Value();
+    if (operationTimeoutSeconds > 0) {
+      pulsar_client_configuration_set_operation_timeout_seconds(cClientConfig, operationTimeoutSeconds);
     }
+  }
 
-    if (clientConfig.Has(CFG_IO_THREADS) && clientConfig.Get(CFG_IO_THREADS).IsNumber()) {
-        int32_t ioThreads = clientConfig.Get(CFG_IO_THREADS).ToNumber().Int32Value();
-        if (ioThreads > 0) {
-            pulsar_client_configuration_set_io_threads(cClientConfig, ioThreads);
-        }
+  if (clientConfig.Has(CFG_IO_THREADS) && clientConfig.Get(CFG_IO_THREADS).IsNumber()) {
+    int32_t ioThreads = clientConfig.Get(CFG_IO_THREADS).ToNumber().Int32Value();
+    if (ioThreads > 0) {
+      pulsar_client_configuration_set_io_threads(cClientConfig, ioThreads);
     }
+  }
 
-    if (clientConfig.Has(CFG_LISTENER_THREADS) && clientConfig.Get(CFG_LISTENER_THREADS).IsNumber()) {
-        int32_t messageListenerThreads = clientConfig.Get(CFG_LISTENER_THREADS).ToNumber().Int32Value();
-        if (messageListenerThreads > 0) {
-            pulsar_client_configuration_set_message_listener_threads(cClientConfig, messageListenerThreads);
-        }
+  if (clientConfig.Has(CFG_LISTENER_THREADS) && clientConfig.Get(CFG_LISTENER_THREADS).IsNumber()) {
+    int32_t messageListenerThreads = clientConfig.Get(CFG_LISTENER_THREADS).ToNumber().Int32Value();
+    if (messageListenerThreads > 0) {
+      pulsar_client_configuration_set_message_listener_threads(cClientConfig, messageListenerThreads);
     }
+  }
 
-    if (clientConfig.Has(CFG_CONCURRENT_LOOKUP) && clientConfig.Get(CFG_CONCURRENT_LOOKUP).IsNumber()) {
-        int32_t concurrentLookupRequest = clientConfig.Get(CFG_CONCURRENT_LOOKUP).ToNumber().Int32Value();
-        if (concurrentLookupRequest > 0) {
-            pulsar_client_configuration_set_concurrent_lookup_request(cClientConfig, concurrentLookupRequest);
-        }
+  if (clientConfig.Has(CFG_CONCURRENT_LOOKUP) && clientConfig.Get(CFG_CONCURRENT_LOOKUP).IsNumber()) {
+    int32_t concurrentLookupRequest = clientConfig.Get(CFG_CONCURRENT_LOOKUP).ToNumber().Int32Value();
+    if (concurrentLookupRequest > 0) {
+      pulsar_client_configuration_set_concurrent_lookup_request(cClientConfig, concurrentLookupRequest);
     }
+  }
 
-    if (clientConfig.Has(CFG_USE_TLS) && clientConfig.Get(CFG_USE_TLS).IsBoolean()) {
-        Napi::Boolean useTls = clientConfig.Get(CFG_USE_TLS).ToBoolean();
-        pulsar_client_configuration_set_use_tls(cClientConfig, useTls.Value());
+  if (clientConfig.Has(CFG_USE_TLS) && clientConfig.Get(CFG_USE_TLS).IsBoolean()) {
+    Napi::Boolean useTls = clientConfig.Get(CFG_USE_TLS).ToBoolean();
+    pulsar_client_configuration_set_use_tls(cClientConfig, useTls.Value());
+  }
+
+  if (clientConfig.Has(CFG_TLS_TRUST_CERT) && clientConfig.Get(CFG_TLS_TRUST_CERT).IsString()) {
+    Napi::String tlsTrustCertsFilePath = clientConfig.Get(CFG_TLS_TRUST_CERT).ToString();
+    pulsar_client_configuration_set_tls_trust_certs_file_path(cClientConfig,
+                                                              tlsTrustCertsFilePath.Utf8Value().c_str());
+  }
+
+  if (clientConfig.Has(CFG_TLS_VALIDATE_HOSTNAME) &&
+      clientConfig.Get(CFG_TLS_VALIDATE_HOSTNAME).IsBoolean()) {
+    Napi::Boolean tlsValidateHostname = clientConfig.Get(CFG_TLS_VALIDATE_HOSTNAME).ToBoolean();
+    pulsar_client_configuration_set_validate_hostname(cClientConfig, tlsValidateHostname.Value());
+  }
+
+  if (clientConfig.Has(CFG_TLS_ALLOW_INSECURE) && clientConfig.Get(CFG_TLS_ALLOW_INSECURE).IsBoolean()) {
+    Napi::Boolean tlsAllowInsecureConnection = clientConfig.Get(CFG_TLS_ALLOW_INSECURE).ToBoolean();
+    pulsar_client_configuration_set_tls_allow_insecure_connection(cClientConfig,
+                                                                  tlsAllowInsecureConnection.Value());
+  }
+
+  if (clientConfig.Has(CFG_STATS_INTERVAL) && clientConfig.Get(CFG_STATS_INTERVAL).IsNumber()) {
+    uint32_t statsIntervalInSeconds = clientConfig.Get(CFG_STATS_INTERVAL).ToNumber().Uint32Value();
+    if (statsIntervalInSeconds > 0) {
+      pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig, statsIntervalInSeconds);
     }
+  }
 
-    if (clientConfig.Has(CFG_TLS_TRUST_CERT) && clientConfig.Get(CFG_TLS_TRUST_CERT).IsString()) {
-        Napi::String tlsTrustCertsFilePath = clientConfig.Get(CFG_TLS_TRUST_CERT).ToString();
-        pulsar_client_configuration_set_tls_trust_certs_file_path(cClientConfig,
-                                                                  tlsTrustCertsFilePath.Utf8Value().c_str());
-    }
-
-    if (clientConfig.Has(CFG_TLS_VALIDATE_HOSTNAME) &&
-        clientConfig.Get(CFG_TLS_VALIDATE_HOSTNAME).IsBoolean()) {
-        Napi::Boolean tlsValidateHostname = clientConfig.Get(CFG_TLS_VALIDATE_HOSTNAME).ToBoolean();
-        pulsar_client_configuration_set_validate_hostname(cClientConfig, tlsValidateHostname.Value());
-    }
-
-    if (clientConfig.Has(CFG_TLS_ALLOW_INSECURE) && clientConfig.Get(CFG_TLS_ALLOW_INSECURE).IsBoolean()) {
-        Napi::Boolean tlsAllowInsecureConnection = clientConfig.Get(CFG_TLS_ALLOW_INSECURE).ToBoolean();
-        pulsar_client_configuration_set_tls_allow_insecure_connection(cClientConfig,
-                                                                      tlsAllowInsecureConnection.Value());
-    }
-
-    if (clientConfig.Has(CFG_STATS_INTERVAL) && clientConfig.Get(CFG_STATS_INTERVAL).IsNumber()) {
-        uint32_t statsIntervalInSeconds = clientConfig.Get(CFG_STATS_INTERVAL).ToNumber().Uint32Value();
-        if (statsIntervalInSeconds > 0) {
-            pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig, statsIntervalInSeconds);
-        }
-    }
-
-    this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig);
-    pulsar_client_configuration_free(cClientConfig);
+  this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig);
+  pulsar_client_configuration_free(cClientConfig);
 }
 
 Client::~Client() { pulsar_client_free(this->cClient); }
 
 Napi::Value Client::CreateProducer(const Napi::CallbackInfo &info) {
-    return Producer::NewInstance(info, this->cClient);
+  return Producer::NewInstance(info, this->cClient);
 }
 
 Napi::Value Client::Subscribe(const Napi::CallbackInfo &info) {
-    return Consumer::NewInstance(info, this->cClient);
+  return Consumer::NewInstance(info, this->cClient);
 }
 
 class ClientCloseWorker : public Napi::AsyncWorker {
-   public:
-    ClientCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_client_t *cClient)
-        : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
-          deferred(deferred),
-          cClient(cClient) {}
-    ~ClientCloseWorker() {}
-    void Execute() {
-        pulsar_result result = pulsar_client_close(this->cClient);
-        if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
-    }
-    void OnOK() { this->deferred.Resolve(Env().Null()); }
-    void OnError(const Napi::Error &e) {
-        this->deferred.Reject(
-            Napi::Error::New(Env(), std::string("Failed to close client: ") + e.Message()).Value());
-    }
+ public:
+  ClientCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_client_t *cClient)
+      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
+        deferred(deferred),
+        cClient(cClient) {}
+  ~ClientCloseWorker() {}
+  void Execute() {
+    pulsar_result result = pulsar_client_close(this->cClient);
+    if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
+  }
+  void OnOK() { this->deferred.Resolve(Env().Null()); }
+  void OnError(const Napi::Error &e) {
+    this->deferred.Reject(
+        Napi::Error::New(Env(), std::string("Failed to close client: ") + e.Message()).Value());
+  }
 
-   private:
-    Napi::Promise::Deferred deferred;
-    pulsar_client_t *cClient;
+ private:
+  Napi::Promise::Deferred deferred;
+  pulsar_client_t *cClient;
 };
 
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
-    Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-    ClientCloseWorker *wk = new ClientCloseWorker(deferred, this->cClient);
-    wk->Queue();
-    return deferred.Promise();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+  ClientCloseWorker *wk = new ClientCloseWorker(deferred, this->cClient);
+  wk->Queue();
+  return deferred.Promise();
 }

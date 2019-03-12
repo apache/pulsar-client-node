@@ -24,18 +24,18 @@
 #include <pulsar/c/client.h>
 
 class Client : public Napi::ObjectWrap<Client> {
-   public:
-    static Napi::Object Init(Napi::Env env, Napi::Object exports);
-    Client(const Napi::CallbackInfo &info);
-    ~Client();
+ public:
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  Client(const Napi::CallbackInfo &info);
+  ~Client();
 
-   private:
-    static Napi::FunctionReference constructor;
-    pulsar_client_t *cClient;
+ private:
+  static Napi::FunctionReference constructor;
+  pulsar_client_t *cClient;
 
-    Napi::Value CreateProducer(const Napi::CallbackInfo &info);
-    Napi::Value Subscribe(const Napi::CallbackInfo &info);
-    Napi::Value Close(const Napi::CallbackInfo &info);
+  Napi::Value CreateProducer(const Napi::CallbackInfo &info);
+  Napi::Value Subscribe(const Napi::CallbackInfo &info);
+  Napi::Value Close(const Napi::CallbackInfo &info);
 };
 
 #endif

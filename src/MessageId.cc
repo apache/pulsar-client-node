@@ -24,64 +24,64 @@
 Napi::FunctionReference MessageId::constructor;
 
 Napi::Object MessageId::Init(Napi::Env env, Napi::Object exports) {
-    Napi::HandleScope scope(env);
+  Napi::HandleScope scope(env);
 
-    Napi::Function func = DefineClass(env, "MessageId",
-                                      {
-                                          StaticMethod("earliest", &MessageId::Earliest, napi_static),
-                                          StaticMethod("latest", &MessageId::Latest, napi_static),
-                                          StaticMethod("finalize", &MessageId::Finalize, napi_static),
-                                          InstanceMethod("toString", &MessageId::ToString),
-                                      });
+  Napi::Function func = DefineClass(env, "MessageId",
+                                    {
+                                        StaticMethod("earliest", &MessageId::Earliest, napi_static),
+                                        StaticMethod("latest", &MessageId::Latest, napi_static),
+                                        StaticMethod("finalize", &MessageId::Finalize, napi_static),
+                                        InstanceMethod("toString", &MessageId::ToString),
+                                    });
 
-    constructor = Napi::Persistent(func);
-    constructor.SuppressDestruct();
+  constructor = Napi::Persistent(func);
+  constructor.SuppressDestruct();
 
-    exports.Set("MessageId", func);
-    return exports;
+  exports.Set("MessageId", func);
+  return exports;
 }
 
 MessageId::MessageId(const Napi::CallbackInfo &info) : Napi::ObjectWrap<MessageId>(info) {
-    Napi::Env env = info.Env();
-    Napi::HandleScope scope(env);
+  Napi::Env env = info.Env();
+  Napi::HandleScope scope(env);
 }
 
 Napi::Object MessageId::NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage) {
-    Napi::Object obj = NewInstance(info[0]);
-    MessageId *msgId = Unwrap(obj);
-    msgId->cMessageId = pulsar_message_get_message_id(cMessage);
-    return obj;
+  Napi::Object obj = NewInstance(info[0]);
+  MessageId *msgId = Unwrap(obj);
+  msgId->cMessageId = pulsar_message_get_message_id(cMessage);
+  return obj;
 }
 
 Napi::Object MessageId::NewInstance(Napi::Value arg) {
-    Napi::Object obj = constructor.New({arg});
-    return obj;
+  Napi::Object obj = constructor.New({arg});
+  return obj;
 }
 
 void MessageId::Finalize(const Napi::CallbackInfo &info) {
-    Napi::Object obj = info[0].As<Napi::Object>();
-    MessageId *msgId = Unwrap(obj);
-    pulsar_message_id_free(msgId->cMessageId);
+  Napi::Object obj = info[0].As<Napi::Object>();
+  MessageId *msgId = Unwrap(obj);
+  pulsar_message_id_free(msgId->cMessageId);
 }
 
 Napi::Value MessageId::Earliest(const Napi::CallbackInfo &info) {
-    Napi::Object obj = NewInstance(info[0]);
-    MessageId *msgId = Unwrap(obj);
-    msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_earliest();
-    return obj;
+  Napi::Object obj = NewInstance(info[0]);
+  MessageId *msgId = Unwrap(obj);
+  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_earliest();
+  return obj;
 }
 
 Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
-    Napi::Object obj = NewInstance(info[0]);
-    MessageId *msgId = Unwrap(obj);
-    msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_latest();
-    return obj;
+  Napi::Object obj = NewInstance(info[0]);
+  MessageId *msgId = Unwrap(obj);
+  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_latest();
+  return obj;
 }
 
 pulsar_message_id_t *MessageId::GetCMessageId() { return this->cMessageId; }
 
 Napi::Value MessageId::ToString(const Napi::CallbackInfo &info) {
-    return Napi::String::New(info.Env(), pulsar_message_id_str(this->cMessageId));
+  return Napi::String::New(info.Env(), pulsar_message_id_str(this->cMessageId));
 }
 
 MessageId::~MessageId() { pulsar_message_id_free(this->cMessageId); }

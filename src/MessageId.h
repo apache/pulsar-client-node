@@ -25,22 +25,22 @@
 #include <pulsar/c/message_id.h>
 
 class MessageId : public Napi::ObjectWrap<MessageId> {
-   public:
-    static Napi::Object Init(Napi::Env env, Napi::Object exports);
-    static Napi::Object NewInstance(Napi::Value arg);
-    static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage);
-    static Napi::Value Earliest(const Napi::CallbackInfo &info);
-    static Napi::Value Latest(const Napi::CallbackInfo &info);
-    static void Finalize(const Napi::CallbackInfo &info);
-    MessageId(const Napi::CallbackInfo &info);
-    ~MessageId();
-    pulsar_message_id_t *GetCMessageId();
+ public:
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  static Napi::Object NewInstance(Napi::Value arg);
+  static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage);
+  static Napi::Value Earliest(const Napi::CallbackInfo &info);
+  static Napi::Value Latest(const Napi::CallbackInfo &info);
+  static void Finalize(const Napi::CallbackInfo &info);
+  MessageId(const Napi::CallbackInfo &info);
+  ~MessageId();
+  pulsar_message_id_t *GetCMessageId();
 
-   private:
-    static Napi::FunctionReference constructor;
-    pulsar_message_id_t *cMessageId;
+ private:
+  static Napi::FunctionReference constructor;
+  pulsar_message_id_t *cMessageId;
 
-    Napi::Value ToString(const Napi::CallbackInfo &info);
+  Napi::Value ToString(const Napi::CallbackInfo &info);
 };
 
 #endif

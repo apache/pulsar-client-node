@@ -24,41 +24,41 @@
 #include <pulsar/c/message.h>
 
 class Message : public Napi::ObjectWrap<Message> {
-   public:
-    static Napi::Object Init(Napi::Env env, Napi::Object exports);
-    static Napi::Object NewInstance(Napi::Value arg, pulsar_message_t *cMessage);
-    static pulsar_message_t *BuildMessage(Napi::Object conf);
-    Message(const Napi::CallbackInfo &info);
-    ~Message();
-    pulsar_message_t *GetCMessage();
+ public:
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  static Napi::Object NewInstance(Napi::Value arg, pulsar_message_t *cMessage);
+  static pulsar_message_t *BuildMessage(Napi::Object conf);
+  Message(const Napi::CallbackInfo &info);
+  ~Message();
+  pulsar_message_t *GetCMessage();
 
-   private:
-    static Napi::FunctionReference constructor;
+ private:
+  static Napi::FunctionReference constructor;
 
-    pulsar_message_t *cMessage;
+  pulsar_message_t *cMessage;
 
-    Napi::Value GetTopicName(const Napi::CallbackInfo &info);
-    Napi::Value GetProperties(const Napi::CallbackInfo &info);
-    Napi::Value GetData(const Napi::CallbackInfo &info);
-    Napi::Value GetMessageId(const Napi::CallbackInfo &info);
-    Napi::Value GetPublishTimestamp(const Napi::CallbackInfo &info);
-    Napi::Value GetEventTimestamp(const Napi::CallbackInfo &info);
-    Napi::Value GetPartitionKey(const Napi::CallbackInfo &info);
-    bool ValidateCMessage(Napi::Env env);
+  Napi::Value GetTopicName(const Napi::CallbackInfo &info);
+  Napi::Value GetProperties(const Napi::CallbackInfo &info);
+  Napi::Value GetData(const Napi::CallbackInfo &info);
+  Napi::Value GetMessageId(const Napi::CallbackInfo &info);
+  Napi::Value GetPublishTimestamp(const Napi::CallbackInfo &info);
+  Napi::Value GetEventTimestamp(const Napi::CallbackInfo &info);
+  Napi::Value GetPartitionKey(const Napi::CallbackInfo &info);
+  bool ValidateCMessage(Napi::Env env);
 
-    static char **NewStringArray(int size) { return (char **)calloc(sizeof(char *), size); }
-    static void SetString(char **array, const char *str, int n) {
-        char *copied = (char *)calloc(strlen(str) + 1, sizeof(char));
-        strcpy(copied, str);
-        array[n] = copied;
+  static char **NewStringArray(int size) { return (char **)calloc(sizeof(char *), size); }
+  static void SetString(char **array, const char *str, int n) {
+    char *copied = (char *)calloc(strlen(str) + 1, sizeof(char));
+    strcpy(copied, str);
+    array[n] = copied;
+  }
+  static void FreeStringArray(char **array, int size) {
+    int i;
+    for (i = 0; i < size; i++) {
+      free(array[i]);
     }
-    static void FreeStringArray(char **array, int size) {
-        int i;
-        for (i = 0; i < size; i++) {
-            free(array[i]);
-        }
-        free(array);
-    }
+    free(array);
+  }
 };
 
 #endif

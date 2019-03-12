@@ -24,15 +24,15 @@
 #include <pulsar/c/producer_configuration.h>
 
 class ProducerConfig {
-   public:
-    ProducerConfig(const Napi::Object &producerConfig);
-    ~ProducerConfig();
-    pulsar_producer_configuration_t *GetCProducerConfig();
-    std::string GetTopic();
+ public:
+  ProducerConfig(const Napi::Object &producerConfig);
+  ~ProducerConfig();
+  pulsar_producer_configuration_t *GetCProducerConfig();
+  std::string GetTopic();
 
-   private:
-    pulsar_producer_configuration_t *cProducerConfig;
-    std::string topic;
+ private:
+  pulsar_producer_configuration_t *cProducerConfig;
+  std::string topic;
 };
 
 #endif

@@ -25,11 +25,11 @@
 #include <napi.h>
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-    Message::Init(env, exports);
-    MessageId::Init(env, exports);
-    Producer::Init(env, exports);
-    Consumer::Init(env, exports);
-    return Client::Init(env, exports);
+  Message::Init(env, exports);
+  MessageId::Init(env, exports);
+  Producer::Init(env, exports);
+  Consumer::Init(env, exports);
+  return Client::Init(env, exports);
 }
 
 NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)

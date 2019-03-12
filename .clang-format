@@ -17,7 +17,7 @@
 
 
 BasedOnStyle: Google
-IndentWidth: 4
+IndentWidth: 2
 ColumnLimit: 110
 SortIncludes: false
 BreakBeforeBraces: Custom

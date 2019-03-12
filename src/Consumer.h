@@ -24,21 +24,21 @@
 #include <pulsar/c/client.h>
 
 class Consumer : public Napi::ObjectWrap<Consumer> {
-   public:
-    static void Init(Napi::Env env, Napi::Object exports);
-    static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
-    static Napi::FunctionReference constructor;
-    Consumer(const Napi::CallbackInfo &info);
-    ~Consumer();
-    void SetCConsumer(pulsar_consumer_t *cConsumer);
+ public:
+  static void Init(Napi::Env env, Napi::Object exports);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::FunctionReference constructor;
+  Consumer(const Napi::CallbackInfo &info);
+  ~Consumer();
+  void SetCConsumer(pulsar_consumer_t *cConsumer);
 
-   private:
-    pulsar_consumer_t *cConsumer;
+ private:
+  pulsar_consumer_t *cConsumer;
 
-    Napi::Value Receive(const Napi::CallbackInfo &info);
-    void Acknowledge(const Napi::CallbackInfo &info);
-    void AcknowledgeId(const Napi::CallbackInfo &info);
-    Napi::Value Close(const Napi::CallbackInfo &info);
+  Napi::Value Receive(const Napi::CallbackInfo &info);
+  void Acknowledge(const Napi::CallbackInfo &info);
+  void AcknowledgeId(const Napi::CallbackInfo &info);
+  Napi::Value Close(const Napi::CallbackInfo &info);
 };
 
 #endif
