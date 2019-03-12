@@ -21,19 +21,17 @@ const Pulsar = require('../index.js');
 
 (async () => {
   // Create a client
-  const clientConfig = {
+  const client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
     operationTimeoutSeconds: 30,
-  };
-  const client = new Pulsar.Client(clientConfig);
+  });
 
   // Create a consumer
-  const consumerConfig = {
+  const consumer = await client.subscribe({
     topic: 'persistent://public/default/my-topic',
     subscription: 'sub1',
     ackTimeoutMs: 10000,
-  };
-  const consumer = await client.subscribe(consumerConfig);
+  });
 
   // Receive messages
   for (let i = 0; i < 10; i += 1) {

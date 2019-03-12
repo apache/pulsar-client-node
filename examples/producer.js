@@ -21,19 +21,17 @@ const Pulsar = require('../index.js');
 
 (async () => {
   // Create a client
-  const clientConfig = {
+  const client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
     operationTimeoutSeconds: 30,
-  };
-  const client = new Pulsar.Client(clientConfig);
+  });
 
   // Create a producer
-  const producerConfig = {
+  const producer = await client.createProducer({
     topic: 'persistent://public/default/my-topic',
     sendTimeoutMs: 30000,
     batchingEnabled: true,
-  };
-  const producer = await client.createProducer(producerConfig);
+  });
 
   // Send messages
   const results = [];
