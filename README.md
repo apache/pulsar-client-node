@@ -23,6 +23,10 @@
 
 The Pulsar Node.js client can be used to create Pulsar producers and consumers in Node.js.
 
+## Compatibility
+
+This Node.js client is developed and tested using Apache Pulsar 2.3.0
+
 ## Requirements
 
 Pulsar Node.js client library is based on the C++ client library. Follow the instructions for
