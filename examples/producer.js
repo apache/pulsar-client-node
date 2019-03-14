@@ -34,15 +34,14 @@ const Pulsar = require('../index.js');
   });
 
   // Send messages
-  const results = [];
   for (let i = 0; i < 10; i += 1) {
     const msg = `my-message-${i}`;
-    results.push(producer.send({
+    producer.send({
       data: Buffer.from(msg),
-    }));
+    });
     console.log(`Sent message: ${msg}`);
   }
-  await Promise.all(results);
+  await producer.flush();
 
   await producer.close();
   await client.close();
