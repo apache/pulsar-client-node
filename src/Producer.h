@@ -36,6 +36,7 @@ class Producer : public Napi::ObjectWrap<Producer> {
  private:
   pulsar_producer_t *cProducer;
   Napi::Value Send(const Napi::CallbackInfo &info);
+  Napi::Value Flush(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
 };
 

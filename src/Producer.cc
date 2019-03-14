@@ -27,8 +27,10 @@ Napi::FunctionReference Producer::constructor;
 void Producer::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
-  Napi::Function func = DefineClass(
-      env, "Producer", {InstanceMethod("send", &Producer::Send), InstanceMethod("close", &Producer::Close)});
+  Napi::Function func =
+      DefineClass(env, "Producer",
+                  {InstanceMethod("send", &Producer::Send), InstanceMethod("flush", &Producer::Flush),
+                   InstanceMethod("close", &Producer::Close)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -115,6 +117,39 @@ Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   pulsar_message_t *cMessage = Message::BuildMessage(info[0].As<Napi::Object>());
   ProducerSendWorker *wk = new ProducerSendWorker(deferred, this->cProducer, cMessage);
+  wk->Queue();
+  return deferred.Promise();
+}
+
+class ProducerFlushWorker : public Napi::AsyncWorker {
+ public:
+  ProducerFlushWorker(const Napi::Promise::Deferred &deferred, pulsar_producer_t *cProducer)
+      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
+        deferred(deferred),
+        cProducer(cProducer) {}
+
+  ~ProducerFlushWorker() {}
+
+  void Execute() {
+    pulsar_result result = pulsar_producer_flush(this->cProducer);
+    if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
+  }
+
+  void OnOK() { this->deferred.Resolve(Env().Null()); }
+
+  void OnError(const Napi::Error &e) {
+    this->deferred.Reject(
+        Napi::Error::New(Env(), std::string("Failed to flush producer: ") + e.Message()).Value());
+  }
+
+ private:
+  Napi::Promise::Deferred deferred;
+  pulsar_producer_t *cProducer;
+};
+
+Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+  ProducerFlushWorker *wk = new ProducerFlushWorker(deferred, this->cProducer);
   wk->Queue();
   return deferred.Promise();
 }

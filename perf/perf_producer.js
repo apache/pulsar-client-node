@@ -85,17 +85,16 @@ const Pulsar = require('../index.js');
     // measure
     await delay(1000);
     const startMeasureTimeMilliSeconds = performance.now();
-    const results = [];
     for (let mi = 0; mi < numOfMessages; mi += 1) {
       const startSendTimeMilliSeconds = performance.now();
-      results.push(producer.send({
+      producer.send({
         data: message,
       }).then(() => {
         // add latency
         histogram.recordValue((performance.now() - startSendTimeMilliSeconds));
-      }));
+      });
     }
-    await Promise.all(results);
+    await producer.flush();
     const endMeasureTimeMilliSeconds = performance.now();
 
     // result
