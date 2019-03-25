@@ -17,21 +17,34 @@
  * under the License.
  */
 
-#include "Message.h"
-#include "MessageId.h"
-#include "Authentication.h"
-#include "Producer.h"
-#include "Consumer.h"
-#include "Client.h"
-#include <napi.h>
+const Pulsar = require('../index.js');
 
-Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-  Message::Init(env, exports);
-  MessageId::Init(env, exports);
-  Authentication::Init(env, exports);
-  Producer::Init(env, exports);
-  Consumer::Init(env, exports);
-  return Client::Init(env, exports);
-}
+(async () => {
+  const auth = new Pulsar.AuthenticationTls({
+    certificatePath: '/path/to/client.crt',
+    privateKeyPath: '/path/to/client.key',
+  });
 
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
+  // Create a client
+  const client = new Pulsar.Client({
+    serviceUrl: 'pulsar+ssl://localhost:6651',
+    authentication: auth,
+    tlsTrustCertsFilePath: '/path/to/server.crt',
+  });
+
+  // Create a consumer
+  const consumer = await client.subscribe({
+    topic: 'persistent://public/default/my-topic',
+    subscription: 'sub1',
+  });
+
+  // Receive messages
+  for (let i = 0; i < 10; i += 1) {
+    const msg = await consumer.receive();
+    console.log(msg.getData().toString());
+    consumer.acknowledge(msg);
+  }
+
+  await consumer.close();
+  await client.close();
+})();

@@ -17,21 +17,12 @@
  * under the License.
  */
 
-#include "Message.h"
-#include "MessageId.h"
-#include "Authentication.h"
-#include "Producer.h"
-#include "Consumer.h"
-#include "Client.h"
-#include <napi.h>
+const PulsarBinding = require('bindings')('Pulsar');
 
-Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-  Message::Init(env, exports);
-  MessageId::Init(env, exports);
-  Authentication::Init(env, exports);
-  Producer::Init(env, exports);
-  Consumer::Init(env, exports);
-  return Client::Init(env, exports);
+class AuthenticationTls {
+  constructor(params) {
+    this.binding = new PulsarBinding.Authentication('tls', params);
+  }
 }
 
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
+module.exports = AuthenticationTls;

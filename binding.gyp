@@ -29,12 +29,13 @@
       "sources": [
         "src/addon.cc",
         "src/Message.cc",
+        "src/MessageId.cc",
+        "src/Authentication.cc",
         "src/Client.cc",
         "src/Producer.cc",
         "src/ProducerConfig.cc",
         "src/Consumer.cc",
         "src/ConsumerConfig.cc",
-        "src/MessageId.cc",
       ],
       "libraries": ["-lpulsar"],
     }
