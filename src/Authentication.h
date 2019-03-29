@@ -17,21 +17,22 @@
  * under the License.
  */
 
-#include "Message.h"
-#include "MessageId.h"
-#include "Authentication.h"
-#include "Producer.h"
-#include "Consumer.h"
-#include "Client.h"
+#ifndef AUTH_H
+#define AUTH_H
+
 #include <napi.h>
+#include <pulsar/c/authentication.h>
 
-Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-  Message::Init(env, exports);
-  MessageId::Init(env, exports);
-  Authentication::Init(env, exports);
-  Producer::Init(env, exports);
-  Consumer::Init(env, exports);
-  return Client::Init(env, exports);
-}
+class Authentication : public Napi::ObjectWrap<Authentication> {
+ public:
+  static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  Authentication(const Napi::CallbackInfo &info);
+  ~Authentication();
+  pulsar_authentication_t *GetCAuthentication();
 
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
+ private:
+  static Napi::FunctionReference constructor;
+  pulsar_authentication_t *cAuthentication;
+};
+
+#endif

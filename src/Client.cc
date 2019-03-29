@@ -20,11 +20,14 @@
 #include "Client.h"
 #include "Consumer.h"
 #include "Producer.h"
+#include "Authentication.h"
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
+static const std::string CFG_AUTH = "authentication";
+static const std::string CFG_AUTH_PROP = "binding";
 static const std::string CFG_OP_TIMEOUT = "operationTimeoutSeconds";
 static const std::string CFG_IO_THREADS = "ioThreads";
 static const std::string CFG_LISTENER_THREADS = "messageListenerThreads";
@@ -67,6 +70,14 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
   pulsar_client_configuration_t *cClientConfig = pulsar_client_configuration_create();
+
+  if (clientConfig.Has(CFG_AUTH) && clientConfig.Get(CFG_AUTH).IsObject()) {
+    Napi::Object obj = clientConfig.Get(CFG_AUTH).ToObject();
+    if (obj.Has(CFG_AUTH_PROP) && obj.Get(CFG_AUTH_PROP).IsObject()) {
+      Authentication *auth = Authentication::Unwrap(obj.Get(CFG_AUTH_PROP).ToObject());
+      pulsar_client_configuration_set_auth(cClientConfig, auth->GetCAuthentication());
+    }
+  }
 
   if (clientConfig.Has(CFG_OP_TIMEOUT) && clientConfig.Get(CFG_OP_TIMEOUT).IsNumber()) {
     int32_t operationTimeoutSeconds = clientConfig.Get(CFG_OP_TIMEOUT).ToNumber().Int32Value();
