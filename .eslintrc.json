@@ -5,5 +5,10 @@
     "no-await-in-loop": "warn",
     "no-console": "off",
     "no-unused-vars": "warn"
+  },
+  "globals": {
+    "describe": true,
+    "test": true,
+    "expect": true
   }
 }
