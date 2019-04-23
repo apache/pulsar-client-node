@@ -20,8 +20,11 @@
 
 set -e
 
+ROOT_DIR=$(git rev-parse --show-toplevel)
+cd $ROOT_DIR
+
 # install pulsar cpp client pkg
-VERSION="${VERSION:-2.3.1}"
+VERSION="${VERSION:-`cat ./pulsar-version.txt`}"
 PULSAR_PKG_DIR="/tmp/pulsar-test-pkg"
 rm -rf $PULSAR_PKG_DIR
 for pkg in apache-pulsar-client-dev.deb apache-pulsar-client.deb;do
