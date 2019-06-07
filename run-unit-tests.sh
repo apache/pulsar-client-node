@@ -28,7 +28,7 @@ VERSION="${VERSION:-`cat ./pulsar-version.txt`}"
 PULSAR_PKG_DIR="/tmp/pulsar-test-pkg"
 rm -rf $PULSAR_PKG_DIR
 for pkg in apache-pulsar-client-dev.deb apache-pulsar-client.deb;do
-  curl -L --create-dir "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${VERSION}/DEB/${pkg}" -o $PULSAR_PKG_DIR/$pkg
+  curl -L --create-dir "https://archive.apache.org/dist/pulsar/pulsar-${VERSION}/DEB/${pkg}" -o $PULSAR_PKG_DIR/$pkg
 done;
 apt install $PULSAR_PKG_DIR/apache-pulsar-client*.deb
 

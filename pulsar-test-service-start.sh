@@ -28,7 +28,7 @@ PULSAR_DIR="${PULSAR_DIR:-/tmp/pulsar-test-dist}"
 PKG=apache-pulsar-${VERSION}-bin.tar.gz
 
 rm -rf $PULSAR_DIR
-curl -L --create-dir "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${VERSION}/${PKG}" -o $PULSAR_DIR/$PKG
+curl -L --create-dir "https://archive.apache.org/dist/pulsar/pulsar-${VERSION}/${PKG}" -o $PULSAR_DIR/$PKG
 tar xfz $PULSAR_DIR/$PKG -C $PULSAR_DIR --strip-components 1
 
 DATA_DIR=/tmp/pulsar-test-data
