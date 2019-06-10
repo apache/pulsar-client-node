@@ -28,13 +28,17 @@ Napi::FunctionReference Consumer::constructor;
 void Consumer::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
-  Napi::Function func = DefineClass(env, "Consumer",
-                                    {
-                                        InstanceMethod("receive", &Consumer::Receive),
-                                        InstanceMethod("acknowledge", &Consumer::Acknowledge),
-                                        InstanceMethod("acknowledgeId", &Consumer::AcknowledgeId),
-                                        InstanceMethod("close", &Consumer::Close),
-                                    });
+  Napi::Function func =
+      DefineClass(env, "Consumer",
+                  {
+                      InstanceMethod("receive", &Consumer::Receive),
+                      InstanceMethod("receiveWithTimeout", &Consumer::ReceiveWithTimeout),
+                      InstanceMethod("acknowledge", &Consumer::Acknowledge),
+                      InstanceMethod("acknowledgeId", &Consumer::AcknowledgeId),
+                      InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
+                      InstanceMethod("acknowledgeCumulativeId", &Consumer::AcknowledgeCumulativeId),
+                      InstanceMethod("close", &Consumer::Close),
+                  });
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -108,13 +112,20 @@ Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_
 
 class ConsumerReceiveWorker : public Napi::AsyncWorker {
  public:
-  ConsumerReceiveWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer)
+  ConsumerReceiveWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer,
+                        int64_t timeout = -1)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
-        cConsumer(cConsumer) {}
+        cConsumer(cConsumer),
+        timeout(timeout) {}
   ~ConsumerReceiveWorker() {}
   void Execute() {
-    pulsar_result result = pulsar_consumer_receive(this->cConsumer, &(this->cMessage));
+    pulsar_result result;
+    if (timeout > 0) {
+      result = pulsar_consumer_receive_with_timeout(this->cConsumer, &(this->cMessage), timeout);
+    } else {
+      result = pulsar_consumer_receive(this->cConsumer, &(this->cMessage));
+    }
 
     if (result != pulsar_result_Ok) {
       SetError(std::string("Failed to received message ") + pulsar_result_str(result));
@@ -130,11 +141,20 @@ class ConsumerReceiveWorker : public Napi::AsyncWorker {
   Napi::Promise::Deferred deferred;
   pulsar_consumer_t *cConsumer;
   pulsar_message_t *cMessage;
+  int64_t timeout;
 };
 
 Napi::Value Consumer::Receive(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer);
+  wk->Queue();
+  return deferred.Promise();
+}
+
+Napi::Value Consumer::ReceiveWithTimeout(const Napi::CallbackInfo &info) {
+  Napi::Number timeout = info[0].As<Napi::Object>().ToNumber();
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+  ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer, timeout.Int64Value());
   wk->Queue();
   return deferred.Promise();
 }
@@ -149,6 +169,18 @@ void Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   MessageId *msgId = MessageId::Unwrap(obj);
   pulsar_consumer_acknowledge_async_id(this->cConsumer, msgId->GetCMessageId(), NULL, NULL);
+}
+
+void Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  Message *msg = Message::Unwrap(obj);
+  pulsar_consumer_acknowledge_cumulative_async(this->cConsumer, msg->GetCMessage(), NULL, NULL);
+}
+
+void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  MessageId *msgId = MessageId::Unwrap(obj);
+  pulsar_consumer_acknowledge_cumulative_async_id(this->cConsumer, msgId->GetCMessageId(), NULL, NULL);
 }
 
 class ConsumerCloseWorker : public Napi::AsyncWorker {

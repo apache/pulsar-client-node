@@ -36,8 +36,11 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   pulsar_consumer_t *cConsumer;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
+  Napi::Value ReceiveWithTimeout(const Napi::CallbackInfo &info);
   void Acknowledge(const Napi::CallbackInfo &info);
   void AcknowledgeId(const Napi::CallbackInfo &info);
+  void AcknowledgeCumulative(const Napi::CallbackInfo &info);
+  void AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
 };
 

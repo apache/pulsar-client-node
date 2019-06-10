@@ -40,6 +40,7 @@ const Pulsar = require('../index.js');
         subscription: 'sub1',
         ackTimeoutMs: 10000,
       });
+
       expect(consumer).not.toBeNull();
 
       const messages = [];
@@ -59,6 +60,44 @@ const Pulsar = require('../index.js');
         results.push(msg.getData().toString());
       }
       expect(lodash.difference(messages, results)).toEqual([]);
+
+      await producer.close();
+      await consumer.close();
+    });
+
+    test('acknowledgeCumulative', async () => {
+      const producer = await client.createProducer({
+        topic: 'persistent://public/default/acknowledgeCumulative',
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic: 'persistent://public/default/acknowledgeCumulative',
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+      });
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        if (i === 9) {
+          consumer.acknowledgeCumulative(msg);
+        }
+      }
+
+      await expect(consumer.receiveWithTimeout(1000)).rejects.toThrow('Failed to received message TimeOut');
 
       await producer.close();
       await consumer.close();
