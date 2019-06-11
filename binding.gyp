@@ -36,6 +36,8 @@
         "src/ProducerConfig.cc",
         "src/Consumer.cc",
         "src/ConsumerConfig.cc",
+        "src/Reader.cc",
+        "src/ReaderConfig.cc",
       ],
       "libraries": ["-lpulsar"],
     }

@@ -17,25 +17,26 @@
  * under the License.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+#ifndef READER_H
+#define READER_H
 
 #include <napi.h>
 #include <pulsar/c/client.h>
 
-class Client : public Napi::ObjectWrap<Client> {
+class Reader : public Napi::ObjectWrap<Reader> {
  public:
-  static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  Client(const Napi::CallbackInfo &info);
-  ~Client();
+  static void Init(Napi::Env env, Napi::Object exports);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::FunctionReference constructor;
+  Reader(const Napi::CallbackInfo &info);
+  ~Reader();
+  void SetCReader(pulsar_reader_t *cReader);
 
  private:
-  static Napi::FunctionReference constructor;
-  pulsar_client_t *cClient;
+  pulsar_reader_t *cReader;
 
-  Napi::Value CreateProducer(const Napi::CallbackInfo &info);
-  Napi::Value Subscribe(const Napi::CallbackInfo &info);
-  Napi::Value CreateReader(const Napi::CallbackInfo &info);
+  Napi::Value ReadNext(const Napi::CallbackInfo &info);
+  Napi::Value HasNext(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
 };
 

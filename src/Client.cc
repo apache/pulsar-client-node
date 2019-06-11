@@ -20,6 +20,7 @@
 #include "Client.h"
 #include "Consumer.h"
 #include "Producer.h"
+#include "Reader.h"
 #include "Authentication.h"
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
@@ -43,10 +44,11 @@ Napi::FunctionReference Client::constructor;
 Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
-  Napi::Function func =
-      DefineClass(env, "Client",
-                  {InstanceMethod("createProducer", &Client::CreateProducer),
-                   InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("close", &Client::Close)});
+  Napi::Function func = DefineClass(
+      env, "Client",
+      {InstanceMethod("createProducer", &Client::CreateProducer),
+       InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("createReader", &Client::CreateReader),
+       InstanceMethod("close", &Client::Close)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -149,6 +151,10 @@ Napi::Value Client::CreateProducer(const Napi::CallbackInfo &info) {
 
 Napi::Value Client::Subscribe(const Napi::CallbackInfo &info) {
   return Consumer::NewInstance(info, this->cClient);
+}
+
+Napi::Value Client::CreateReader(const Napi::CallbackInfo &info) {
+  return Reader::NewInstance(info, this->cClient);
 }
 
 class ClientCloseWorker : public Napi::AsyncWorker {
