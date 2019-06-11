@@ -32,7 +32,6 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
       DefineClass(env, "Consumer",
                   {
                       InstanceMethod("receive", &Consumer::Receive),
-                      InstanceMethod("receiveWithTimeout", &Consumer::ReceiveWithTimeout),
                       InstanceMethod("acknowledge", &Consumer::Acknowledge),
                       InstanceMethod("acknowledgeId", &Consumer::AcknowledgeId),
                       InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
@@ -146,16 +145,14 @@ class ConsumerReceiveWorker : public Napi::AsyncWorker {
 
 Napi::Value Consumer::Receive(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer);
-  wk->Queue();
-  return deferred.Promise();
-}
-
-Napi::Value Consumer::ReceiveWithTimeout(const Napi::CallbackInfo &info) {
-  Napi::Number timeout = info[0].As<Napi::Object>().ToNumber();
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer, timeout.Int64Value());
-  wk->Queue();
+  if (info[0].IsUndefined()) {
+    ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer);
+    wk->Queue();
+  } else {
+    Napi::Number timeout = info[0].As<Napi::Object>().ToNumber();
+    ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer, timeout.Int64Value());
+    wk->Queue();
+  }
   return deferred.Promise();
 }
 
