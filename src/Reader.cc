@@ -149,10 +149,10 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
   if (result != pulsar_result_Ok) {
     Napi::Error::New(info.Env(), "Failed to check if next message is available").ThrowAsJavaScriptException();
     return Napi::Boolean::New(info.Env(), false);
-  } else if (value != 1) {
-    return Napi::Boolean::New(info.Env(), false);
-  } else {
+  } else if (value == 1) {
     return Napi::Boolean::New(info.Env(), true);
+  } else {
+    return Napi::Boolean::New(info.Env(), false);
   }
 }
 
