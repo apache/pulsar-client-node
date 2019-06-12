@@ -23,11 +23,12 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('End To End', () => {
-    const client = new Pulsar.Client({
-      serviceUrl: 'pulsar://localhost:6650',
-      operationTimeoutSeconds: 30,
-    });
     test('Produce/Consume', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
       const producer = await client.createProducer({
         topic: 'persistent://public/default/test-end-to-end',
         sendTimeoutMs: 30000,
@@ -63,9 +64,15 @@ const Pulsar = require('../index.js');
 
       await producer.close();
       await consumer.close();
+      await client.close();
     });
 
     test('acknowledgeCumulative', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
       const producer = await client.createProducer({
         topic: 'persistent://public/default/acknowledgeCumulative',
         sendTimeoutMs: 30000,
@@ -101,6 +108,52 @@ const Pulsar = require('../index.js');
 
       await producer.close();
       await consumer.close();
+      await client.close();
+    });
+
+    test('Produce/Read', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+      expect(client).not.toBeNull();
+
+      const producer = await client.createProducer({
+        topic: 'persistent://public/default/test-end-to-end',
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const reader = await client.createReader({
+        topic: 'persistent://public/default/test-end-to-end',
+        startMessageId: Pulsar.MessageId.latest(),
+      });
+      expect(reader).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      expect(reader.hasNext()).toBe(true);
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await reader.readNext();
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+
+      expect(reader.hasNext()).toBe(false);
+
+      await producer.close();
+      await reader.close();
       await client.close();
     });
   });

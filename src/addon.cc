@@ -23,6 +23,7 @@
 #include "Producer.h"
 #include "Consumer.h"
 #include "Client.h"
+#include "Reader.h"
 #include <napi.h>
 
 Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
@@ -31,6 +32,7 @@ Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
   Authentication::Init(env, exports);
   Producer::Init(env, exports);
   Consumer::Init(env, exports);
+  Reader::Init(env, exports);
   return Client::Init(env, exports);
 }
 

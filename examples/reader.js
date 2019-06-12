@@ -17,26 +17,27 @@
  * under the License.
  */
 
-#ifndef CLIENT_H
-#define CLIENT_H
+const Pulsar = require('../index.js');
 
-#include <napi.h>
-#include <pulsar/c/client.h>
+(async () => {
+  // Create a client
+  const client = new Pulsar.Client({
+    serviceUrl: 'pulsar://localhost:6650',
+    operationTimeoutSeconds: 30,
+  });
 
-class Client : public Napi::ObjectWrap<Client> {
- public:
-  static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  Client(const Napi::CallbackInfo &info);
-  ~Client();
+  // Create a reader
+  const reader = await client.createReader({
+    topic: 'persistent://public/default/my-topic',
+    startMessageId: Pulsar.MessageId.earliest(),
+  });
 
- private:
-  static Napi::FunctionReference constructor;
-  pulsar_client_t *cClient;
+  // read messages
+  for (let i = 0; i < 10; i += 1) {
+    const msg = await reader.readNext();
+    console.log(msg.getData().toString());
+  }
 
-  Napi::Value CreateProducer(const Napi::CallbackInfo &info);
-  Napi::Value Subscribe(const Napi::CallbackInfo &info);
-  Napi::Value CreateReader(const Napi::CallbackInfo &info);
-  Napi::Value Close(const Napi::CallbackInfo &info);
-};
-
-#endif
+  await reader.close();
+  await client.close();
+})();
