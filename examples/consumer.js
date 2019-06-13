@@ -30,6 +30,7 @@ const Pulsar = require('../index.js');
   const consumer = await client.subscribe({
     topic: 'persistent://public/default/my-topic',
     subscription: 'sub1',
+    subscriptionType: 'Shared',
     ackTimeoutMs: 10000,
   });
 
