@@ -29,15 +29,16 @@ const Pulsar = require('../index.js');
         operationTimeoutSeconds: 30,
       });
 
+      const topic = 'persistent://public/default/produce-consume';
       const producer = await client.createProducer({
-        topic: 'persistent://public/default/test-end-to-end',
+        topic,
         sendTimeoutMs: 30000,
         batchingEnabled: true,
       });
       expect(producer).not.toBeNull();
 
       const consumer = await client.subscribe({
-        topic: 'persistent://public/default/test-end-to-end',
+        topic,
         subscription: 'sub1',
         ackTimeoutMs: 10000,
       });
@@ -73,15 +74,16 @@ const Pulsar = require('../index.js');
         operationTimeoutSeconds: 30,
       });
 
+      const topic = 'persistent://public/default/acknowledgeCumulative';
       const producer = await client.createProducer({
-        topic: 'persistent://public/default/acknowledgeCumulative',
+        topic,
         sendTimeoutMs: 30000,
         batchingEnabled: true,
       });
       expect(producer).not.toBeNull();
 
       const consumer = await client.subscribe({
-        topic: 'persistent://public/default/acknowledgeCumulative',
+        topic,
         subscription: 'sub1',
         ackTimeoutMs: 10000,
       });
@@ -118,15 +120,16 @@ const Pulsar = require('../index.js');
       });
       expect(client).not.toBeNull();
 
+      const topic = 'persistent://public/default/produce-read';
       const producer = await client.createProducer({
-        topic: 'persistent://public/default/test-end-to-end',
+        topic,
         sendTimeoutMs: 30000,
         batchingEnabled: true,
       });
       expect(producer).not.toBeNull();
 
       const reader = await client.createReader({
-        topic: 'persistent://public/default/test-end-to-end',
+        topic,
         startMessageId: Pulsar.MessageId.latest(),
       });
       expect(reader).not.toBeNull();
