@@ -31,7 +31,9 @@ Napi::Object MessageId::Init(Napi::Env env, Napi::Object exports) {
                                         StaticMethod("earliest", &MessageId::Earliest, napi_static),
                                         StaticMethod("latest", &MessageId::Latest, napi_static),
                                         StaticMethod("finalize", &MessageId::Finalize, napi_static),
-                                        InstanceMethod("toString", &MessageId::ToString),
+                                        InstanceMethod("serialize", &MessageId::Serialize),
+                                        StaticMethod("deserialize", &MessageId::Deserialize, napi_static),
+                                        InstanceMethod("toString", &MessageId::ToString)
                                     });
 
   constructor = Napi::Persistent(func);
@@ -75,6 +77,33 @@ Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
   msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_latest();
+  return obj;
+}
+
+Napi::Value MessageId::Serialize(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  int len;
+  void *ptr = pulsar_message_id_serialize(GetCMessageId(), &len);
+
+  return Napi::Buffer<char>::New(env, (char *)ptr, len);
+}
+
+Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+
+  if (!info[0].IsBuffer()) {
+    Napi::Error::New(env, "Expected buffer as first argument").ThrowAsJavaScriptException();
+    return env.Undefined();
+  }
+
+  Napi::Object obj = NewInstance(info[0]);
+  MessageId *msgId = Unwrap(obj);
+
+  Napi::Buffer<char> buf = info[0].As<Napi::Buffer<char>>();
+  char *data = buf.Data();
+  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_deserialize(data, buf.Length());
+
   return obj;
 }
 
