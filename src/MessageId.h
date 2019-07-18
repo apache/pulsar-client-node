@@ -31,6 +31,8 @@ class MessageId : public Napi::ObjectWrap<MessageId> {
   static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage);
   static Napi::Value Earliest(const Napi::CallbackInfo &info);
   static Napi::Value Latest(const Napi::CallbackInfo &info);
+  Napi::Value Serialize(const Napi::CallbackInfo &info);
+  static Napi::Value Deserialize(const Napi::CallbackInfo &info);
   static void Finalize(const Napi::CallbackInfo &info);
   MessageId(const Napi::CallbackInfo &info);
   ~MessageId();
