@@ -41,6 +41,7 @@ class MessageId : public Napi::ObjectWrap<MessageId> {
  private:
   static Napi::FunctionReference constructor;
   pulsar_message_id_t *cMessageId;
+  bool skipcMessageIdFree = false;
 
   Napi::Value ToString(const Napi::CallbackInfo &info);
 };
