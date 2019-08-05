@@ -134,9 +134,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
 
   if (clientConfig.Has(CFG_STATS_INTERVAL) && clientConfig.Get(CFG_STATS_INTERVAL).IsNumber()) {
     uint32_t statsIntervalInSeconds = clientConfig.Get(CFG_STATS_INTERVAL).ToNumber().Uint32Value();
-    if (statsIntervalInSeconds > 0) {
-      pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig, statsIntervalInSeconds);
-    }
+    pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig, statsIntervalInSeconds);
   }
 
   this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig);
