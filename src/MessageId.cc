@@ -70,7 +70,7 @@ Napi::Value MessageId::Earliest(const Napi::CallbackInfo &info) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
   msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_earliest();
-  msgId->skipcMessageIdFree = true;
+  msgId->skipCMessageIdFree = true;
   return obj;
 }
 
@@ -78,7 +78,7 @@ Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
   msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_latest();
-  msgId->skipcMessageIdFree = true;
+  msgId->skipCMessageIdFree = true;
   return obj;
 }
 
@@ -116,7 +116,7 @@ Napi::Value MessageId::ToString(const Napi::CallbackInfo &info) {
 }
 
 MessageId::~MessageId() {
-  if (!this->skipcMessageIdFree) {
+  if (!this->skipCMessageIdFree) {
     pulsar_message_id_free(this->cMessageId);
   }
 }
