@@ -27,14 +27,12 @@ Napi::Object MessageId::Init(Napi::Env env, Napi::Object exports) {
   Napi::HandleScope scope(env);
 
   Napi::Function func = DefineClass(env, "MessageId",
-                                    {
-                                        StaticMethod("earliest", &MessageId::Earliest, napi_static),
-                                        StaticMethod("latest", &MessageId::Latest, napi_static),
-                                        StaticMethod("finalize", &MessageId::Finalize, napi_static),
-                                        InstanceMethod("serialize", &MessageId::Serialize),
-                                        StaticMethod("deserialize", &MessageId::Deserialize, napi_static),
-                                        InstanceMethod("toString", &MessageId::ToString)
-                                    });
+                                    {StaticMethod("earliest", &MessageId::Earliest, napi_static),
+                                     StaticMethod("latest", &MessageId::Latest, napi_static),
+                                     StaticMethod("finalize", &MessageId::Finalize, napi_static),
+                                     InstanceMethod("serialize", &MessageId::Serialize),
+                                     StaticMethod("deserialize", &MessageId::Deserialize, napi_static),
+                                     InstanceMethod("toString", &MessageId::ToString)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
