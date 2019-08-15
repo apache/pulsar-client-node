@@ -16,6 +16,7 @@
     "build": "npm run format && node-gyp rebuild",
     "build:debug": "npm run format && node-gyp rebuild --debug",
     "license:report": "mkdir -p report && grunt grunt-license-report",
+    "license:addheader": "license-check-and-add",
     "test": "jest --verbose"
   },
   "repository": {
@@ -39,6 +40,7 @@
     "grunt-license-report": "^0.0.8",
     "hdr-histogram-js": "^1.1.4",
     "jest": "^24.7.1",
+    "license-check-and-add": "^2.3.6",
     "lodash": "^4.17.11"
   },
   "dependencies": {
@@ -51,5 +53,55 @@
     "module_name": "libpulsar",
     "module_path": "./build/Release",
     "host": "https://pulsar.apache.org/docs/en/client-libraries-cpp/"
+  },
+  "license-check-and-add-config": {
+    "folder": ".",
+    "license": "license-header.txt",
+    "exact_paths_method": "EXCLUDE",
+    "exact_paths": [
+      ".git/",
+      "build/",
+      "node_modules/",
+      "report/",
+      "LICENSE"
+    ],
+    "file_type_method": "EXCLUDE",
+    "file_types": [
+      ".json",
+      ".pem",
+      ".txt"
+    ],
+    "trailing_whitespace": "TRIM",
+    "insert_license": true,
+    "default_format": {
+      "prepend": "#",
+      "eachLine": {
+        "prepend": "# "
+      },
+      "append": "#"
+    },
+    "license_formats": {
+      "c|cc|cpp|h|hpp|js|ts|css": {
+        "prepend": "/**",
+        "eachLine": {
+          "prepend": " * "
+        },
+        "append": " */"
+      },
+      "conf|gitignore|npmignore|eslintignore|sh|py": {
+        "prepend": "#",
+        "eachLine": {
+          "prepend": "# "
+        },
+        "append": "#"
+      },
+      "html|xml|md": {
+        "prepend": "<!--\n",
+        "eachLine": {
+          "prepend": "    "
+        },
+        "append": "\n-->"
+      }
+    }
   }
 }
