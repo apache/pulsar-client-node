@@ -34,9 +34,9 @@ class ReaderConfig {
   std::string GetTopic();
 
  private:
-  pulsar_reader_configuration_t *cReaderConfig;
-  pulsar_message_id_t *cStartMessageId;
   std::string topic;
+  pulsar_message_id_t *cStartMessageId;
+  pulsar_reader_configuration_t *cReaderConfig;
 };
 
 #endif
