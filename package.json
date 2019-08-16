@@ -16,6 +16,7 @@
     "build": "npm run format && node-gyp rebuild",
     "build:debug": "npm run format && node-gyp rebuild --debug",
     "license:report": "mkdir -p report && grunt grunt-license-report",
+    "license:addheader": "license-check-and-add",
     "test": "jest --verbose"
   },
   "repository": {
@@ -32,14 +33,15 @@
     "clang-format": "^1.2.4",
     "commander": "^2.20.0",
     "delay": "^4.3.0",
-    "eslint": "^5.12.0",
-    "eslint-config-airbnb-base": "^13.1.0",
-    "eslint-plugin-import": "^2.14.0",
+    "eslint": "^5.16.0",
+    "eslint-config-airbnb-base": "^13.2.0",
+    "eslint-plugin-import": "^2.18.2",
     "grunt": "^1.0.4",
     "grunt-license-report": "^0.0.8",
     "hdr-histogram-js": "^1.1.4",
-    "jest": "^24.7.1",
-    "lodash": "^4.17.11"
+    "jest": "^24.8.0",
+    "license-check-and-add": "^2.3.6",
+    "lodash": "^4.17.15"
   },
   "dependencies": {
     "bindings": "^1.3.1",
@@ -51,5 +53,55 @@
     "module_name": "libpulsar",
     "module_path": "./build/Release",
     "host": "https://pulsar.apache.org/docs/en/client-libraries-cpp/"
+  },
+  "license-check-and-add-config": {
+    "folder": ".",
+    "license": "license-header.txt",
+    "exact_paths_method": "EXCLUDE",
+    "exact_paths": [
+      ".git/",
+      "build/",
+      "node_modules/",
+      "report/",
+      "LICENSE"
+    ],
+    "file_type_method": "EXCLUDE",
+    "file_types": [
+      ".json",
+      ".pem",
+      ".txt"
+    ],
+    "trailing_whitespace": "TRIM",
+    "insert_license": true,
+    "default_format": {
+      "prepend": "#",
+      "eachLine": {
+        "prepend": "# "
+      },
+      "append": "#"
+    },
+    "license_formats": {
+      "c|cc|cpp|h|hpp|js|ts|css": {
+        "prepend": "/**",
+        "eachLine": {
+          "prepend": " * "
+        },
+        "append": " */"
+      },
+      "conf|gitignore|npmignore|eslintignore|sh|py": {
+        "prepend": "#",
+        "eachLine": {
+          "prepend": "# "
+        },
+        "append": "#"
+      },
+      "html|xml|md": {
+        "prepend": "<!--\n",
+        "eachLine": {
+          "prepend": "    "
+        },
+        "append": "\n-->"
+      }
+    }
   }
 }
