@@ -35,6 +35,8 @@ Pulsar Node.js client library is based on the C++ client library. Follow the ins
 [Deb](https://pulsar.apache.org/docs/en/client-libraries-cpp/#deb) or
 [Homebrew packages](https://pulsar.apache.org/docs/en/client-libraries-cpp/#macos).
 
+(Note: you will need to install the pulsar-client-dev library, not the pulsar-client library.)
+
 Also, this library works only in Node.js 10.x or later because it uses the
 [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
 
