@@ -46,6 +46,18 @@ Compatibility between each version of the Node.js client and the C++ client is a
 
 If an incompatible version of the C++ client is installed, you may fail to build or run this library.
 
+## How to install
+
+### Please install pulsar-client in your project:
+
+```shell
+$ npm install pulsar-client
+```
+
+## Sample code
+
+Please refer to [examples](https://github.com/apache/pulsar-client-node/tree/master/examples).
+
 ## How to build
 
 ### Install dependent npm modules and build Pulsar client library:
@@ -61,15 +73,3 @@ $ npm install
 ```shell
 $ npm run build
 ```
-
-## How to install
-
-### Please install pulsar-client in your project:
-
-```shell
-$ npm install pulsar-client
-```
-
-## Sample code
-
-Please refer to examples.
