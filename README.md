@@ -61,3 +61,15 @@ $ npm install
 ```shell
 $ npm run build
 ```
+
+## How to install
+
+### Please install pulsar-client in your project:
+
+```shell
+$ npm install pulsar-client
+```
+
+## Sample code
+
+Please refer to examples.
