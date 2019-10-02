@@ -29,7 +29,7 @@ Napi::Object MessageId::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func = DefineClass(env, "MessageId",
                                     {StaticMethod("earliest", &MessageId::Earliest, napi_static),
                                      StaticMethod("latest", &MessageId::Latest, napi_static),
-                                     StaticMethod("finalize", &MessageId::Finalize, napi_static),
+                                     StaticMethod("finalize", &MessageId::Free, napi_static),
                                      InstanceMethod("serialize", &MessageId::Serialize),
                                      StaticMethod("deserialize", &MessageId::Deserialize, napi_static),
                                      InstanceMethod("toString", &MessageId::ToString)});
@@ -58,7 +58,7 @@ Napi::Object MessageId::NewInstance(Napi::Value arg) {
   return obj;
 }
 
-void MessageId::Finalize(const Napi::CallbackInfo &info) {
+void MessageId::Free(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   MessageId *msgId = Unwrap(obj);
   pulsar_message_id_free(msgId->cMessageId);

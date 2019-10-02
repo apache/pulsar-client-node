@@ -105,9 +105,63 @@ const Pulsar = require('../index.js');
       results.push(msg2.getData().toString());
       consumer.acknowledge(msg2);
 
-      await expect(consumer.receive(1000)).rejects.toThrow('Failed to received message TimeOut');
+      await expect(consumer.receive(1000)).rejects.toThrow(
+        'Failed to received message TimeOut',
+      );
 
       expect(results).toEqual([message, message]);
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
+    test('Produce/Consume Listener', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume-listener';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      let finish;
+      const results = [];
+      const finishPromise = new Promise((resolve) => {
+        finish = resolve;
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+        listener: (message, messageConsumer) => {
+          const data = message.getData().toString();
+          results.push(data);
+          messageConsumer.acknowledge(message);
+          if (results.length === 10) finish();
+        },
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      await finishPromise;
+      expect(lodash.difference(messages, results)).toEqual([]);
 
       await producer.close();
       await consumer.close();
@@ -152,7 +206,9 @@ const Pulsar = require('../index.js');
         }
       }
 
-      await expect(consumer.receive(1000)).rejects.toThrow('Failed to received message TimeOut');
+      await expect(consumer.receive(1000)).rejects.toThrow(
+        'Failed to received message TimeOut',
+      );
 
       await producer.close();
       await consumer.close();

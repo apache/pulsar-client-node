@@ -33,7 +33,7 @@ class MessageId : public Napi::ObjectWrap<MessageId> {
   static Napi::Value Latest(const Napi::CallbackInfo &info);
   Napi::Value Serialize(const Napi::CallbackInfo &info);
   static Napi::Value Deserialize(const Napi::CallbackInfo &info);
-  static void Finalize(const Napi::CallbackInfo &info);
+  static void Free(const Napi::CallbackInfo &info);
   MessageId(const Napi::CallbackInfo &info);
   ~MessageId();
   pulsar_message_id_t *GetCMessageId();
