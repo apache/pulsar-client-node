@@ -20,32 +20,36 @@
 const Pulsar = require('../index.js');
 
 (async () => {
-  const auth = new Pulsar.AuthenticationTls({
-    certificatePath: '/path/to/client.crt',
-    privateKeyPath: '/path/to/client.key',
+      
+  const auth = new Pulsar.AuthenticationTuya({
+    accessId: '84dj9ppwvvdyrf4e4sxq',
+    accessKey: 'yfcmuthtghmvhscj8redgp9r3wwsnr5w',
   });
 
   // Create a client
   const client = new Pulsar.Client({
-    serviceUrl: 'pulsar+ssl://localhost:6651',
-    authentication: auth,
-    tlsTrustCertsFilePath: '/path/to/server.crt',
+    serviceUrl: 'pulsar+ssl://mqe.tuyacn.com:7285/',
+    tlsAllowInsecureConnection: true,
   });
 
-  // Create a consumer
-  const consumer = await client.subscribe({
-    topic: 'persistent://public/default/my-topic',
-    subscription: 'sub1',
-    subscriptionType: 'Shared',
+  // Create a producer
+  try {    
+  const producer = await client.createProducer({
+    topic: '84dj9ppwvvdyrf4e4sxq/out/event',
   });
-
-  // Receive messages
-  for (let i = 0; i < 10; i += 1) {
-    const msg = await consumer.receive();
-    console.log(msg.getData().toString());
-    consumer.acknowledge(msg);
+  } catch (error) {
+    console.log(error)
   }
+  // Send messages
+  for (let i = 0; i < 10; i += 1) {
+    const msg = `my-message-${i}`;
+    producer.send({
+      data: Buffer.from(msg),
+    });
+    console.log(`Sent message: ${msg}`);
+  }
+  await producer.flush();
 
-  await consumer.close();
+  await producer.close();
   await client.close();
 })();

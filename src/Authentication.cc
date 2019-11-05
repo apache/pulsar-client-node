@@ -22,6 +22,8 @@
 static const std::string PARAM_TLS_CERT = "certificatePath";
 static const std::string PARAM_TLS_KEY = "privateKeyPath";
 static const std::string PARAM_TOKEN = "token";
+static const std::string PARAM_ACCESS_ID = "accessId";
+static const std::string PARAM_ACCESS_KEY = "accessKey";
 
 Napi::FunctionReference Authentication::constructor;
 
@@ -80,6 +82,16 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       return;
     }
     this->cAuthentication = pulsar_authentication_athenz_create(info[1].ToString().Utf8Value().c_str());
+  } else if (authMethod == "auth1") {
+    Napi::Object obj = info[1].ToObject();
+
+    if (!obj.Has(PARAM_ACCESS_ID) || !obj.Get(PARAM_ACCESS_KEY).IsString()) {
+      Napi::Error::New(env, "Missing required parameter").ThrowAsJavaScriptException();
+      return;
+    }
+    this->cAuthentication =
+        pulsar_authentication_tuya_create(obj.Get(PARAM_ACCESS_ID).ToString().Utf8Value().c_str(),
+                                          obj.Get(PARAM_ACCESS_KEY).ToString().Utf8Value().c_str());
   } else {
     Napi::Error::New(env, "Unsupported authentication method").ThrowAsJavaScriptException();
     return;

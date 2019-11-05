@@ -25,6 +25,8 @@
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
+#include <iostream>
+using namespace std;
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
 static const std::string CFG_AUTH = "authentication";

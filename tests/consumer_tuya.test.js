@@ -21,23 +21,26 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('Consumer', () => {
-    const auth = new Pulsar.AuthenticationTuya({
-      accessId: '84dj9ppwvvdyrf4e4sxq',
-      accessKey: 'yfcmuthtghmvhscj8redgp9r3wwsnr5w',
-    });
+      
+  const auth = new Pulsar.AuthenticationTuya({
+    accessId: '84dj9ppwvvdyrf4e4sxq',
+    accessKey: 'yfcmuthtghmvhscj8redgp9r3wwsnr5w',
+  });
 
-    const client = new Pulsar.Client({
-      serviceUrl: 'pulsar+ssl://mqe.tuyaus.com:7285/',
-      authentication: auth,
-      operationTimeoutSeconds: 30,
-    });
-
-    describe('Create', () => {
+  const client = new Pulsar.Client({
+    serviceUrl: "pulsar+ssl://mqe.tuyaus.com:7285/",
+    authentication: auth,
+    tlsAllowInsecureConnection: true,
+  });
+  // Create a consumer
+	  
+  describe('Create', () => {
       test('No Topic', async () => {
         await expect(client.subscribe({
-          subscription: 'sub1',
+          topic: '84dj9ppwvvdyrf4e4sxq/out/event',
+          subscription: '84dj9ppwvvdyrf4e4sxq-sub',
           ackTimeoutMs: 10000,
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
+          })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
       });
 
       test('Not String Topic', async () => {

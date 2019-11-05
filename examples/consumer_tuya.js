@@ -17,35 +17,35 @@
  * under the License.
  */
 
+//const Pulsar = require('pulsar-client');
 const Pulsar = require('../index.js');
 
 (async () => {
-  const auth = new Pulsar.AuthenticationTls({
-    certificatePath: '/path/to/client.crt',
-    privateKeyPath: '/path/to/client.key',
-  });
-
   // Create a client
+      
+  const auth = new Pulsar.AuthenticationTuya({
+    accessId: '84dj9ppwvvdyrf4e4sxq',
+    accessKey: 'yfcmuthtghmvhscj8redgp9r3wwsnr5w',
+  });
   const client = new Pulsar.Client({
-    serviceUrl: 'pulsar+ssl://localhost:6651',
+    serviceUrl: "pulsar+ssl://mqe.tuyaus.com:7285/",
     authentication: auth,
-    tlsTrustCertsFilePath: '/path/to/server.crt',
+    tlsAllowInsecureConnection: true,
   });
-
   // Create a consumer
-  const consumer = await client.subscribe({
-    topic: 'persistent://public/default/my-topic',
-    subscription: 'sub1',
-    subscriptionType: 'Shared',
-  });
-
+   const consumer = await client.subscribe({
+    topic: '84dj9ppwvvdyrf4e4sxq/out/event',
+    subscription: '84dj9ppwvvdyrf4e4sxq-sub',
+    ackTimeoutMs: 10000,
+   });
   // Receive messages
-  for (let i = 0; i < 10; i += 1) {
+     
+  for (let i = 0; i < 10000; i += 1) {
     const msg = await consumer.receive();
     console.log(msg.getData().toString());
     consumer.acknowledge(msg);
   }
-
   await consumer.close();
   await client.close();
+ 
 })();
