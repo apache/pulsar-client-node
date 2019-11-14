@@ -67,6 +67,53 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('negativeAcknowledge', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+        nAckRedeliverTimeoutMs: 1000,
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const message = 'my-message';
+      producer.send({
+        data: Buffer.from(message),
+      });
+      await producer.flush();
+
+      const results = [];
+      const msg = await consumer.receive();
+      results.push(msg.getData().toString());
+      consumer.negativeAcknowledge(msg);
+
+      const msg2 = await consumer.receive();
+      results.push(msg2.getData().toString());
+      consumer.acknowledge(msg2);
+
+      await expect(consumer.receive(1000)).rejects.toThrow('Failed to received message TimeOut');
+
+      expect(results).toEqual([message, message]);
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
     test('acknowledgeCumulative', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
