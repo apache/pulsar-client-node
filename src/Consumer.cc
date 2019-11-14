@@ -34,6 +34,8 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
                       InstanceMethod("receive", &Consumer::Receive),
                       InstanceMethod("acknowledge", &Consumer::Acknowledge),
                       InstanceMethod("acknowledgeId", &Consumer::AcknowledgeId),
+                      InstanceMethod("negativeAcknowledge", &Consumer::NegativeAcknowledge),
+                      InstanceMethod("negativeAcknowledgeId", &Consumer::NegativeAcknowledgeId),
                       InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
                       InstanceMethod("acknowledgeCumulativeId", &Consumer::AcknowledgeCumulativeId),
                       InstanceMethod("close", &Consumer::Close),
@@ -72,6 +74,12 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
     if (ackTimeoutMs != 0 && ackTimeoutMs < MIN_ACK_TIMEOUT_MILLIS) {
       std::string msg("Ack timeout should be 0 or greater than or equal to " +
                       std::to_string(MIN_ACK_TIMEOUT_MILLIS));
+      SetError(msg);
+      return;
+    }
+    int32_t nAckRedeliverTimeoutMs = this->consumerConfig->GetNAckRedeliverTimeoutMs();
+    if (nAckRedeliverTimeoutMs < 0) {
+      std::string msg("NAck timeout should be greater than or equal to zero");
       SetError(msg);
       return;
     }
@@ -166,6 +174,18 @@ void Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   MessageId *msgId = MessageId::Unwrap(obj);
   pulsar_consumer_acknowledge_async_id(this->cConsumer, msgId->GetCMessageId(), NULL, NULL);
+}
+
+void Consumer::NegativeAcknowledge(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  Message *msg = Message::Unwrap(obj);
+  pulsar_consumer_negative_acknowledge(this->cConsumer, msg->GetCMessage());
+}
+
+void Consumer::NegativeAcknowledgeId(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  MessageId *msgId = MessageId::Unwrap(obj);
+  pulsar_consumer_negative_acknowledge_id(this->cConsumer, msgId->GetCMessageId());
 }
 
 void Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
