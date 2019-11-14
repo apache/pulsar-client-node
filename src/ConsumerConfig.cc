@@ -25,6 +25,7 @@ static const std::string CFG_TOPIC = "topic";
 static const std::string CFG_SUBSCRIPTION = "subscription";
 static const std::string CFG_SUBSCRIPTION_TYPE = "subscriptionType";
 static const std::string CFG_ACK_TIMEOUT = "ackTimeoutMs";
+static const std::string CFG_NACK_REDELIVER_TIMEOUT = "nAckRedeliverTimeoutMs";
 static const std::string CFG_RECV_QUEUE = "receiverQueueSize";
 static const std::string CFG_RECV_QUEUE_ACROSS_PARTITIONS = "receiverQueueSizeAcrossPartitions";
 static const std::string CFG_CONSUMER_NAME = "consumerName";
@@ -36,7 +37,7 @@ static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Failover", pulsar_ConsumerFailover}};
 
 ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig)
-    : topic(""), subscription(""), ackTimeoutMs(0) {
+    : topic(""), subscription(""), ackTimeoutMs(0), nAckRedeliverTimeoutMs(60000) {
   this->cConsumerConfig = pulsar_consumer_configuration_create();
 
   if (consumerConfig.Has(CFG_TOPIC) && consumerConfig.Get(CFG_TOPIC).IsString()) {
@@ -64,6 +65,13 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig)
     this->ackTimeoutMs = consumerConfig.Get(CFG_ACK_TIMEOUT).ToNumber().Int64Value();
     if (this->ackTimeoutMs == 0 || this->ackTimeoutMs >= MIN_ACK_TIMEOUT_MILLIS) {
       pulsar_consumer_set_unacked_messages_timeout_ms(this->cConsumerConfig, this->ackTimeoutMs);
+    }
+  }
+
+  if (consumerConfig.Has(CFG_NACK_REDELIVER_TIMEOUT) && consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).IsNumber()) {
+    this->nAckRedeliverTimeoutMs = consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).ToNumber().Int64Value();
+    if (this->nAckRedeliverTimeoutMs >= 0) {
+      pulsar_configure_set_negative_ack_redelivery_delay_ms(this->cConsumerConfig, this->nAckRedeliverTimeoutMs);
     }
   }
 
@@ -103,3 +111,4 @@ pulsar_consumer_configuration_t *ConsumerConfig::GetCConsumerConfig() { return t
 std::string ConsumerConfig::GetTopic() { return this->topic; }
 std::string ConsumerConfig::GetSubscription() { return this->subscription; }
 int64_t ConsumerConfig::GetAckTimeoutMs() { return this->ackTimeoutMs; }
+int64_t ConsumerConfig::GetNAckRedeliverTimeoutMs() { return this->nAckRedeliverTimeoutMs; }
