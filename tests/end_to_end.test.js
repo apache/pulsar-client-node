@@ -114,6 +114,51 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('getRedeliveryCount', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+        nAckRedeliverTimeoutMs: 500,
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const message = 'my-message';
+      producer.send({
+        data: Buffer.from(message),
+      });
+      await producer.flush();
+
+      while (true) {
+        const msg = await consumer.receive();
+        consumer.negativeAcknowledge(msg);
+        const redeliveryCount = msg.getRedeliveryCount();
+        if (redeliveryCount > 2) {
+          consumer.acknowledge(msg);
+          expect(redeliveryCount).to.eq(3);
+          break;
+        }
+      }
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
     test('acknowledgeCumulative', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
