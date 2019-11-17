@@ -68,10 +68,12 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig)
     }
   }
 
-  if (consumerConfig.Has(CFG_NACK_REDELIVER_TIMEOUT) && consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).IsNumber()) {
+  if (consumerConfig.Has(CFG_NACK_REDELIVER_TIMEOUT) &&
+      consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).IsNumber()) {
     this->nAckRedeliverTimeoutMs = consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).ToNumber().Int64Value();
     if (this->nAckRedeliverTimeoutMs >= 0) {
-      pulsar_configure_set_negative_ack_redelivery_delay_ms(this->cConsumerConfig, this->nAckRedeliverTimeoutMs);
+      pulsar_configure_set_negative_ack_redelivery_delay_ms(this->cConsumerConfig,
+                                                            this->nAckRedeliverTimeoutMs);
     }
   }
 
