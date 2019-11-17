@@ -40,6 +40,7 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getMessageId", &Message::GetMessageId),
        InstanceMethod("getPublishTimestamp", &Message::GetPublishTimestamp),
        InstanceMethod("getEventTimestamp", &Message::GetEventTimestamp),
+       InstanceMethod("getRedeliveryCount", &Message::GetRedeliveryCount),
        InstanceMethod("getPartitionKey", &Message::GetPartitionKey)});
 
   constructor = Napi::Persistent(func);
@@ -66,6 +67,14 @@ Napi::Value Message::GetTopicName(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   return Napi::String::New(env, pulsar_message_get_topic_name(this->cMessage));
+}
+
+Napi::Value Message::GetRedeliveryCount(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+  return Napi::Number::New(env, pulsar_message_get_redelivery_count(this->cMessage));
 }
 
 Napi::Value Message::GetProperties(const Napi::CallbackInfo &info) {
