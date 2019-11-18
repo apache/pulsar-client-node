@@ -133,7 +133,7 @@ const Pulsar = require('../index.js');
         subscriptionType: "Shared",
         subscription: 'sub1',
         ackTimeoutMs: 10000,
-        nAckRedeliverTimeoutMs: 500,
+        nAckRedeliverTimeoutMs: 100,
       });
 
       expect(consumer).not.toBeNull();
