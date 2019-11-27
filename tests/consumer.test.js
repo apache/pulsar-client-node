@@ -30,6 +30,7 @@ const Pulsar = require('../index.js');
         await expect(client.subscribe({
           subscription: 'sub1',
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
       });
 
@@ -38,6 +39,7 @@ const Pulsar = require('../index.js');
           topic: 0,
           subscription: 'sub1',
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
       });
 
@@ -45,6 +47,7 @@ const Pulsar = require('../index.js');
         await expect(client.subscribe({
           topic: 'persistent://public/default/t1',
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Subscription is required and must be specified as a string when creating consumer');
       });
 
@@ -53,6 +56,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://public/default/t1',
           subscription: 0,
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Subscription is required and must be specified as a string when creating consumer');
       });
 
@@ -61,6 +65,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://no-tenant/namespace/topic',
           subscription: 'sub1',
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Failed to create consumer: ConnectError');
       });
 
@@ -69,7 +74,17 @@ const Pulsar = require('../index.js');
           topic: 'persistent://public/no-namespace/topic',
           subscription: 'sub1',
           ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
         })).rejects.toThrow('Failed to create consumer: ConnectError');
+      });
+
+      test('Not Positive NAckRedeliverTimeout', async () => {
+        await expect(client.subscribe({
+          topic: 'persistent://public/default/t1',
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: -12,
+        })).rejects.toThrow('NAck timeout should be greater than or equal to zero');
       });
     });
   });
