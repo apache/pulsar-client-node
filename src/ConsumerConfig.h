@@ -25,15 +25,27 @@
 
 #define MIN_ACK_TIMEOUT_MILLIS 10000
 
+struct CConsumerWrapper {
+  pulsar_consumer_t *cConsumer;
+  CConsumerWrapper();
+  ~CConsumerWrapper();
+};
+
+struct ListenerCallback {
+  Napi::ThreadSafeFunction callback;
+  std::shared_ptr<CConsumerWrapper> consumerWrapper;
+};
+
 class ConsumerConfig {
  public:
-  ConsumerConfig(const Napi::Object &consumerConfig);
+  ConsumerConfig(const Napi::Object &consumerConfig, std::shared_ptr<CConsumerWrapper> consumerWrapper);
   ~ConsumerConfig();
   pulsar_consumer_configuration_t *GetCConsumerConfig();
   std::string GetTopic();
   std::string GetSubscription();
   int64_t GetAckTimeoutMs();
   int64_t GetNAckRedeliverTimeoutMs();
+  ListenerCallback *GetListenerCallback();
 
  private:
   pulsar_consumer_configuration_t *cConsumerConfig;
@@ -41,6 +53,7 @@ class ConsumerConfig {
   std::string subscription;
   int64_t ackTimeoutMs;
   int64_t nAckRedeliverTimeoutMs;
+  ListenerCallback *listener;
 };
 
 #endif

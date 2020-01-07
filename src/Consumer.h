@@ -22,6 +22,7 @@
 
 #include <napi.h>
 #include <pulsar/c/client.h>
+#include "ConsumerConfig.h"
 
 class Consumer : public Napi::ObjectWrap<Consumer> {
  public:
@@ -30,10 +31,12 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   static Napi::FunctionReference constructor;
   Consumer(const Napi::CallbackInfo &info);
   ~Consumer();
-  void SetCConsumer(pulsar_consumer_t *cConsumer);
+  void SetCConsumer(std::shared_ptr<CConsumerWrapper> cConsumer);
+  void SetListenerCallback(ListenerCallback *listener);
 
  private:
-  pulsar_consumer_t *cConsumer;
+  std::shared_ptr<CConsumerWrapper> wrapper;
+  ListenerCallback *listener;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
   void Acknowledge(const Napi::CallbackInfo &info);
