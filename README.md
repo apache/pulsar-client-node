@@ -54,6 +54,12 @@ If an incompatible version of the C++ client is installed, you may fail to build
 $ npm install pulsar-client
 ```
 
+## Typescript Definitions
+
+```shell
+$ npm install @types/pulsar-client --save-dev
+```
+
 ## Sample code
 
 Please refer to [examples](https://github.com/apache/pulsar-client-node/tree/master/examples).
