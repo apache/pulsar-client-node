@@ -215,6 +215,75 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('subscriptionInitialPosition', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/subscriptionInitialPosition';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 2; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const latestConsumer = await client.subscribe({
+        topic,
+        subscription: 'latestSub',
+        subscriptionInitialPosition: 'Latest',
+      });
+      expect(latestConsumer).not.toBeNull();
+
+      const earliestConsumer = await client.subscribe({
+        topic,
+        subscription: 'earliestSub',
+        subscriptionInitialPosition: 'Earliest',
+      });
+      expect(earliestConsumer).not.toBeNull();
+
+      for (let i = 2; i < 4; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const latestResults = [];
+      const earliestResults = [];
+      for (let i = 0; i < 4; i += 1) {
+        if (i < 2) {
+          const latestMsg = await latestConsumer.receive(5000);
+          latestConsumer.acknowledge(latestMsg);
+          latestResults.push(latestMsg.getData().toString());
+        }
+
+        const earliestMsg = await earliestConsumer.receive(5000);
+        earliestConsumer.acknowledge(earliestMsg);
+        earliestResults.push(earliestMsg.getData().toString());
+      }
+      expect(lodash.difference(messages, latestResults)).toEqual(['my-message-0', 'my-message-1']);
+      expect(lodash.difference(messages, earliestResults)).toEqual([]);
+
+      await producer.close();
+      await latestConsumer.close();
+      await earliestConsumer.close();
+      await client.close();
+    });
+
     test('Produce/Read', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
