@@ -27,6 +27,7 @@
 static const std::string CFG_TOPIC = "topic";
 static const std::string CFG_SUBSCRIPTION = "subscription";
 static const std::string CFG_SUBSCRIPTION_TYPE = "subscriptionType";
+static const std::string CFG_INIT_POSITION = "subscriptionInitialPosition";
 static const std::string CFG_ACK_TIMEOUT = "ackTimeoutMs";
 static const std::string CFG_NACK_REDELIVER_TIMEOUT = "nAckRedeliverTimeoutMs";
 static const std::string CFG_RECV_QUEUE = "receiverQueueSize";
@@ -39,6 +40,9 @@ static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
     {"Shared", pulsar_ConsumerShared},
     {"Failover", pulsar_ConsumerFailover}};
+
+static const std::map<std::string, initial_position> INIT_POSITION = {
+    {"Latest", initial_position_latest}, {"Earliest", initial_position_earliest}};
 
 struct MessageListenerProxyData {
   std::shared_ptr<CConsumerWrapper> consumerWrapper;
@@ -88,6 +92,14 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
     if (SUBSCRIPTION_TYPE.count(subscriptionType)) {
       pulsar_consumer_configuration_set_consumer_type(this->cConsumerConfig,
                                                       SUBSCRIPTION_TYPE.at(subscriptionType));
+    }
+  }
+
+  if (consumerConfig.Has(CFG_INIT_POSITION) && consumerConfig.Get(CFG_INIT_POSITION).IsString()) {
+    std::string initPosition = consumerConfig.Get(CFG_INIT_POSITION).ToString().Utf8Value();
+    if (INIT_POSITION.count(initPosition)) {
+      pulsar_consumer_set_subscription_initial_position(this->cConsumerConfig,
+                                                        INIT_POSITION.at(initPosition));
     }
   }
 
