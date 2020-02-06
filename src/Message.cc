@@ -181,9 +181,7 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
       for (int i = 0; i < length; i++) {
         SetString(arr, clusters.Get(i).ToString().Utf8Value().c_str(), i);
       }
-      // TODO: temoporalily commented out unless 2.3.1 which includes interface change of
-      // pulsar_message_set_replication_clusters (#3729) is released
-      // pulsar_message_set_replication_clusters(cMessage, (const char **)arr, length);
+      pulsar_message_set_replication_clusters(cMessage, (const char **)arr, length);
       FreeStringArray(arr, length);
     }
   }
