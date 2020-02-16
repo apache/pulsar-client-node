@@ -35,6 +35,7 @@ static const std::string CFG_RECV_QUEUE_ACROSS_PARTITIONS = "receiverQueueSizeAc
 static const std::string CFG_CONSUMER_NAME = "consumerName";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_LISTENER = "listener";
+static const std::string CFG_READ_COMPACTED = "readCompacted";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -161,6 +162,13 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
     this->listener->callback = std::move(callback);
     pulsar_consumer_configuration_set_message_listener(this->cConsumerConfig, &MessageListener,
                                                        this->listener);
+  }
+
+  if (consumerConfig.Has(CFG_READ_COMPACTED) && consumerConfig.Get(CFG_READ_COMPACTED).IsBoolean()) {
+    bool readCompacted = consumerConfig.Get(CFG_READ_COMPACTED).ToBoolean();
+    if (readCompacted) {
+      pulsar_consumer_set_read_compacted(this->cConsumerConfig, 1);
+    }
   }
 }
 
