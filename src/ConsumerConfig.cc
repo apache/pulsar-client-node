@@ -39,6 +39,7 @@ static const std::string CFG_LISTENER = "listener";
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
     {"Shared", pulsar_ConsumerShared},
+    {"KeyShared", pulsar_ConsumerKeyShared},
     {"Failover", pulsar_ConsumerFailover}};
 
 static const std::map<std::string, initial_position> INIT_POSITION = {
