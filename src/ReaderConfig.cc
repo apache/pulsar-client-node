@@ -26,6 +26,7 @@ static const std::string CFG_START_MESSAGE_ID = "startMessageId";
 static const std::string CFG_RECV_QUEUE = "receiverQueueSize";
 static const std::string CFG_READER_NAME = "readerName";
 static const std::string CFG_SUBSCRIPTION_ROLE_PREFIX = "subscriptionRolePrefix";
+static const std::string CFG_READ_COMPACTED = "readCompacted";
 
 ReaderConfig::ReaderConfig(const Napi::Object &readerConfig) : topic(""), cStartMessageId(NULL) {
   this->cReaderConfig = pulsar_reader_configuration_create();
@@ -58,6 +59,13 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig) : topic(""), cStart
         readerConfig.Get(CFG_SUBSCRIPTION_ROLE_PREFIX).ToString().Utf8Value();
     if (!subscriptionRolePrefix.empty())
       pulsar_reader_configuration_set_reader_name(this->cReaderConfig, subscriptionRolePrefix.c_str());
+  }
+
+  if (readerConfig.Has(CFG_READ_COMPACTED) && readerConfig.Get(CFG_READ_COMPACTED).IsBoolean()) {
+    bool readCompacted = readerConfig.Get(CFG_READ_COMPACTED).ToBoolean();
+    if (readCompacted) {
+      pulsar_reader_configuration_set_read_compacted(this->cReaderConfig, 1);
+    }
   }
 }
 
