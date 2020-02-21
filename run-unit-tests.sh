@@ -33,7 +33,7 @@ done;
 apt install $PULSAR_PKG_DIR/apache-pulsar-client*.deb
 
 ./pulsar-test-service-start.sh
-npm install && npm run build && npm run test
+npm install && npm run lint && npm run build && npm run test
 RES=$?
 ./pulsar-test-service-stop.sh
 

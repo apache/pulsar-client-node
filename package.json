@@ -11,8 +11,8 @@
     "install": "node-pre-gyp install --fallback-to-build",
     "clean": "node-gyp clean",
     "configure": "node-gyp configure",
-    "lint": "eslint --ext .js .",
-    "format": "clang-format -i --verbose src/* && eslint --fix --ext .js .",
+    "lint": "clang-format-lint src/*.cc src/*.h && eslint --ext .js .",
+    "format": "clang-format-lint --fix src/*.cc src/*.h && eslint --fix --ext .js .",
     "build": "npm run format && node-gyp rebuild",
     "build:debug": "npm run format && node-gyp rebuild --debug",
     "license:report": "mkdir -p report && grunt grunt-license-report",
@@ -30,6 +30,7 @@
     "node": ">=10.16.0"
   },
   "devDependencies": {
+    "@seadub/clang-format-lint": "0.0.2",
     "clang-format": "^1.2.4",
     "commander": "^2.20.0",
     "delay": "^4.3.0",
