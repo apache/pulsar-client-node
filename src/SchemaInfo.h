@@ -28,10 +28,6 @@ class SchemaInfo {
  public:
   SchemaInfo(const Napi::Object &schemaInfo);
   ~SchemaInfo();
-  // pulsar_schema_type GetSchemaType();
-  // std::string GetName();
-  // std::string GetSchema();
-  // pulsar_string_map_t GetProperties();
   void SetProducerSchema(pulsar_producer_configuration_t *cProducerConfiguration);
   void SetConsumerSchema(pulsar_consumer_configuration_t *cConsumerConfiguration);
 

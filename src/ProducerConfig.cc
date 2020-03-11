@@ -34,10 +34,6 @@ static const std::string CFG_BATCH_ENABLED = "batchingEnabled";
 static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
 static const std::string CFG_SCHEMA = "schema";
-static const std::string CFG_SCHEMA_TYPE = "schemaType";
-static const std::string CFG_SCHEMA_NAME = "name";
-static const std::string CFG_SCHEMA_SCHEMA = "schema";
-static const std::string CFG_SCHEMA_PROPS = "properties";
 static const std::string CFG_PROPS = "properties";
 
 static const std::map<std::string, pulsar_partitions_routing_mode> MESSAGE_ROUTING_MODE = {
