@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
+#include "SchemaInfo.h"
 #include "ProducerConfig.h"
 #include <map>
 
@@ -33,6 +33,11 @@ static const std::string CFG_COMPRESS_TYPE = "compressionType";
 static const std::string CFG_BATCH_ENABLED = "batchingEnabled";
 static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
+static const std::string CFG_SCHEMA = "schema";
+static const std::string CFG_SCHEMA_TYPE = "schemaType";
+static const std::string CFG_SCHEMA_NAME = "name";
+static const std::string CFG_SCHEMA_SCHEMA = "schema";
+static const std::string CFG_SCHEMA_PROPS = "properties";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
 static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
@@ -150,6 +155,12 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
       pulsar_producer_configuration_set_batching_max_messages(this->cProducerConfig.get(),
                                                               batchingMaxMessages);
     }
+  }
+
+  if (producerConfig.Has(CFG_SCHEMA) && producerConfig.Get(CFG_SCHEMA).IsObject()) {
+    SchemaInfo* schemaInfo = new SchemaInfo(producerConfig.Get(CFG_SCHEMA).ToObject());
+    schemaInfo->SetProducerSchema(this->cProducerConfig);
+    delete schemaInfo;
   }
 
   if (producerConfig.Has(CFG_PROPS) && producerConfig.Get(CFG_PROPS).IsObject()) {
