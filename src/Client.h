@@ -23,15 +23,33 @@
 #include <napi.h>
 #include <pulsar/c/client.h>
 
+struct LogMessage {
+  pulsar_logger_level_t level;
+  std::string file;
+  int line;
+  std::string message;
+
+  LogMessage(pulsar_logger_level_t level, std::string file, int line, std::string message)
+      : level(level), file(file), line(line), message(message) {}
+};
+
+struct LogCallback {
+  Napi::ThreadSafeFunction callback;
+};
+
+void LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message, void *ctx);
+
 class Client : public Napi::ObjectWrap<Client> {
  public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
+
   Client(const Napi::CallbackInfo &info);
   ~Client();
 
  private:
   static Napi::FunctionReference constructor;
   pulsar_client_t *cClient;
+  LogCallback *logCallback;
 
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);
   Napi::Value Subscribe(const Napi::CallbackInfo &info);

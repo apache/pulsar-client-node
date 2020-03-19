@@ -38,6 +38,7 @@ static const std::string CFG_TLS_TRUST_CERT = "tlsTrustCertsFilePath";
 static const std::string CFG_TLS_VALIDATE_HOSTNAME = "tlsValidateHostname";
 static const std::string CFG_TLS_ALLOW_INSECURE = "tlsAllowInsecureConnection";
 static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
+static const std::string CFG_LOG = "log";
 
 Napi::FunctionReference Client::constructor;
 
@@ -72,6 +73,17 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
   pulsar_client_configuration_t *cClientConfig = pulsar_client_configuration_create();
+
+  if (clientConfig.Has(CFG_LOG) && clientConfig.Get(CFG_LOG).IsFunction()) {
+    Napi::ThreadSafeFunction logFunction = Napi::ThreadSafeFunction::New(
+        env, clientConfig.Get(CFG_LOG).As<Napi::Function>(), "Pulsar Logging", 0, 1);
+    this->logCallback = new LogCallback();
+    this->logCallback->callback = logFunction;
+
+    pulsar_client_configuration_set_logger(cClientConfig, &LogMessage, this->logCallback);
+  } else {
+    this->logCallback = nullptr;
+  }
 
   if (clientConfig.Has(CFG_AUTH) && clientConfig.Get(CFG_AUTH).IsObject()) {
     Napi::Object obj = clientConfig.Get(CFG_AUTH).ToObject();
@@ -141,18 +153,46 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   pulsar_client_configuration_free(cClientConfig);
 }
 
-Client::~Client() { pulsar_client_free(this->cClient); }
+Client::~Client() {
+  pulsar_client_free(this->cClient);
+  if (this->logCallback != nullptr) {
+    this->logCallback->callback.Release();
+    this->logCallback = nullptr;
+  }
+}
 
 Napi::Value Client::CreateProducer(const Napi::CallbackInfo &info) {
   return Producer::NewInstance(info, this->cClient);
 }
-
 Napi::Value Client::Subscribe(const Napi::CallbackInfo &info) {
   return Consumer::NewInstance(info, this->cClient);
 }
 
 Napi::Value Client::CreateReader(const Napi::CallbackInfo &info) {
   return Reader::NewInstance(info, this->cClient);
+}
+
+void LogMessageProxy(Napi::Env env, Napi::Function jsCallback, struct LogMessage *logMessage) {
+  Napi::Number logLevel = Napi::Number::New(env, static_cast<double>(logMessage->level));
+  Napi::String file = Napi::String::New(env, logMessage->file);
+  Napi::Number line = Napi::Number::New(env, static_cast<double>(logMessage->line));
+  Napi::String message = Napi::String::New(env, logMessage->message);
+
+  delete logMessage;
+  jsCallback.Call({logLevel, file, line, message});
+}
+
+void LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message, void *ctx) {
+  LogCallback *logCallback = (LogCallback *)ctx;
+
+  if (logCallback->callback.Acquire() != napi_ok) {
+    return;
+  }
+
+  struct LogMessage *logMessage = new struct LogMessage(level, std::string(file), line, std::string(message));
+
+  logCallback->callback.BlockingCall(logMessage, LogMessageProxy);
+  logCallback->callback.Release();
 }
 
 class ClientCloseWorker : public Napi::AsyncWorker {
