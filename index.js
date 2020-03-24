@@ -22,6 +22,13 @@ const AuthenticationTls = require('./src/AuthenticationTls.js');
 const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
 const AuthenticationToken = require('./src/AuthenticationToken.js');
 
+const LogLevel = {
+  DEBUG: 0,
+  INFO: 1,
+  WARN: 2,
+  ERROR: 3,
+};
+
 const Pulsar = {
   Client: PulsarBinding.Client,
   Message: PulsarBinding.Message,
@@ -29,6 +36,7 @@ const Pulsar = {
   AuthenticationTls,
   AuthenticationAthenz,
   AuthenticationToken,
+  LogLevel,
 };
 
 module.exports = Pulsar;
