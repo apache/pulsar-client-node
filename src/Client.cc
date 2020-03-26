@@ -151,6 +151,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
 
   this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig);
   pulsar_client_configuration_free(cClientConfig);
+  this->Ref();
 }
 
 Client::~Client() {
@@ -218,6 +219,8 @@ class ClientCloseWorker : public Napi::AsyncWorker {
 };
 
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
+  this->Unref();
+
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   ClientCloseWorker *wk = new ClientCloseWorker(deferred, this->cClient);
   wk->Queue();
