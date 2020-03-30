@@ -17,34 +17,23 @@
  * under the License.
  */
 
-#ifndef CONSUMER_CONFIG_H
-#define CONSUMER_CONFIG_H
+#ifndef MESSAGELISTENER_H
+#define MESSAGELISTENER_H
 
-#include <pulsar/c/consumer_configuration.h>
-#include "MessageListener.h"
+#include <napi.h>
+#include <pulsar/c/client.h>
 
-#define MIN_ACK_TIMEOUT_MILLIS 10000
+struct CConsumerWrapper {
+  pulsar_consumer_t *cConsumer;
+  CConsumerWrapper();
+  ~CConsumerWrapper();
+};
 
-class ConsumerConfig {
- public:
-  ConsumerConfig(const Napi::Object &consumerConfig, std::shared_ptr<CConsumerWrapper> consumerWrapper,
-                 pulsar_message_listener messageListener);
-  ~ConsumerConfig();
-  pulsar_consumer_configuration_t *GetCConsumerConfig();
-  std::string GetTopic();
-  std::string GetSubscription();
-  int64_t GetAckTimeoutMs();
-  int64_t GetNAckRedeliverTimeoutMs();
+struct ListenerCallback {
+  Napi::ThreadSafeFunction callback;
 
-  ListenerCallback *GetListenerCallback();
-
- private:
-  pulsar_consumer_configuration_t *cConsumerConfig;
-  std::string topic;
-  std::string subscription;
-  int64_t ackTimeoutMs;
-  int64_t nAckRedeliverTimeoutMs;
-  ListenerCallback *listener;
+  // Using consumer as void* since the ListenerCallback is shared between Config and Consumer.
+  void *consumer;
 };
 
 #endif

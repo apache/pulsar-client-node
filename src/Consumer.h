@@ -23,6 +23,7 @@
 #include <napi.h>
 #include <pulsar/c/client.h>
 #include "ConsumerConfig.h"
+#include "MessageListener.h"
 
 class Consumer : public Napi::ObjectWrap<Consumer> {
  public:
