@@ -49,6 +49,14 @@ If an incompatible version of the C++ client is installed, you may fail to build
 
 ## How to install
 
+### Please use a NodeJS version >= 12
+
+```shell
+$ nvm use 12
+$ nodeenv --node=12
+$ node -v # 12.X.X
+```
+
 ### Please install pulsar-client in your project:
 
 ```shell
