@@ -87,5 +87,22 @@ const Pulsar = require('../index.js');
         })).rejects.toThrow('NAck timeout should be greater than or equal to zero');
       });
     });
+
+    describe('Close', () => {
+      test('throws error on subsequent calls to close', async () => {
+        const consumer = await client.subscribe({
+          topic: 'persistent://public/default/my-topic',
+          subscription: 'sub1',
+          subscriptionType: 'Shared',
+          // Test with listener since it changes the flow of close
+          // and reproduces an issue
+          listener() {},
+        });
+
+        await expect(consumer.close()).resolves.toEqual(null);
+
+        await expect(consumer.close()).rejects.toThrow('Failed to close consumer: AlreadyClosed');
+      });
+    });
   });
 })();
