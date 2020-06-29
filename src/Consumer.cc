@@ -68,7 +68,8 @@ void MessageListener(pulsar_consumer_t *cConsumer, pulsar_message_t *cMessage, v
 
   if (listenerCallback->callback.Acquire() != napi_ok) {
     return;
-  };
+  }
+
   MessageListenerProxyData *dataPtr = new MessageListenerProxyData(cMessage, consumer);
   listenerCallback->callback.BlockingCall(dataPtr, MessageListenerProxy);
   listenerCallback->callback.Release();
@@ -256,17 +257,25 @@ void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
 
 class ConsumerCloseWorker : public Napi::AsyncWorker {
  public:
-  ConsumerCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer)
+  ConsumerCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer,
+                      Consumer *consumer)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
-        cConsumer(cConsumer) {}
+        cConsumer(cConsumer),
+        consumer(consumer) {}
+
   ~ConsumerCloseWorker() {}
   void Execute() {
     pulsar_consumer_pause_message_listener(this->cConsumer);
     pulsar_result result = pulsar_consumer_close(this->cConsumer);
-    if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
+    if (result != pulsar_result_Ok) {
+      SetError(pulsar_result_str(result));
+    }
   }
-  void OnOK() { this->deferred.Resolve(Env().Null()); }
+  void OnOK() {
+    this->consumer->Cleanup();
+    this->deferred.Resolve(Env().Null());
+  }
   void OnError(const Napi::Error &e) {
     this->deferred.Reject(
         Napi::Error::New(Env(), std::string("Failed to close consumer: ") + e.Message()).Value());
@@ -275,15 +284,19 @@ class ConsumerCloseWorker : public Napi::AsyncWorker {
  private:
   Napi::Promise::Deferred deferred;
   pulsar_consumer_t *cConsumer;
+  Consumer *consumer;
 };
 
-Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
+void Consumer::Cleanup() {
   if (this->listener) {
     this->Unref();
+    this->listener = nullptr;
   }
+}
 
+Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->wrapper->cConsumer);
+  ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->wrapper->cConsumer, this);
   wk->Queue();
   return deferred.Promise();
 }
