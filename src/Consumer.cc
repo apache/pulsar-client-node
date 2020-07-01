@@ -45,8 +45,49 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
   constructor.SuppressDestruct();
 }
 
+struct MessageListenerProxyData {
+  pulsar_message_t *cMessage;
+  Consumer *consumer;
+
+  MessageListenerProxyData(pulsar_message_t *cMessage, Consumer *consumer)
+      : cMessage(cMessage), consumer(consumer) {}
+};
+
+void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListenerProxyData *data) {
+  Napi::Object msg = Message::NewInstance({}, data->cMessage);
+  Consumer *consumer = data->consumer;
+  delete data;
+
+  jsCallback.Call({msg, consumer->Value()});
+}
+
+void MessageListener(pulsar_consumer_t *cConsumer, pulsar_message_t *cMessage, void *ctx) {
+  ListenerCallback *listenerCallback = (ListenerCallback *)ctx;
+
+  Consumer *consumer = (Consumer *)listenerCallback->consumer;
+
+  if (listenerCallback->callback.Acquire() != napi_ok) {
+    return;
+  }
+
+  MessageListenerProxyData *dataPtr = new MessageListenerProxyData(cMessage, consumer);
+  listenerCallback->callback.BlockingCall(dataPtr, MessageListenerProxy);
+  listenerCallback->callback.Release();
+}
+
 void Consumer::SetCConsumer(std::shared_ptr<CConsumerWrapper> cConsumer) { this->wrapper = cConsumer; }
-void Consumer::SetListenerCallback(ListenerCallback *listener) { this->listener = listener; }
+void Consumer::SetListenerCallback(ListenerCallback *listener) {
+  if (listener) {
+    // Maintain reference to consumer, so it won't get garbage collected
+    // since, when we have a listener, we don't have to maintain reference to consumer (in js code)
+    this->Ref();
+
+    // Pass consumer as argument
+    listener->consumer = this;
+  }
+
+  this->listener = listener;
+}
 
 Consumer::Consumer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Consumer>(info), listener(nullptr) {}
 
@@ -100,6 +141,7 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
   void OnOK() {
     Napi::Object obj = Consumer::constructor.New({});
     Consumer *consumer = Consumer::Unwrap(obj);
+
     consumer->SetCConsumer(this->consumerWrapper);
     consumer->SetListenerCallback(this->listener);
     this->deferred.Resolve(obj);
@@ -118,8 +160,10 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
 Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   Napi::Object config = info[0].As<Napi::Object>();
+
   std::shared_ptr<CConsumerWrapper> consumerWrapper = std::make_shared<CConsumerWrapper>();
-  ConsumerConfig *consumerConfig = new ConsumerConfig(config, consumerWrapper);
+
+  ConsumerConfig *consumerConfig = new ConsumerConfig(config, consumerWrapper, &MessageListener);
   ConsumerNewInstanceWorker *wk =
       new ConsumerNewInstanceWorker(deferred, cClient, consumerConfig, consumerWrapper);
   wk->Queue();
@@ -225,17 +269,25 @@ void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
 
 class ConsumerCloseWorker : public Napi::AsyncWorker {
  public:
-  ConsumerCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer)
+  ConsumerCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer,
+                      Consumer *consumer)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
-        cConsumer(cConsumer) {}
+        cConsumer(cConsumer),
+        consumer(consumer) {}
+
   ~ConsumerCloseWorker() {}
   void Execute() {
     pulsar_consumer_pause_message_listener(this->cConsumer);
     pulsar_result result = pulsar_consumer_close(this->cConsumer);
-    if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
+    if (result != pulsar_result_Ok) {
+      SetError(pulsar_result_str(result));
+    }
   }
-  void OnOK() { this->deferred.Resolve(Env().Null()); }
+  void OnOK() {
+    this->consumer->Cleanup();
+    this->deferred.Resolve(Env().Null());
+  }
   void OnError(const Napi::Error &e) {
     this->deferred.Reject(
         Napi::Error::New(Env(), std::string("Failed to close consumer: ") + e.Message()).Value());
@@ -244,11 +296,19 @@ class ConsumerCloseWorker : public Napi::AsyncWorker {
  private:
   Napi::Promise::Deferred deferred;
   pulsar_consumer_t *cConsumer;
+  Consumer *consumer;
 };
+
+void Consumer::Cleanup() {
+  if (this->listener) {
+    this->Unref();
+    this->listener = nullptr;
+  }
+}
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->wrapper->cConsumer);
+  ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->wrapper->cConsumer, this);
   wk->Queue();
   return deferred.Promise();
 }

@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,23 +17,30 @@
 # under the License.
 #
 
-set -e
-
-ROOT_DIR=$(git rev-parse --show-toplevel)
-cd $ROOT_DIR
-
-# install pulsar cpp client pkg
-VERSION="${VERSION:-`cat ./pulsar-version.txt`}"
-PULSAR_PKG_DIR="/tmp/pulsar-test-pkg"
-rm -rf $PULSAR_PKG_DIR
-for pkg in apache-pulsar-client-dev.deb apache-pulsar-client.deb;do
-  curl -L --create-dir "https://archive.apache.org/dist/pulsar/pulsar-${VERSION}/DEB/${pkg}" -o $PULSAR_PKG_DIR/$pkg
-done;
-apt install $PULSAR_PKG_DIR/apache-pulsar-client*.deb
-
-./pulsar-test-service-start.sh
-npm install && npm run lint && npm run build && npm run test
-RES=$?
-./pulsar-test-service-stop.sh
-
-exit $RES
+github:
+  description: "Apache Pulsar NodeJS Client"
+  homepage: https://pulsar.apache.org/
+  labels:
+    - pulsar
+    - pubsub
+    - messaging
+    - streaming
+    - queuing
+    - event-streaming
+    - node
+    - javascript
+    - nodejs
+  features:
+    # Enable wiki for documentation
+    wiki: true
+    # Enable issues management
+    issues: true
+    # Enable projects for project management boards
+    projects: true
+  enabled_merge_buttons:
+    # enable squash button:
+    squash:  true
+    # disable merge button:
+    merge:   false
+    # disable rebase button:
+    rebase:  false

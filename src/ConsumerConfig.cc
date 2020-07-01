@@ -35,47 +35,22 @@ static const std::string CFG_RECV_QUEUE_ACROSS_PARTITIONS = "receiverQueueSizeAc
 static const std::string CFG_CONSUMER_NAME = "consumerName";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_LISTENER = "listener";
+static const std::string CFG_READ_COMPACTED = "readCompacted";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
     {"Shared", pulsar_ConsumerShared},
+    {"KeyShared", pulsar_ConsumerKeyShared},
     {"Failover", pulsar_ConsumerFailover}};
 
 static const std::map<std::string, initial_position> INIT_POSITION = {
     {"Latest", initial_position_latest}, {"Earliest", initial_position_earliest}};
 
-struct MessageListenerProxyData {
-  std::shared_ptr<CConsumerWrapper> consumerWrapper;
-  pulsar_message_t *cMessage;
-
-  MessageListenerProxyData(std::shared_ptr<CConsumerWrapper> consumerWrapper, pulsar_message_t *cMessage)
-      : consumerWrapper(consumerWrapper), cMessage(cMessage) {}
-};
-
-void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListenerProxyData *data) {
-  Napi::Object msg = Message::NewInstance({}, data->cMessage);
-  Napi::Object consumerObj = Consumer::constructor.New({});
-  Consumer *consumer = Consumer::Unwrap(consumerObj);
-  consumer->SetCConsumer(std::move(data->consumerWrapper));
-  delete data;
-  jsCallback.Call({msg, consumerObj});
-}
-
-void MessageListener(pulsar_consumer_t *cConsumer, pulsar_message_t *cMessage, void *ctx) {
-  ListenerCallback *listenerCallback = (ListenerCallback *)ctx;
-  if (listenerCallback->callback.Acquire() != napi_ok) {
-    return;
-  };
-  MessageListenerProxyData *dataPtr =
-      new MessageListenerProxyData(listenerCallback->consumerWrapper, cMessage);
-  listenerCallback->callback.BlockingCall(dataPtr, MessageListenerProxy);
-  listenerCallback->callback.Release();
-}
-
 void FinalizeListenerCallback(Napi::Env env, ListenerCallback *cb, void *) { delete cb; }
 
 ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
-                               std::shared_ptr<CConsumerWrapper> consumerWrapper)
+                               std::shared_ptr<CConsumerWrapper> consumerWrapper,
+                               pulsar_message_listener messageListener)
     : topic(""), subscription(""), ackTimeoutMs(0), nAckRedeliverTimeoutMs(60000), listener(nullptr) {
   this->cConsumerConfig = pulsar_consumer_configuration_create();
 
@@ -154,13 +129,19 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
 
   if (consumerConfig.Has(CFG_LISTENER) && consumerConfig.Get(CFG_LISTENER).IsFunction()) {
     this->listener = new ListenerCallback();
-    this->listener->consumerWrapper = consumerWrapper;
     Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
         consumerConfig.Env(), consumerConfig.Get(CFG_LISTENER).As<Napi::Function>(), "Listener Callback", 1,
         1, (void *)NULL, FinalizeListenerCallback, listener);
     this->listener->callback = std::move(callback);
-    pulsar_consumer_configuration_set_message_listener(this->cConsumerConfig, &MessageListener,
+    pulsar_consumer_configuration_set_message_listener(this->cConsumerConfig, messageListener,
                                                        this->listener);
+  }
+
+  if (consumerConfig.Has(CFG_READ_COMPACTED) && consumerConfig.Get(CFG_READ_COMPACTED).IsBoolean()) {
+    bool readCompacted = consumerConfig.Get(CFG_READ_COMPACTED).ToBoolean();
+    if (readCompacted) {
+      pulsar_consumer_set_read_compacted(this->cConsumerConfig, 1);
+    }
   }
 }
 

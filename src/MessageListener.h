@@ -17,26 +17,23 @@
  * under the License.
  */
 
-const PulsarBinding = require('bindings')('Pulsar');
-const AuthenticationTls = require('./src/AuthenticationTls.js');
-const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
-const AuthenticationToken = require('./src/AuthenticationToken.js');
+#ifndef MESSAGELISTENER_H
+#define MESSAGELISTENER_H
 
-const LogLevel = {
-  DEBUG: 0,
-  INFO: 1,
-  WARN: 2,
-  ERROR: 3,
+#include <napi.h>
+#include <pulsar/c/client.h>
+
+struct CConsumerWrapper {
+  pulsar_consumer_t *cConsumer;
+  CConsumerWrapper();
+  ~CConsumerWrapper();
 };
 
-const Pulsar = {
-  Client: PulsarBinding.Client,
-  Message: PulsarBinding.Message,
-  MessageId: PulsarBinding.MessageId,
-  AuthenticationTls,
-  AuthenticationAthenz,
-  AuthenticationToken,
-  LogLevel,
+struct ListenerCallback {
+  Napi::ThreadSafeFunction callback;
+
+  // Using consumer as void* since the ListenerCallback is shared between Config and Consumer.
+  void *consumer;
 };
 
-module.exports = Pulsar;
+#endif

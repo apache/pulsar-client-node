@@ -6,6 +6,14 @@
     "no-console": "off",
     "no-unused-vars": "warn"
   },
+  "overrides": [
+    {
+      "files": ["tests/*.js"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    }
+  ],
   "globals": {
     "describe": true,
     "test": true,
