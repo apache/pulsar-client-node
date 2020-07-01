@@ -116,6 +116,52 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('getRedeliveryCount', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscriptionType: "Shared",
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+        nAckRedeliverTimeoutMs: 100,
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const message = 'my-message';
+      producer.send({
+        data: Buffer.from(message),
+      });
+      await producer.flush();
+
+      let redeliveryCount;
+      let msg
+      for (let index = 0; index < 3; index++) {
+        msg = await consumer.receive();
+        redeliveryCount = msg.getRedeliveryCount();
+        consumer.negativeAcknowledge(msg);
+      }
+      expect(redeliveryCount).toBe(2);
+      consumer.acknowledge(msg);
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
+
     test('Produce/Consume Listener', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',

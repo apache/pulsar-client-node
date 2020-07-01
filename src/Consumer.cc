@@ -198,6 +198,18 @@ void Consumer::NegativeAcknowledgeId(const Napi::CallbackInfo &info) {
   pulsar_consumer_negative_acknowledge_id(this->wrapper->cConsumer, msgId->GetCMessageId());
 }
 
+void Consumer::NegativeAcknowledge(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  Message *msg = Message::Unwrap(obj);
+  pulsar_consumer_negative_acknowledge(this->cConsumer, msg->GetCMessage());
+}
+
+void Consumer::NegativeAcknowledgeId(const Napi::CallbackInfo &info) {
+  Napi::Object obj = info[0].As<Napi::Object>();
+  MessageId *msgId = MessageId::Unwrap(obj);
+  pulsar_consumer_negative_acknowledge_id(this->cConsumer, msgId->GetCMessageId());
+}
+
 void Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   Message *msg = Message::Unwrap(obj);
