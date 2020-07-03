@@ -44,6 +44,7 @@ class Message : public Napi::ObjectWrap<Message> {
   Napi::Value GetPublishTimestamp(const Napi::CallbackInfo &info);
   Napi::Value GetEventTimestamp(const Napi::CallbackInfo &info);
   Napi::Value GetPartitionKey(const Napi::CallbackInfo &info);
+  Napi::Value GetRedeliveryCount(const Napi::CallbackInfo &info);
   bool ValidateCMessage(Napi::Env env);
 
   static char **NewStringArray(int size) { return (char **)calloc(sizeof(char *), size); }
