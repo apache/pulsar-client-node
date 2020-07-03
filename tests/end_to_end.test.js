@@ -132,7 +132,7 @@ const Pulsar = require('../index.js');
 
       const consumer = await client.subscribe({
         topic,
-        subscriptionType: "Shared",
+        subscriptionType: 'Shared',
         subscription: 'sub1',
         ackTimeoutMs: 10000,
         nAckRedeliverTimeoutMs: 100,
@@ -147,8 +147,8 @@ const Pulsar = require('../index.js');
       await producer.flush();
 
       let redeliveryCount;
-      let msg
-      for (let index = 0; index < 3; index++) {
+      let msg;
+      for (let index = 0; index < 3; index += 1) {
         msg = await consumer.receive();
         redeliveryCount = msg.getRedeliveryCount();
         consumer.negativeAcknowledge(msg);
