@@ -35,6 +35,7 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   void SetCConsumer(std::shared_ptr<CConsumerWrapper> cConsumer);
   void SetListenerCallback(ListenerCallback *listener);
   void Cleanup();
+  void CleanupListener();
 
  private:
   std::shared_ptr<CConsumerWrapper> wrapper;
