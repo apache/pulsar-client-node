@@ -289,9 +289,15 @@ class ConsumerCloseWorker : public Napi::AsyncWorker {
 
 void Consumer::Cleanup() {
   if (this->listener) {
-    this->Unref();
-    this->listener = nullptr;
+    this->CleanupListener();
   }
+}
+
+void Consumer::CleanupListener() {
+  pulsar_consumer_pause_message_listener(this->wrapper->cConsumer);
+  this->Unref();
+  this->listener->callback.Release();
+  this->listener = nullptr;
 }
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
@@ -303,7 +309,6 @@ Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
 
 Consumer::~Consumer() {
   if (this->listener) {
-    pulsar_consumer_pause_message_listener(this->wrapper->cConsumer);
-    this->listener->callback.Release();
+    this->CleanupListener();
   }
 }
