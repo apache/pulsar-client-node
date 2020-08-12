@@ -80,6 +80,9 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       return;
     }
     this->cAuthentication = pulsar_authentication_athenz_create(info[1].ToString().Utf8Value().c_str());
+  } else if (authMethod.length() > 0) {
+    this->cAuthentication =
+        pulsar_authentication_create(authMethod.c_str(), info[1].ToString().Utf8Value().c_str());
   } else {
     Napi::Error::New(env, "Unsupported authentication method").ThrowAsJavaScriptException();
     return;
