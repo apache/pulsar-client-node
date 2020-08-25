@@ -20,8 +20,6 @@
 -->
 
 This is a test for ci
-This is a test for ci
-
 
 # Pulsar Node.js client library
 
