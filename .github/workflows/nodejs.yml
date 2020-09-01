@@ -1,0 +1,13 @@
+name: Node.js
+on: [pull_request]
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Node.js module directory
+        uses: actions/checkout@v2
+
+      - name: Test
+        run: |
+          ./docker-tests.sh
