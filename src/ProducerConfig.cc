@@ -46,8 +46,12 @@ static const std::map<std::string, pulsar_hashing_scheme> HASHING_SCHEME = {
     {"JavaStringHash", pulsar_JavaStringHash},
 };
 
-static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {{"Zlib", pulsar_CompressionZLib},
-                                                                          {"LZ4", pulsar_CompressionLZ4}};
+static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {
+    {"Zlib", pulsar_CompressionZLib},
+    {"LZ4", pulsar_CompressionLZ4},
+    {"ZSTD", pulsar_CompressionZSTD},
+    {"SNAPPY", pulsar_CompressionSNAPPY},
+};
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   this->cProducerConfig = pulsar_producer_configuration_create();
