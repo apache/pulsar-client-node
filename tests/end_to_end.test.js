@@ -161,7 +161,6 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
-
     test('Produce/Consume Listener', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
@@ -374,6 +373,69 @@ const Pulsar = require('../index.js');
 
       await producer.close();
       await reader.close();
+      await client.close();
+    });
+
+    test('Produce/Consume/Unsubscribe', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume-unsubscribe';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        consumer.acknowledge(msg);
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+
+      await consumer.unsubscribe();
+      producer.send({ data: Buffer.from('drop') });
+      await producer.flush();
+
+      const consumer2 = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+      });
+
+      const testData = 'success';
+      producer.send({ data: Buffer.from(testData) });
+      await producer.flush();
+
+      const msg = await consumer2.receive();
+      consumer2.acknowledge(msg);
+      expect(msg.getData().toString()).toBe(testData);
+
+      await consumer2.close();
+      await producer.close();
       await client.close();
     });
 
