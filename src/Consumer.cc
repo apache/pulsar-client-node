@@ -39,6 +39,7 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
                       InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
                       InstanceMethod("acknowledgeCumulativeId", &Consumer::AcknowledgeCumulativeId),
                       InstanceMethod("close", &Consumer::Close),
+                      InstanceMethod("unsubscribe", &Consumer::Unsubscribe),
                   });
 
   constructor = Napi::Persistent(func);
@@ -287,6 +288,38 @@ class ConsumerCloseWorker : public Napi::AsyncWorker {
   Consumer *consumer;
 };
 
+class ConsumerUnsubscribeWorker : public Napi::AsyncWorker {
+ public:
+  ConsumerUnsubscribeWorker(const Napi::Promise::Deferred &deferred, pulsar_consumer_t *cConsumer,
+                            Consumer *consumer)
+      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
+        deferred(deferred),
+        cConsumer(cConsumer),
+        consumer(consumer) {}
+
+  ~ConsumerUnsubscribeWorker() {}
+  void Execute() {
+    pulsar_consumer_pause_message_listener(this->cConsumer);
+    pulsar_result result = pulsar_consumer_unsubscribe(this->cConsumer);
+    if (result != pulsar_result_Ok) {
+      SetError(pulsar_result_str(result));
+    }
+  }
+  void OnOK() {
+    this->consumer->Cleanup();
+    this->deferred.Resolve(Env().Null());
+  }
+  void OnError(const Napi::Error &e) {
+    this->deferred.Reject(
+        Napi::Error::New(Env(), std::string("Failed to unsubscribe consumer: ") + e.Message()).Value());
+  }
+
+ private:
+  Napi::Promise::Deferred deferred;
+  pulsar_consumer_t *cConsumer;
+  Consumer *consumer;
+};
+
 void Consumer::Cleanup() {
   if (this->listener) {
     this->CleanupListener();
@@ -303,6 +336,13 @@ void Consumer::CleanupListener() {
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->wrapper->cConsumer, this);
+  wk->Queue();
+  return deferred.Promise();
+}
+
+Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
+  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
+  ConsumerUnsubscribeWorker *wk = new ConsumerUnsubscribeWorker(deferred, this->wrapper->cConsumer, this);
   wk->Queue();
   return deferred.Promise();
 }
