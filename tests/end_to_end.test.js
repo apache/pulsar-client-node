@@ -376,6 +376,62 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('Produce-Delayed/Consume', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+      expect(client).not.toBeNull();
+
+      const topic = 'persistent://public/default/produce-read-delayed';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub',
+        subscriptionType: 'Shared',
+      });
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      const time = (new Date()).getTime();
+      for (let i = 0; i < 5; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+          deliverAfter: 3000,
+        });
+        messages.push(msg);
+      }
+      for (let i = 5; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+          deliverAt: (new Date()).getTime() + 3000,
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        results.push(msg.getData().toString());
+        consumer.acknowledge(msg);
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+      expect((new Date()).getTime() - time).toBeGreaterThan(3000);
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
     test('Produce/Consume/Unsubscribe', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
