@@ -22,6 +22,8 @@
 #include "Message.h"
 #include "MessageId.h"
 #include <pulsar/c/result.h>
+#include <atomic>
+#include <thread>
 
 Napi::FunctionReference Consumer::constructor;
 
@@ -128,16 +130,20 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
       return;
     }
 
-    pulsar_result result = pulsar_client_subscribe(this->cClient, topic.c_str(), subscription.c_str(),
-                                                   this->consumerConfig->GetCConsumerConfig(),
-                                                   &this->consumerWrapper->cConsumer);
-    if (result != pulsar_result_Ok) {
-      SetError(std::string("Failed to create consumer: ") + pulsar_result_str(result));
+    this->done = false;
+    const std::string &mode = this->consumerConfig->GetMode();
+    if (mode == "Pattern") {
+      pulsar_client_subscribe_pattern_async(this->cClient, topic.c_str(), subscription.c_str(),
+                                            this->consumerConfig->GetCConsumerConfig(),
+                                            &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
     } else {
-      this->listener = this->consumerConfig->GetListenerCallback();
+      pulsar_client_subscribe_async(this->cClient, topic.c_str(), subscription.c_str(),
+                                    this->consumerConfig->GetCConsumerConfig(),
+                                    &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
     }
-
-    delete this->consumerConfig;
+    while (!done) {
+      std::this_thread::yield();
+    }
   }
   void OnOK() {
     Napi::Object obj = Consumer::constructor.New({});
@@ -156,6 +162,19 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
   ConsumerConfig *consumerConfig;
   ListenerCallback *listener;
   std::shared_ptr<CConsumerWrapper> consumerWrapper;
+  std::atomic<bool> done;
+  static void subscribeCallback(pulsar_result result, pulsar_consumer_t *consumer, void *ctx) {
+    ConsumerNewInstanceWorker *worker = (ConsumerNewInstanceWorker *)ctx;
+    if (result != pulsar_result_Ok) {
+      worker->SetError(std::string("Failed to create consumer: ") + pulsar_result_str(result));
+    } else {
+      worker->consumerWrapper->cConsumer = consumer;
+      worker->listener = worker->consumerConfig->GetListenerCallback();
+    }
+
+    delete worker->consumerConfig;
+    worker->done = true;
+  }
 };
 
 Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {

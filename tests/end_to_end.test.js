@@ -542,5 +542,68 @@ const Pulsar = require('../index.js');
       await reader.close();
       await client.close();
     });
+
+    test('Produce/Consume-Pattern', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+      expect(client).not.toBeNull();
+
+      const topic1 = 'persistent://public/default/produce-abcdef';
+      const topic2 = 'persistent://public/default/produce-abczef';
+      const topicPattern = 'persistent://public/default/produce-abc[a-z]ef';
+      const producer1 = await client.createProducer({
+        topic: topic1,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer1).not.toBeNull();
+      const producer2 = await client.createProducer({
+        topic: topic2,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer2).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic: topicPattern,
+        subscriptionMode: 'Pattern',
+        subscription: 'sub',
+        subscriptionType: 'Shared',
+      });
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 5; i += 1) {
+        const msg = `my-message-${i}`;
+        producer1.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer1.flush();
+      for (let i = 5; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer2.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer2.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        results.push(msg.getData().toString());
+        consumer.acknowledge(msg);
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+
+      await producer1.close();
+      await producer2.close();
+      await consumer.close();
+      await client.close();
+    });
   });
 })();
