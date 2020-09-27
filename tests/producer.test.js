@@ -63,6 +63,16 @@ const Pulsar = require('../index.js');
         });
 
         expect(typeof producer.getProducerName()).toBe('string');
+        await producer.close();
+      });
+
+      test('Topic Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+        });
+
+        expect(producer.getTopic()).toBe('persistent://public/default/topic');
+        await producer.close();
       });
     });
   });
