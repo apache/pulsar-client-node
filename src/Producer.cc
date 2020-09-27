@@ -30,7 +30,8 @@ void Producer::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func =
       DefineClass(env, "Producer",
                   {InstanceMethod("send", &Producer::Send), InstanceMethod("flush", &Producer::Flush),
-                   InstanceMethod("close", &Producer::Close)});
+                   InstanceMethod("close", &Producer::Close),
+                   InstanceMethod("getProducerName", &Producer::GetProducerName)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -181,6 +182,11 @@ Napi::Value Producer::Close(const Napi::CallbackInfo &info) {
   ProducerCloseWorker *wk = new ProducerCloseWorker(deferred, this->cProducer);
   wk->Queue();
   return deferred.Promise();
+}
+
+Napi::Value Producer::GetProducerName(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  return Napi::String::New(env, pulsar_producer_get_producer_name(this->cProducer));
 }
 
 Producer::~Producer() { pulsar_producer_free(this->cProducer); }
