@@ -19,6 +19,7 @@
 
 #include "ProducerConfig.h"
 #include <map>
+#include <string>
 
 static const std::string CFG_TOPIC = "topic";
 static const std::string CFG_PRODUCER_NAME = "producerName";
@@ -76,6 +77,12 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_INIT_SEQUENCE_ID) && producerConfig.Get(CFG_INIT_SEQUENCE_ID).IsNumber()) {
     int64_t initialSequenceId = producerConfig.Get(CFG_INIT_SEQUENCE_ID).ToNumber().Int64Value();
     pulsar_producer_configuration_set_initial_sequence_id(this->cProducerConfig, initialSequenceId);
+  }
+
+  if (producerConfig.Has(CFG_INIT_SEQUENCE_ID) && producerConfig.Get(CFG_INIT_SEQUENCE_ID).IsString()) {
+    std::string initialSequenceId = producerConfig.Get(CFG_INIT_SEQUENCE_ID).ToString().Utf8Value();
+    pulsar_producer_configuration_set_initial_sequence_id(this->cProducerConfig,
+                                                          std::strtoll(initialSequenceId.c_str(), 0, 10));
   }
 
   if (producerConfig.Has(CFG_MAX_PENDING) && producerConfig.Get(CFG_MAX_PENDING).IsNumber()) {

@@ -20,6 +20,7 @@
 #include "Message.h"
 #include "MessageId.h"
 #include <pulsar/c/message.h>
+#include <string>
 
 static const std::string CFG_DATA = "data";
 static const std::string CFG_PROPS = "properties";
@@ -174,6 +175,11 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
   if (conf.Has(CFG_SEQUENCE_ID) && conf.Get(CFG_SEQUENCE_ID).IsNumber()) {
     Napi::Number sequenceId = conf.Get(CFG_SEQUENCE_ID).ToNumber();
     pulsar_message_set_sequence_id(cMessage, sequenceId.Int64Value());
+  }
+
+  if (conf.Has(CFG_SEQUENCE_ID) && conf.Get(CFG_SEQUENCE_ID).IsString()) {
+    std::string sequenceId = conf.Get(CFG_SEQUENCE_ID).ToString().Utf8Value();
+    pulsar_message_set_sequence_id(cMessage, std::strtoll(sequenceId.c_str(), 0, 10));
   }
 
   if (conf.Has(CFG_PARTITION_KEY) && conf.Get(CFG_PARTITION_KEY).IsString()) {

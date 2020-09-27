@@ -84,6 +84,54 @@ const Pulsar = require('../index.js');
         expect(producer.getTopic()).toBe('persistent://public/default/topic');
         await producer.close();
       });
+
+      test('Sequence ID as Number', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/sequence-id-number',
+          initialSequenceId: 100,
+        });
+
+        expect(producer.getLastSequenceId()).toEqual('100');
+
+        await producer.send({
+          data: Buffer.from('testing'),
+        });
+        await producer.flush();
+        expect(producer.getLastSequenceId()).toEqual('101');
+
+        await producer.send({
+          sequenceId: 105,
+          data: Buffer.from('testing'),
+        });
+        await producer.flush();
+        expect(producer.getLastSequenceId()).toEqual('105');
+
+        await producer.close();
+      });
+
+      test('Sequence ID as String', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/sequence-id-string',
+          initialSequenceId: '100',
+        });
+
+        expect(producer.getLastSequenceId()).toEqual('100');
+
+        await producer.send({
+          data: Buffer.from('testing'),
+        });
+        await producer.flush();
+        expect(producer.getLastSequenceId()).toEqual('101');
+
+        await producer.send({
+          sequenceId: '105',
+          data: Buffer.from('testing'),
+        });
+        await producer.flush();
+        expect(producer.getLastSequenceId()).toEqual('105');
+
+        await producer.close();
+      });
     });
   });
 })();

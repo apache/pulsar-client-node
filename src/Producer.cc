@@ -22,6 +22,8 @@
 #include "Message.h"
 #include <pulsar/c/result.h>
 #include <memory>
+#include <string>
+
 Napi::FunctionReference Producer::constructor;
 
 void Producer::Init(Napi::Env env, Napi::Object exports) {
@@ -32,7 +34,8 @@ void Producer::Init(Napi::Env env, Napi::Object exports) {
                   {InstanceMethod("send", &Producer::Send), InstanceMethod("flush", &Producer::Flush),
                    InstanceMethod("close", &Producer::Close),
                    InstanceMethod("getProducerName", &Producer::GetProducerName),
-                   InstanceMethod("getTopic", &Producer::GetTopic)});
+                   InstanceMethod("getTopic", &Producer::GetTopic),
+                   InstanceMethod("getLastSequenceId", &Producer::GetLastSequenceId)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -193,6 +196,12 @@ Napi::Value Producer::GetProducerName(const Napi::CallbackInfo &info) {
 Napi::Value Producer::GetTopic(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   return Napi::String::New(env, pulsar_producer_get_topic(this->cProducer));
+}
+
+Napi::Value Producer::GetLastSequenceId(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  int64_t lastSequenceId = pulsar_producer_get_last_sequence_id(this->cProducer);
+  return Napi::String::New(env, std::to_string(lastSequenceId));
 }
 
 Producer::~Producer() { pulsar_producer_free(this->cProducer); }
