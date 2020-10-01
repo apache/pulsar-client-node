@@ -38,6 +38,8 @@ class Producer : public Napi::ObjectWrap<Producer> {
   Napi::Value Send(const Napi::CallbackInfo &info);
   Napi::Value Flush(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
+  Napi::Value GetProducerName(const Napi::CallbackInfo &info);
+  Napi::Value GetTopic(const Napi::CallbackInfo &info);
 };
 
 #endif

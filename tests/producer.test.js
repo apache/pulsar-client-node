@@ -56,6 +56,34 @@ const Pulsar = require('../index.js');
           batchingEnabled: true,
         })).rejects.toThrow('Failed to create producer: ConnectError');
       });
+
+      test('Automatic Producer Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+        });
+
+        expect(typeof producer.getProducerName()).toBe('string');
+        await producer.close();
+      });
+
+      test('Explicit Producer Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+          producerName: 'test-producer',
+        });
+
+        expect(producer.getProducerName()).toBe('test-producer');
+        await producer.close();
+      });
+
+      test('Topic Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+        });
+
+        expect(producer.getTopic()).toBe('persistent://public/default/topic');
+        await producer.close();
+      });
     });
   });
 })();
