@@ -552,7 +552,7 @@ const Pulsar = require('../index.js');
 
       const topic1 = 'persistent://public/default/produce-abcdef';
       const topic2 = 'persistent://public/default/produce-abczef';
-      const topicPattern = 'persistent://public/default/produce-abc[a-z]ef';
+      const topicsPattern = 'persistent://public/default/produce-abc[a-z]ef';
       const producer1 = await client.createProducer({
         topic: topic1,
         sendTimeoutMs: 30000,
@@ -567,8 +567,7 @@ const Pulsar = require('../index.js');
       expect(producer2).not.toBeNull();
 
       const consumer = await client.subscribe({
-        topic: topicPattern,
-        subscriptionMode: 'Pattern',
+        topicsPattern,
         subscription: 'sub',
         subscriptionType: 'Shared',
       });

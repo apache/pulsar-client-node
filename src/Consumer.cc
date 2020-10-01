@@ -106,8 +106,10 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
   ~ConsumerNewInstanceWorker() {}
   void Execute() {
     const std::string &topic = this->consumerConfig->GetTopic();
-    if (topic.empty()) {
-      SetError(std::string("Topic is required and must be specified as a string when creating consumer"));
+    const std::string &topicsPattern = this->consumerConfig->GetTopicsPattern();
+    if (topic.empty() && topicsPattern.empty()) {
+      SetError(std::string(
+          "Topic or topicsPattern is required and must be specified as a string when creating consumer"));
       return;
     }
     const std::string &subscription = this->consumerConfig->GetSubscription();
@@ -131,9 +133,8 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
     }
 
     this->done = false;
-    const std::string &mode = this->consumerConfig->GetMode();
-    if (mode == "Pattern") {
-      pulsar_client_subscribe_pattern_async(this->cClient, topic.c_str(), subscription.c_str(),
+    if (topic.empty()) {
+      pulsar_client_subscribe_pattern_async(this->cClient, topicsPattern.c_str(), subscription.c_str(),
                                             this->consumerConfig->GetCConsumerConfig(),
                                             &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
     } else {

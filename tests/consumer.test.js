@@ -31,7 +31,7 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('Not String Topic', async () => {
@@ -40,7 +40,16 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not String TopicsPattern', async () => {
+        await expect(client.subscribe({
+          topicsPattern: 0,
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('No Subscription', async () => {
