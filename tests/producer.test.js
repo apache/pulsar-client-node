@@ -57,12 +57,22 @@ const Pulsar = require('../index.js');
         })).rejects.toThrow('Failed to create producer: ConnectError');
       });
 
-      test('Producer Name', async () => {
+      test('Automatic Producer Name', async () => {
         const producer = await client.createProducer({
           topic: 'persistent://public/default/topic',
         });
 
         expect(typeof producer.getProducerName()).toBe('string');
+        await producer.close();
+      });
+
+      test('Explicit Producer Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+          producerName: 'test-producer',
+        });
+
+        expect(producer.getProducerName()).toBe('test-producer');
         await producer.close();
       });
 
