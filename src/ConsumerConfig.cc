@@ -25,6 +25,7 @@
 #include <map>
 
 static const std::string CFG_TOPIC = "topic";
+static const std::string CFG_TOPICS_PATTERN = "topicsPattern";
 static const std::string CFG_SUBSCRIPTION = "subscription";
 static const std::string CFG_SUBSCRIPTION_TYPE = "subscriptionType";
 static const std::string CFG_INIT_POSITION = "subscriptionInitialPosition";
@@ -51,11 +52,20 @@ void FinalizeListenerCallback(Napi::Env env, ListenerCallback *cb, void *) { del
 ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
                                std::shared_ptr<CConsumerWrapper> consumerWrapper,
                                pulsar_message_listener messageListener)
-    : topic(""), subscription(""), ackTimeoutMs(0), nAckRedeliverTimeoutMs(60000), listener(nullptr) {
+    : topic(""),
+      topicsPattern(""),
+      subscription(""),
+      ackTimeoutMs(0),
+      nAckRedeliverTimeoutMs(60000),
+      listener(nullptr) {
   this->cConsumerConfig = pulsar_consumer_configuration_create();
 
   if (consumerConfig.Has(CFG_TOPIC) && consumerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = consumerConfig.Get(CFG_TOPIC).ToString().Utf8Value();
+  }
+
+  if (consumerConfig.Has(CFG_TOPICS_PATTERN) && consumerConfig.Get(CFG_TOPICS_PATTERN).IsString()) {
+    this->topicsPattern = consumerConfig.Get(CFG_TOPICS_PATTERN).ToString().Utf8Value();
   }
 
   if (consumerConfig.Has(CFG_SUBSCRIPTION) && consumerConfig.Get(CFG_SUBSCRIPTION).IsString()) {
@@ -155,6 +165,7 @@ ConsumerConfig::~ConsumerConfig() {
 pulsar_consumer_configuration_t *ConsumerConfig::GetCConsumerConfig() { return this->cConsumerConfig; }
 
 std::string ConsumerConfig::GetTopic() { return this->topic; }
+std::string ConsumerConfig::GetTopicsPattern() { return this->topicsPattern; }
 std::string ConsumerConfig::GetSubscription() { return this->subscription; }
 ListenerCallback *ConsumerConfig::GetListenerCallback() {
   ListenerCallback *cb = this->listener;

@@ -32,6 +32,7 @@ class ConsumerConfig {
   ~ConsumerConfig();
   pulsar_consumer_configuration_t *GetCConsumerConfig();
   std::string GetTopic();
+  std::string GetTopicsPattern();
   std::string GetSubscription();
   int64_t GetAckTimeoutMs();
   int64_t GetNAckRedeliverTimeoutMs();
@@ -41,6 +42,7 @@ class ConsumerConfig {
  private:
   pulsar_consumer_configuration_t *cConsumerConfig;
   std::string topic;
+  std::string topicsPattern;
   std::string subscription;
   int64_t ackTimeoutMs;
   int64_t nAckRedeliverTimeoutMs;
