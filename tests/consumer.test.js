@@ -31,7 +31,7 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('Not String Topic', async () => {
@@ -40,7 +40,7 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('Not String TopicsPattern', async () => {
@@ -49,7 +49,25 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic or topicsPattern is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not Array Topics', async () => {
+        await expect(client.subscribe({
+          topics: 0,
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not String in Array Topics', async () => {
+        await expect(client.subscribe({
+          topics: [0, true],
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('No Subscription', async () => {

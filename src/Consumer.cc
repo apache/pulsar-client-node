@@ -106,10 +106,12 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
   ~ConsumerNewInstanceWorker() {}
   void Execute() {
     const std::string &topic = this->consumerConfig->GetTopic();
+    const std::vector<std::string> &topics = this->consumerConfig->GetTopics();
     const std::string &topicsPattern = this->consumerConfig->GetTopicsPattern();
-    if (topic.empty() && topicsPattern.empty()) {
-      SetError(std::string(
-          "Topic or topicsPattern is required and must be specified as a string when creating consumer"));
+    if (topic.empty() && topics.size() == 0 && topicsPattern.empty()) {
+      SetError(
+          std::string("Topic, topics or topicsPattern is required and must be specified as a string when "
+                      "creating consumer"));
       return;
     }
     const std::string &subscription = this->consumerConfig->GetSubscription();
@@ -133,10 +135,19 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
     }
 
     this->done = false;
-    if (topic.empty()) {
+    if (!topicsPattern.empty()) {
       pulsar_client_subscribe_pattern_async(this->cClient, topicsPattern.c_str(), subscription.c_str(),
                                             this->consumerConfig->GetCConsumerConfig(),
                                             &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
+    } else if (topics.size() > 0) {
+      const char **c_topics = new const char *[topics.size()];
+      for (size_t i = 0; i < topics.size(); i++) {
+        c_topics[i] = topics[i].c_str();
+      }
+      pulsar_client_subscribe_multi_topics_async(this->cClient, c_topics, topics.size(), subscription.c_str(),
+                                                 this->consumerConfig->GetCConsumerConfig(),
+                                                 &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
+      delete c_topics;
     } else {
       pulsar_client_subscribe_async(this->cClient, topic.c_str(), subscription.c_str(),
                                     this->consumerConfig->GetCConsumerConfig(),
