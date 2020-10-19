@@ -25,6 +25,7 @@
 #include <map>
 
 static const std::string CFG_TOPIC = "topic";
+static const std::string CFG_TOPICS = "topics";
 static const std::string CFG_TOPICS_PATTERN = "topicsPattern";
 static const std::string CFG_SUBSCRIPTION = "subscription";
 static const std::string CFG_SUBSCRIPTION_TYPE = "subscriptionType";
@@ -62,6 +63,15 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
 
   if (consumerConfig.Has(CFG_TOPIC) && consumerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = consumerConfig.Get(CFG_TOPIC).ToString().Utf8Value();
+  }
+
+  if (consumerConfig.Has(CFG_TOPICS) && consumerConfig.Get(CFG_TOPICS).IsArray()) {
+    auto arr = consumerConfig.Get(CFG_TOPICS).As<Napi::Array>();
+    for (uint32_t i = 0; i < arr.Length(); i++) {
+      if (arr.Get(i).IsString()) {
+        this->topics.emplace_back(arr.Get(i).ToString().Utf8Value());
+      }
+    }
   }
 
   if (consumerConfig.Has(CFG_TOPICS_PATTERN) && consumerConfig.Get(CFG_TOPICS_PATTERN).IsString()) {
@@ -165,6 +175,7 @@ ConsumerConfig::~ConsumerConfig() {
 pulsar_consumer_configuration_t *ConsumerConfig::GetCConsumerConfig() { return this->cConsumerConfig; }
 
 std::string ConsumerConfig::GetTopic() { return this->topic; }
+std::vector<std::string> ConsumerConfig::GetTopics() { return this->topics; }
 std::string ConsumerConfig::GetTopicsPattern() { return this->topicsPattern; }
 std::string ConsumerConfig::GetSubscription() { return this->subscription; }
 ListenerCallback *ConsumerConfig::GetListenerCallback() {
