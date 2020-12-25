@@ -665,5 +665,54 @@ const Pulsar = require('../index.js');
       await consumer.close();
       await client.close();
     });
+
+    test('Produce/Consume and validate MessageId', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume-message-id';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+      });
+
+      expect(consumer).not.toBeNull();
+
+      const messages = [];
+      const messageIds = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        const msgId = await producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+        messageIds.push(msgId.toString());
+      }
+
+      const results = [];
+      const resultIds = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        consumer.acknowledge(msg);
+        results.push(msg.getData().toString());
+        resultIds.push(msg.getMessageId().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+      expect(lodash.difference(messageIds, resultIds)).toEqual([]);
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
   });
 })();

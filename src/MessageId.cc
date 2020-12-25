@@ -58,6 +58,13 @@ Napi::Object MessageId::NewInstance(Napi::Value arg) {
   return obj;
 }
 
+Napi::Object MessageId::NewInstance(pulsar_message_id_t *cMessageId) {
+  Napi::Object obj = constructor.New({});
+  MessageId *msgId = Unwrap(obj);
+  msgId->cMessageId = cMessageId;
+  return obj;
+}
+
 void MessageId::Free(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   MessageId *msgId = Unwrap(obj);
