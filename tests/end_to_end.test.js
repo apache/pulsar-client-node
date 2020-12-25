@@ -683,7 +683,6 @@ const Pulsar = require('../index.js');
       const consumer = await client.subscribe({
         topic,
         subscription: 'sub1',
-        ackTimeoutMs: 10000,
       });
 
       expect(consumer).not.toBeNull();
