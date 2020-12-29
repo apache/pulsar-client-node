@@ -58,8 +58,8 @@ static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {
 };
 
 static std::map<std::string, pulsar_producer_crypto_failure_action> PRODUCER_CRYPTO_FAILURE_ACTION = {
-    {"FAIL", pulsar_producerFail},
-    {"SEND", pulsar_producerSend},
+    {"FAIL", pulsar_ProducerFail},
+    {"SEND", pulsar_ProducerSend},
 };
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
