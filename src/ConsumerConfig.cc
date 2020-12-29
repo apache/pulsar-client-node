@@ -40,6 +40,7 @@ static const std::string CFG_LISTENER = "listener";
 static const std::string CFG_READ_COMPACTED = "readCompacted";
 static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
 static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
+static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -49,6 +50,12 @@ static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
 
 static const std::map<std::string, initial_position> INIT_POSITION = {
     {"Latest", initial_position_latest}, {"Earliest", initial_position_earliest}};
+
+static const std::map<std::string, pulsar_consumer_crypto_failure_action> CONSUMER_CRYPTO_FAILURE_ACTION = {
+    {"FAIL", pulsar_ConsumerFail},
+    {"DISCARD", pulsar_ConsumerDiscard},
+    {"CONSUME", pulsar_ConsumerConsume},
+};
 
 void FinalizeListenerCallback(Napi::Env env, ListenerCallback *cb, void *) { delete cb; }
 
@@ -173,6 +180,14 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
     std::string privateKeyPath = consumerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
     pulsar_consumer_configuration_set_default_crypto_key_reader(this->cConsumerConfig, publicKeyPath.c_str(),
                                                                 privateKeyPath.c_str());
+    if (consumerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
+        consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
+      std::string cryptoFailureAction = consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
+      if (CONSUMER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction)) {
+        pulsar_consumer_configuration_set_crypto_failure_action(
+            this->cConsumerConfig, CONSUMER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
+      }
+    }
   }
 }
 
