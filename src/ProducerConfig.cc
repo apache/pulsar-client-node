@@ -34,6 +34,9 @@ static const std::string CFG_BATCH_ENABLED = "batchingEnabled";
 static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
 static const std::string CFG_PROPS = "properties";
+static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
+static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
+static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
 
 static const std::map<std::string, pulsar_partitions_routing_mode> MESSAGE_ROUTING_MODE = {
     {"UseSinglePartition", pulsar_UseSinglePartition},
@@ -152,6 +155,20 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
       pulsar_producer_configuration_set_property(this->cProducerConfig, key.Utf8Value().c_str(),
                                                  value.Utf8Value().c_str());
     }
+  }
+
+  if ((producerConfig.Has(CFG_PUBLIC_KEY_PATH) && producerConfig.Has(CFG_PRIVATE_KEY_PATH)) &&
+      (producerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString() &&
+       producerConfig.Get(CFG_PRIVATE_KEY_PATH).IsString())) {
+    std::string publicKeyPath = producerConfig.Get(CFG_PUBLIC_KEY_PATH).ToString().Utf8Value();
+    std::string privateKeyPath = producerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
+    pulsar_producer_configuration_set_default_crypto_key_reader(this->cProducerConfig, publicKeyPath.c_str(),
+                                                                privateKeyPath.c_str());
+  }
+
+  if (producerConfig.Has(CFG_ENCRYPTION_KEY) && producerConfig.Get(CFG_ENCRYPTION_KEY).IsString()) {
+    std::string encryptionKey = producerConfig.Get(CFG_ENCRYPTION_KEY).ToString().Utf8Value();
+    pulsar_producer_configuration_set_encryption_key(this->cProducerConfig, encryptionKey.c_str());
   }
 }
 
