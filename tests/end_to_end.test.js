@@ -20,6 +20,10 @@
 const lodash = require('lodash');
 const Pulsar = require('../index.js');
 
+function fail() {
+  throw new Error('Test was force-failed');
+}
+
 (() => {
   describe('End To End', () => {
     test('Produce/Consume', async () => {
@@ -662,6 +666,88 @@ const Pulsar = require('../index.js');
 
       await producer1.close();
       await producer2.close();
+      await consumer.close();
+      await client.close();
+    });
+    test('Basic produce and consume encryption', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/encryption-produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+        publicKeyPath: './certificate/public-rsa.pem',
+        privateKeyPath: './certificate/private-rsa.pem',
+        encryptionKey: 'encryption-key',
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        subscriptionType: 'Shared',
+        ackTimeoutMs: 10000,
+        publicKeyPath: './public-rsa.pem',
+        privateKeyPath: './private-rsa.pem',
+      });
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        consumer.acknowledge(msg);
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
+    test('Failed produce and consume encryption', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/encryption-produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+        publicKeyPath: './certificate/public-rsa.pem',
+        privateKeyPath: './certificate/private-rsa.pem',
+        encryptionKey: 'encryption-key',
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        subscriptionType: 'Shared',
+        ackTimeoutMs: 10000,
+        publicKeyPath: './certificate/public-rsa.pem',
+        privateKeyPath: './certificate/private-rsa.pem',
+      });
+
+      try {
+        await consumer.receive(1000);
+        fail();
+      } catch (e) {
+        expect(e.message).toContain('TimeOut');
+      }
+      await producer.close();
       await consumer.close();
       await client.close();
     });
