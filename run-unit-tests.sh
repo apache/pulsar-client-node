@@ -37,7 +37,7 @@ apt-get -y install gcc-4.9 && apt-get upgrade -y libstdc++6
 apt install $PULSAR_PKG_DIR/apache-pulsar-client*.deb
 
 ./pulsar-test-service-start.sh
-npm install && npm run lint && npm run build && npm run test
+npm install && npm run lint && npm run dtslint && npm run build && npm run test
 RES=$?
 ./pulsar-test-service-stop.sh
 

@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "lib": [
+      "ES2015"
+    ],
+    "module": "commonjs",
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "noImplicitReturns": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "types": [],
+    "forceConsistentCasingInFileNames": true
+  },
+  "files": [
+    "index.d.ts",
+    "tstest.ts"
+  ]
+}
