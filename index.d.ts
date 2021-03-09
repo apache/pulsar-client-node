@@ -145,7 +145,19 @@ export class AuthenticationTls {
 }
 
 export class AuthenticationAthenz {
-  constructor(params: string);
+  constructor(params: string | AthenzConfig);
+}
+
+export interface AthenzConfig {
+  tenantDomain: string;
+  tenantService: string;
+  providerDomain: string;
+  privateKey: string;
+  ztsUrl: string;
+  keyId?: string;
+  principalHeader?: string;
+  roleHeader?: string;
+  tokenExpirationTime?: string;
 }
 
 export class AuthenticationToken {

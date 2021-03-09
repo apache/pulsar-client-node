@@ -25,7 +25,19 @@ import Pulsar = require('./index');
     privateKeyPath: '/path/to/key.pem',
   });
 
-  const authAthenz: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz('{}');
+  const authAthenz1: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz('{}');
+
+  const authAthenz2: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz({
+    tenantDomain: 'athenz.tenant.domain',
+    tenantService: 'service',
+    providerDomain: 'athenz.provider.domain',
+    privateKey: 'file:///path/to/private.key',
+    ztsUrl: 'https://localhost:8443',
+    keyId: '0',
+    principalHeader: 'Athenz-Principal-Auth',
+    roleHeader: 'Athenz-Role-Auth',
+    tokenExpirationTime: '3600',
+  });
 
   const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
     token: 'foobar',
@@ -215,6 +227,14 @@ import Pulsar = require('./index');
 
 // Minimal parameters
 (async () => {
+  const authAthenz: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz({
+    tenantDomain: 'athenz.tenant.domain',
+    tenantService: 'service',
+    providerDomain: 'athenz.provider.domain',
+    privateKey: 'file:///path/to/private.key',
+    ztsUrl: 'https://localhost:8443',
+  });
+
   const client: Pulsar.Client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
   });
@@ -257,6 +277,10 @@ import Pulsar = require('./index');
 
 // Missing required parameters
 (async () => {
+  // $ExpectError
+  const authAthenz: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz({
+  });
+
   // $ExpectError
   const client: Pulsar.Client = new Pulsar.Client({
   });
