@@ -32,11 +32,9 @@ const Pulsar = require('pulsar-client');
     subscription: 'sub1',
     subscriptionType: 'Shared',
     ackTimeoutMs: 10000,
-    publicKeyPath: "./certificate/public-key.client-rsa.pem",
     privateKeyPath: "./certificate/private-key.client-rsa.pem"
   });
 
-  console.log(consumer)
   // Receive messages
   for (let i = 0; i < 10; i += 1) {
     const msg = await consumer.receive();

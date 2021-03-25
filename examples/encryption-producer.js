@@ -32,11 +32,9 @@ const Pulsar = require('pulsar-client');
     sendTimeoutMs: 30000,
     batchingEnabled: true,
     publicKeyPath: "./certificate/public-key.client-rsa.pem",
-    privateKeyPath: "./certificate/private-key.client-rsa.pem",
     encryptionKey: "encryption-key"
   });
 
-  console.log(producer.ProducerConfig)
   // Send messages
   for (let i = 0; i < 10; i += 1) {
     const msg = `my-message-${i}`;

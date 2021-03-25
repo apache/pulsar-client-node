@@ -38,7 +38,6 @@ static const std::string CFG_CONSUMER_NAME = "consumerName";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_LISTENER = "listener";
 static const std::string CFG_READ_COMPACTED = "readCompacted";
-static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
 static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 
@@ -173,10 +172,8 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig,
     }
   }
 
-  if ((consumerConfig.Has(CFG_PUBLIC_KEY_PATH) && consumerConfig.Has(CFG_PRIVATE_KEY_PATH)) &&
-      (consumerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString() &&
-       consumerConfig.Get(CFG_PRIVATE_KEY_PATH).IsString())) {
-    std::string publicKeyPath = consumerConfig.Get(CFG_PUBLIC_KEY_PATH).ToString().Utf8Value();
+  if (consumerConfig.Has(CFG_PRIVATE_KEY_PATH) && consumerConfig.Get(CFG_PRIVATE_KEY_PATH).IsString()) {
+    std::string publicKeyPath = "";
     std::string privateKeyPath = consumerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
     pulsar_consumer_configuration_set_default_crypto_key_reader(this->cConsumerConfig, publicKeyPath.c_str(),
                                                                 privateKeyPath.c_str());

@@ -35,7 +35,6 @@ static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
-static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
 static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 
@@ -163,11 +162,9 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     }
   }
 
-  if ((producerConfig.Has(CFG_PUBLIC_KEY_PATH) && producerConfig.Has(CFG_PRIVATE_KEY_PATH)) &&
-      (producerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString() &&
-       producerConfig.Get(CFG_PRIVATE_KEY_PATH).IsString())) {
+  if (producerConfig.Has(CFG_PUBLIC_KEY_PATH) && producerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString()) {
     std::string publicKeyPath = producerConfig.Get(CFG_PUBLIC_KEY_PATH).ToString().Utf8Value();
-    std::string privateKeyPath = producerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
+    std::string privateKeyPath = "";
     pulsar_producer_configuration_set_default_crypto_key_reader(this->cProducerConfig, publicKeyPath.c_str(),
                                                                 privateKeyPath.c_str());
     if (producerConfig.Has(CFG_ENCRYPTION_KEY) && producerConfig.Get(CFG_ENCRYPTION_KEY).IsString()) {
@@ -177,8 +174,9 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     if (producerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
         producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
       std::string cryptoFailureAction = producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
-      pulsar_producer_configuration_set_crypto_failure_action(
-          this->cProducerConfig, PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
+      if (PRODUCER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction))
+        pulsar_producer_configuration_set_crypto_failure_action(
+            this->cProducerConfig, PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
     }
   }
 }

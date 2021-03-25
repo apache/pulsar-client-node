@@ -20,10 +20,6 @@
 const lodash = require('lodash');
 const Pulsar = require('../index.js');
 
-function fail() {
-  throw new Error('Test was force-failed');
-}
-
 (() => {
   describe('End To End', () => {
     test('Produce/Consume', async () => {
@@ -712,6 +708,50 @@ function fail() {
       }
       expect(lodash.difference(messages, results)).toEqual([]);
       expect(lodash.difference(messageIds, resultIds)).toEqual([]);
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+    test('Basic produce and consume encryption', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/encryption-produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+        publicKeyPath: `${__dirname}/certificate/public-key.client-rsa.pem`,
+        encryptionKey: 'encryption-key',
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        subscriptionType: 'Shared',
+        ackTimeoutMs: 10000,
+        privateKeyPath: `${__dirname}/certificate/private-key.client-rsa.pem`,
+      });
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await consumer.receive();
+        consumer.acknowledge(msg);
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
       await producer.close();
       await consumer.close();
       await client.close();
