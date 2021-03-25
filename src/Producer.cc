@@ -20,6 +20,7 @@
 #include "Producer.h"
 #include "ProducerConfig.h"
 #include "Message.h"
+#include "MessageId.h"
 #include <pulsar/c/result.h>
 #include <memory>
 Napi::FunctionReference Producer::constructor;
@@ -103,7 +104,10 @@ class ProducerSendWorker : public Napi::AsyncWorker {
     pulsar_result result = pulsar_producer_send(this->cProducer, this->cMessage);
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
-  void OnOK() { this->deferred.Resolve(Env().Null()); }
+  void OnOK() {
+    Napi::Object messageId = MessageId::NewInstance(pulsar_message_get_message_id(this->cMessage));
+    this->deferred.Resolve(messageId);
+  }
   void OnError(const Napi::Error &e) {
     this->deferred.Reject(
         Napi::Error::New(Env(), std::string("Failed to send message: ") + e.Message()).Value());

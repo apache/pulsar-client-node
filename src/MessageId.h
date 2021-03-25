@@ -28,6 +28,7 @@ class MessageId : public Napi::ObjectWrap<MessageId> {
  public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
   static Napi::Object NewInstance(Napi::Value arg);
+  static Napi::Object NewInstance(pulsar_message_id_t *cMessageId);
   static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage);
   static Napi::Value Earliest(const Napi::CallbackInfo &info);
   static Napi::Value Latest(const Napi::CallbackInfo &info);

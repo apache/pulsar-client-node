@@ -669,84 +669,49 @@ function fail() {
       await consumer.close();
       await client.close();
     });
-    test('Basic produce and consume encryption', async () => {
+
+    test('Produce/Consume and validate MessageId', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
         operationTimeoutSeconds: 30,
       });
 
-      const topic = 'persistent://public/default/encryption-produce-consume';
+      const topic = 'persistent://public/default/produce-consume-message-id';
       const producer = await client.createProducer({
         topic,
         sendTimeoutMs: 30000,
         batchingEnabled: true,
-        publicKeyPath: './certificate/public-rsa.pem',
-        privateKeyPath: './certificate/private-rsa.pem',
-        encryptionKey: 'encryption-key',
       });
+      expect(producer).not.toBeNull();
 
       const consumer = await client.subscribe({
         topic,
         subscription: 'sub1',
-        subscriptionType: 'Shared',
-        ackTimeoutMs: 10000,
-        publicKeyPath: './public-rsa.pem',
-        privateKeyPath: './private-rsa.pem',
       });
 
+      expect(consumer).not.toBeNull();
+
       const messages = [];
+      const messageIds = [];
       for (let i = 0; i < 10; i += 1) {
         const msg = `my-message-${i}`;
-        producer.send({
+        const msgId = await producer.send({
           data: Buffer.from(msg),
         });
         messages.push(msg);
+        messageIds.push(msgId.toString());
       }
-      await producer.flush();
 
       const results = [];
+      const resultIds = [];
       for (let i = 0; i < 10; i += 1) {
         const msg = await consumer.receive();
         consumer.acknowledge(msg);
         results.push(msg.getData().toString());
+        resultIds.push(msg.getMessageId().toString());
       }
       expect(lodash.difference(messages, results)).toEqual([]);
-      await producer.close();
-      await consumer.close();
-      await client.close();
-    });
-
-    test('Failed produce and consume encryption', async () => {
-      const client = new Pulsar.Client({
-        serviceUrl: 'pulsar://localhost:6650',
-        operationTimeoutSeconds: 30,
-      });
-
-      const topic = 'persistent://public/default/encryption-produce-consume';
-      const producer = await client.createProducer({
-        topic,
-        sendTimeoutMs: 30000,
-        batchingEnabled: true,
-        publicKeyPath: './certificate/public-rsa.pem',
-        privateKeyPath: './certificate/private-rsa.pem',
-        encryptionKey: 'encryption-key',
-      });
-
-      const consumer = await client.subscribe({
-        topic,
-        subscription: 'sub1',
-        subscriptionType: 'Shared',
-        ackTimeoutMs: 10000,
-        publicKeyPath: './certificate/public-rsa.pem',
-        privateKeyPath: './certificate/private-rsa.pem',
-      });
-
-      try {
-        await consumer.receive(1000);
-        fail();
-      } catch (e) {
-        expect(e.message).toContain('TimeOut');
-      }
+      expect(lodash.difference(messageIds, resultIds)).toEqual([]);
       await producer.close();
       await consumer.close();
       await client.close();
