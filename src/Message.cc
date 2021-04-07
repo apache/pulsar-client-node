@@ -29,6 +29,7 @@ static const std::string CFG_PARTITION_KEY = "partitionKey";
 static const std::string CFG_REPL_CLUSTERS = "replicationClusters";
 static const std::string CFG_DELIVER_AFTER = "deliverAfter";
 static const std::string CFG_DELIVER_AT = "deliverAt";
+static const std::string CFG_DISABLE_REPLICATION = "disableReplication";
 
 Napi::FunctionReference Message::constructor;
 
@@ -205,6 +206,13 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
   if (conf.Has(CFG_DELIVER_AT) && conf.Get(CFG_DELIVER_AT).IsNumber()) {
     Napi::Number deliverAt = conf.Get(CFG_DELIVER_AT).ToNumber();
     pulsar_message_set_deliver_at(cMessage, deliverAt.Int64Value());
+  }
+
+  if (conf.Has(CFG_DISABLE_REPLICATION) && conf.Get(CFG_DISABLE_REPLICATION).IsBoolean()) {
+    Napi::Boolean disableReplication = conf.Get(CFG_DISABLE_REPLICATION).ToBoolean();
+    if (disableReplication.Value()) {
+      pulsar_message_disable_replication(cMessage, 1);
+    }
   }
   return cMessage;
 }
