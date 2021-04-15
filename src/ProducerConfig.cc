@@ -34,6 +34,9 @@ static const std::string CFG_BATCH_ENABLED = "batchingEnabled";
 static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
 static const std::string CFG_PROPS = "properties";
+static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
+static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
+static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 
 static const std::map<std::string, pulsar_partitions_routing_mode> MESSAGE_ROUTING_MODE = {
     {"UseSinglePartition", pulsar_UseSinglePartition},
@@ -51,6 +54,11 @@ static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {
     {"LZ4", pulsar_CompressionLZ4},
     {"ZSTD", pulsar_CompressionZSTD},
     {"SNAPPY", pulsar_CompressionSNAPPY},
+};
+
+static std::map<std::string, pulsar_producer_crypto_failure_action> PRODUCER_CRYPTO_FAILURE_ACTION = {
+    {"FAIL", pulsar_ProducerFail},
+    {"SEND", pulsar_ProducerSend},
 };
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
@@ -151,6 +159,24 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
       Napi::String value = propObj.Get(key).ToString();
       pulsar_producer_configuration_set_property(this->cProducerConfig, key.Utf8Value().c_str(),
                                                  value.Utf8Value().c_str());
+    }
+  }
+
+  if (producerConfig.Has(CFG_PUBLIC_KEY_PATH) && producerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString()) {
+    std::string publicKeyPath = producerConfig.Get(CFG_PUBLIC_KEY_PATH).ToString().Utf8Value();
+    std::string privateKeyPath = "";
+    pulsar_producer_configuration_set_default_crypto_key_reader(this->cProducerConfig, publicKeyPath.c_str(),
+                                                                privateKeyPath.c_str());
+    if (producerConfig.Has(CFG_ENCRYPTION_KEY) && producerConfig.Get(CFG_ENCRYPTION_KEY).IsString()) {
+      std::string encryptionKey = producerConfig.Get(CFG_ENCRYPTION_KEY).ToString().Utf8Value();
+      pulsar_producer_configuration_set_encryption_key(this->cProducerConfig, encryptionKey.c_str());
+    }
+    if (producerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
+        producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
+      std::string cryptoFailureAction = producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
+      if (PRODUCER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction))
+        pulsar_producer_configuration_set_crypto_failure_action(
+            this->cProducerConfig, PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
     }
   }
 }
