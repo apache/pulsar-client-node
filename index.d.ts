@@ -56,6 +56,9 @@ export interface ProducerConfig {
   batchingMaxPublishDelayMs?: number;
   batchingMaxMessages?: number;
   properties?: { [key: string]: string };
+  publicKeyPath?: string;
+  encryptionKey?: string;
+  cryptoFailureAction?: ProducerCryptoFailureAction;
 }
 
 export class Producer {
@@ -81,6 +84,8 @@ export interface ConsumerConfig {
   properties?: { [key: string]: string };
   listener?: (message: Message, consumer: Consumer) => void;
   readCompacted?: boolean;
+  privateKeyPath?: string;
+  cryptoFailureAction?: ConsumerCryptoFailureAction;
 }
 
 export class Consumer {
@@ -187,6 +192,10 @@ export type CompressionType =
   'ZSTD' |
   'SNAPPY';
 
+export type ProducerCryptoFailureAction =
+  'FAIL' |
+  'SEND';
+
 export type SubscriptionType =
   'Exclusive' |
   'Shared' |
@@ -196,3 +205,8 @@ export type SubscriptionType =
 export type InitialPosition =
   'Latest' |
   'Earliest';
+
+export type ConsumerCryptoFailureAction =
+  'FAIL' |
+  'DISCARD' |
+  'CONSUME';

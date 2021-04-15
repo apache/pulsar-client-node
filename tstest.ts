@@ -91,6 +91,9 @@ import Pulsar = require('./index');
       key1: 'value1',
       key2: 'value2',
     },
+    publicKeyPath: '/path/to/public.key',
+    encryptionKey: 'encryption-key',
+    cryptoFailureAction: 'FAIL',
   });
 
   const producer2: Pulsar.Producer = await client.createProducer({
@@ -98,6 +101,7 @@ import Pulsar = require('./index');
     messageRoutingMode: 'RoundRobinDistribution',
     hashingScheme: 'BoostHash',
     compressionType: 'LZ4',
+    cryptoFailureAction: 'SEND',
   });
 
   const producer3: Pulsar.Producer = await client.createProducer({
@@ -127,6 +131,8 @@ import Pulsar = require('./index');
       key2: 'value2',
     },
     readCompacted: false,
+    privateKeyPath: '/path/to/private.key',
+    cryptoFailureAction: 'FAIL',
   });
 
   const consumer2: Pulsar.Consumer = await client.subscribe({
@@ -134,6 +140,7 @@ import Pulsar = require('./index');
     subscription: 'my-sub2',
     subscriptionType: 'Shared',
     subscriptionInitialPosition: 'Earliest',
+    cryptoFailureAction: 'DISCARD',
   });
 
   const consumer3: Pulsar.Consumer = await client.subscribe({
@@ -142,6 +149,7 @@ import Pulsar = require('./index');
     subscriptionType: 'KeyShared',
     listener: (message: Pulsar.Message, consumer: Pulsar.Consumer) => {
     },
+    cryptoFailureAction: 'CONSUME',
   });
 
   const consumer4: Pulsar.Consumer = await client.subscribe({
