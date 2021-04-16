@@ -182,6 +182,7 @@ import Pulsar = require('./index');
     ],
     deliverAfter: 30000,
     deliverAt: Date.now() + 30000,
+    disableReplication: false,
   });
 
   const messageIdString: string = messageId1.toString();
