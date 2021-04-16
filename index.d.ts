@@ -124,6 +124,7 @@ export interface ProducerMessage {
   replicationClusters?: string[];
   deliverAfter?: number;
   deliverAt?: number;
+  disableReplication?: boolean;
 }
 
 export class Message {
