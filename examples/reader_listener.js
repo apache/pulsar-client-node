@@ -17,30 +17,21 @@
  * under the License.
  */
 
-#ifndef READER_CONFIG_H
-#define READER_CONFIG_H
+const Pulsar = require('pulsar-client');
 
-#include <napi.h>
-#include <pulsar/c/reader.h>
-#include <pulsar/c/reader_configuration.h>
-#include <pulsar/c/message_id.h>
-#include "ReaderListener.h"
+(async () => {
+  // Create a client
+  const client = new Pulsar.Client({
+    serviceUrl: 'pulsar://localhost:6650',
+    operationTimeoutSeconds: 30,
+  });
 
-class ReaderConfig {
- public:
-  ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CReaderWrapper> readerWrapper,
-               pulsar_reader_listener readerListener);
-  ~ReaderConfig();
-  pulsar_reader_configuration_t *GetCReaderConfig();
-  pulsar_message_id_t *GetCStartMessageId();
-  std::string GetTopic();
-  ReaderListenerCallback *GetListenerCallback();
-
- private:
-  std::string topic;
-  pulsar_message_id_t *cStartMessageId;
-  pulsar_reader_configuration_t *cReaderConfig;
-  ReaderListenerCallback *listener;
-};
-
-#endif
+  // Create a reader
+  const reader = await client.createReader({
+    topic: 'persistent://public/default/my-topic',
+    startMessageId: Pulsar.MessageId.latest(),
+    listener: (msg, reader) => {
+      console.log(msg.getData().toString());
+    },
+  });
+})();

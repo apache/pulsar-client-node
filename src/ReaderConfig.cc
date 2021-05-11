@@ -27,8 +27,13 @@ static const std::string CFG_RECV_QUEUE = "receiverQueueSize";
 static const std::string CFG_READER_NAME = "readerName";
 static const std::string CFG_SUBSCRIPTION_ROLE_PREFIX = "subscriptionRolePrefix";
 static const std::string CFG_READ_COMPACTED = "readCompacted";
+static const std::string CFG_LISTENER = "listener";
 
-ReaderConfig::ReaderConfig(const Napi::Object &readerConfig) : topic(""), cStartMessageId(NULL) {
+void FinalizeListenerCallback(Napi::Env env, ReaderListenerCallback *cb, void *) { delete cb; }
+
+ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CReaderWrapper> readerWrapper,
+                           pulsar_reader_listener readerListener)
+    : topic(""), cStartMessageId(NULL), listener(nullptr) {
   this->cReaderConfig = pulsar_reader_configuration_create();
 
   if (readerConfig.Has(CFG_TOPIC) && readerConfig.Get(CFG_TOPIC).IsString()) {
@@ -67,12 +72,40 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig) : topic(""), cStart
       pulsar_reader_configuration_set_read_compacted(this->cReaderConfig, 1);
     }
   }
+
+  if (readerConfig.Has(CFG_LISTENER) && readerConfig.Get(CFG_LISTENER).IsFunction()) {
+    this->listener = new ReaderListenerCallback();
+    Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
+        readerConfig.Env(), readerConfig.Get(CFG_LISTENER).As<Napi::Function>(), "Reader Listener Callback",
+        1, 1, (void *)NULL, FinalizeListenerCallback, listener);
+    this->listener->callback = std::move(callback);
+    pulsar_reader_configuration_set_reader_listener(this->cReaderConfig, readerListener, this->listener);
+  }
 }
 
-ReaderConfig::~ReaderConfig() { pulsar_reader_configuration_free(this->cReaderConfig); }
+ReaderConfig::~ReaderConfig() {
+  pulsar_reader_configuration_free(this->cReaderConfig);
+  if (this->listener) {
+    this->listener->callback.Release();
+  }
+}
 
 pulsar_reader_configuration_t *ReaderConfig::GetCReaderConfig() { return this->cReaderConfig; }
 
 std::string ReaderConfig::GetTopic() { return this->topic; }
 
 pulsar_message_id_t *ReaderConfig::GetCStartMessageId() { return this->cStartMessageId; }
+
+ReaderListenerCallback *ReaderConfig::GetListenerCallback() {
+  ReaderListenerCallback *cb = this->listener;
+  this->listener = nullptr;
+  return cb;
+}
+
+CReaderWrapper::CReaderWrapper() : cReader(nullptr) {}
+
+CReaderWrapper::~CReaderWrapper() {
+  if (this->cReader) {
+    pulsar_reader_free(this->cReader);
+  }
+}
