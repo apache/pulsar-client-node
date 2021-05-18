@@ -108,11 +108,16 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
                                     this->readerConfig->GetCReaderConfig(), &this->readerWrapper->cReader);
     if (result != pulsar_result_Ok) {
       SetError(std::string("Failed to create reader: ") + pulsar_result_str(result));
+      if (this->readerConfig) {
+        delete this->readerConfig;
+      }
       return;
     } else {
       this->listener = this->readerConfig->GetListenerCallback();
     }
-    delete this->readerConfig;
+    if (this->readerConfig) {
+      delete this->readerConfig;
+    }
   }
   void OnOK() {
     Napi::Object obj = Reader::constructor.New({});
@@ -254,5 +259,4 @@ Reader::~Reader() {
   if (this->listener) {
     this->CleanupListener();
   }
-  pulsar_reader_free(this->wrapper->cReader);
 }
