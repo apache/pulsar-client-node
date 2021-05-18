@@ -30,6 +30,7 @@ static const std::string CFG_REPL_CLUSTERS = "replicationClusters";
 static const std::string CFG_DELIVER_AFTER = "deliverAfter";
 static const std::string CFG_DELIVER_AT = "deliverAt";
 static const std::string CFG_DISABLE_REPLICATION = "disableReplication";
+static const std::string CFG_ORDERING_KEY = "orderingKey";
 
 Napi::FunctionReference Message::constructor;
 
@@ -214,6 +215,12 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
       pulsar_message_disable_replication(cMessage, 1);
     }
   }
+
+  if (conf.Has(CFG_ORDERING_KEY) && conf.Get(CFG_ORDERING_KEY).IsString()) {
+    Napi::String orderingKey = conf.Get(CFG_ORDERING_KEY).ToString();
+    pulsar_message_set_ordering_key(cMessage, orderingKey.Utf8Value().c_str());
+  }
+
   return cMessage;
 }
 
