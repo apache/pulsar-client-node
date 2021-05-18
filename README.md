@@ -76,3 +76,5 @@ $ npm install
 ```shell
 $ npm run build
 ```
+
+This is a test for docker.
