@@ -22,6 +22,8 @@
 #include "ReaderConfig.h"
 #include <pulsar/c/result.h>
 #include <pulsar/c/reader.h>
+#include <atomic>
+#include <thread>
 
 Napi::FunctionReference Reader::constructor;
 
@@ -89,34 +91,29 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
         deferred(deferred),
         cClient(cClient),
         readerConfig(readerConfig),
-        readerWrapper(readerWrapper) {}
+        readerWrapper(readerWrapper),
+        done(false) {}
   ~ReaderNewInstanceWorker() {}
   void Execute() {
     const std::string &topic = this->readerConfig->GetTopic();
     if (topic.empty()) {
-      SetError(std::string("Topic is required and must be specified as a string when creating reader"));
+      std::string msg("Topic is required and must be specified as a string when creating reader");
+      SetError(msg);
       return;
     }
     if (this->readerConfig->GetCStartMessageId() == nullptr) {
-      SetError(std::string(
-          "StartMessageId is required and must be specified as a MessageId object when creating reader"));
+      std::string msg(
+          "StartMessageId is required and must be specified as a MessageId object when creating reader");
+      SetError(msg);
       return;
     }
 
-    pulsar_result result =
-        pulsar_client_create_reader(this->cClient, topic.c_str(), this->readerConfig->GetCStartMessageId(),
-                                    this->readerConfig->GetCReaderConfig(), &this->readerWrapper->cReader);
-    if (result != pulsar_result_Ok) {
-      SetError(std::string("Failed to create reader: ") + pulsar_result_str(result));
-      if (this->readerConfig) {
-        delete this->readerConfig;
-      }
-      return;
-    } else {
-      this->listener = this->readerConfig->GetListenerCallback();
-    }
-    if (this->readerConfig) {
-      delete this->readerConfig;
+    pulsar_client_create_reader_async(this->cClient, topic.c_str(), this->readerConfig->GetCStartMessageId(),
+                                      this->readerConfig->GetCReaderConfig(),
+                                      &ReaderNewInstanceWorker::createReaderCallback, (void *)this);
+
+    while (!done) {
+      std::this_thread::yield();
     }
   }
   void OnOK() {
@@ -135,6 +132,19 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
   ReaderConfig *readerConfig;
   ReaderListenerCallback *listener;
   std::shared_ptr<CReaderWrapper> readerWrapper;
+  std::atomic<bool> done;
+  static void createReaderCallback(pulsar_result result, pulsar_reader_t *reader, void *ctx) {
+    ReaderNewInstanceWorker *worker = (ReaderNewInstanceWorker *)ctx;
+    if (result != pulsar_result_Ok) {
+      worker->SetError(std::string("Failed to create reader: ") + pulsar_result_str(result));
+    } else {
+      worker->readerWrapper->cReader = reader;
+      worker->listener = worker->readerConfig->GetListenerCallback();
+    }
+
+    delete worker->readerConfig;
+    worker->done = true;
+  }
 };
 
 Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
