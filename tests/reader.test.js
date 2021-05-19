@@ -21,52 +21,50 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('Reader', () => {
-    describe('Create', () => {
-      test('No Topic', async () => {
-        const client = new Pulsar.Client({
-          serviceUrl: 'pulsar://localhost:6650',
-          operationTimeoutSeconds: 30,
-        });
-        await expect(client.createReader({
-          startMessageId: Pulsar.MessageId.earliest(),
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating reader');
-        await client.close();
+    test('No Topic', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
       });
+      await expect(client.createReader({
+        startMessageId: Pulsar.MessageId.earliest(),
+      })).rejects.toThrow('Topic is required and must be specified as a string when creating reader');
+      await client.close();
+    });
 
-      test('No Topic', async () => {
-        const client = new Pulsar.Client({
-          serviceUrl: 'pulsar://localhost:6650',
-          operationTimeoutSeconds: 30,
-        });
-        await expect(client.createReader({
-          topic: 0,
-          startMessageId: Pulsar.MessageId.earliest(),
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating reader');
-        await client.close();
+    test('Not String Topic', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
       });
+      await expect(client.createReader({
+        topic: 0,
+        startMessageId: Pulsar.MessageId.earliest(),
+      })).rejects.toThrow('Topic is required and must be specified as a string when creating reader');
+      await client.close();
+    });
 
-      test('No StartMessageId', async () => {
-        const client = new Pulsar.Client({
-          serviceUrl: 'pulsar://localhost:6650',
-          operationTimeoutSeconds: 30,
-        });
-        await expect(client.createReader({
-          topic: 'persistent://public/default/topic',
-        })).rejects.toThrow('StartMessageId is required and must be specified as a MessageId object when creating reader');
-        await client.close();
+    test('No StartMessageId', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
       });
+      await expect(client.createReader({
+        topic: 'persistent://public/default/topic',
+      })).rejects.toThrow('StartMessageId is required and must be specified as a MessageId object when creating reader');
+      await client.close();
+    });
 
-      test('Not StartMessageId as MessageId', async () => {
-        const client = new Pulsar.Client({
-          serviceUrl: 'pulsar://localhost:6650',
-          operationTimeoutSeconds: 30,
-        });
-        await expect(client.createReader({
-          topic: 'persistent://public/default/topic',
-          startMessageId: 'not MessageId',
-        })).rejects.toThrow('StartMessageId is required and must be specified as a MessageId object when creating reader');
-        await client.close();
+    test('Not StartMessageId as MessageId', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
       });
+      await expect(client.createReader({
+        topic: 'persistent://public/default/topic',
+        startMessageId: 'not MessageId',
+      })).rejects.toThrow('StartMessageId is required and must be specified as a MessageId object when creating reader');
+      await client.close();
     });
   });
 })();
