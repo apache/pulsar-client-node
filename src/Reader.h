@@ -22,6 +22,7 @@
 
 #include <napi.h>
 #include <pulsar/c/client.h>
+#include "ReaderConfig.h"
 
 class Reader : public Napi::ObjectWrap<Reader> {
  public:
@@ -30,14 +31,18 @@ class Reader : public Napi::ObjectWrap<Reader> {
   static Napi::FunctionReference constructor;
   Reader(const Napi::CallbackInfo &info);
   ~Reader();
-  void SetCReader(pulsar_reader_t *cReader);
+  void SetCReader(std::shared_ptr<CReaderWrapper> cReader);
+  void SetListenerCallback(ReaderListenerCallback *listener);
+  void Cleanup();
 
  private:
-  pulsar_reader_t *cReader;
+  std::shared_ptr<CReaderWrapper> wrapper;
+  ReaderListenerCallback *listener;
 
   Napi::Value ReadNext(const Napi::CallbackInfo &info);
   Napi::Value HasNext(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
+  void CleanupListener();
 };
 
 #endif

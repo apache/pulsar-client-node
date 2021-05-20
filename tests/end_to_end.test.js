@@ -213,6 +213,56 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('Produce/Read Listener', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-read-listener';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      let finish;
+      const results = [];
+      const finishPromise = new Promise((resolve) => {
+        finish = resolve;
+      });
+
+      const reader = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.latest(),
+        listener: (message) => {
+          const data = message.getData().toString();
+          results.push(data);
+          if (results.length === 10) finish();
+        },
+      });
+
+      expect(reader).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      await finishPromise;
+      expect(lodash.difference(messages, results)).toEqual([]);
+
+      await producer.close();
+      await reader.close();
+      await client.close();
+    });
+
     test('acknowledgeCumulative', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
