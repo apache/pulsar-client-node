@@ -172,6 +172,13 @@ import Pulsar = require('./index');
     startMessageId: Pulsar.MessageId.earliest(),
   });
 
+  const reader3: Pulsar.Reader = await client.createReader({
+    topic: 'persistent://public/default/my-topic',
+    startMessageId: Pulsar.MessageId.earliest(),
+    listener: (message: Pulsar.Message, reader: Pulsar.Reader) => {
+    },
+  });
+
   const producerName: string = producer1.getProducerName();
   const topicName1: string = producer1.getTopic();
 
@@ -231,6 +238,7 @@ import Pulsar = require('./index');
   await consumer4.close();
   await reader1.close();
   await reader2.close();
+  await reader3.close();
   await client.close();
 })();
 
