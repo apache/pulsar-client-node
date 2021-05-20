@@ -21,10 +21,19 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('Consumer', () => {
-    const client = new Pulsar.Client({
-      serviceUrl: 'pulsar://localhost:6650',
-      operationTimeoutSeconds: 30,
+    let client;
+
+    beforeAll(() => {
+      client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
     });
+
+    afterAll(async () => {
+      await client.close();
+    });
+
     describe('Create', () => {
       test('No Topic', async () => {
         await expect(client.subscribe({
