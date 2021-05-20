@@ -107,6 +107,7 @@ export interface ReaderConfig {
   readerName?: string;
   subscriptionRolePrefix?: string;
   readCompacted?: boolean;
+  listener?: (message: Message, reader: Reader) => void;
 }
 
 export class Reader {
