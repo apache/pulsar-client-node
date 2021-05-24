@@ -191,6 +191,7 @@ import Pulsar = require('./index');
     eventTimestamp: Date.now(),
     sequenceId: 10,
     partitionKey: 'key1',
+    orderingKey: 'orderingKey1',
     replicationClusters: [
       'cluster1',
       'cluster2',
