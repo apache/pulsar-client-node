@@ -89,13 +89,15 @@ Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
   return obj;
 }
 
+void serializeFinalizeCallback(Napi::Env env, char *ptr) { free(ptr); }
+
 Napi::Value MessageId::Serialize(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   int len;
   void *ptr = pulsar_message_id_serialize(GetCMessageId(), &len);
 
-  return Napi::Buffer<char>::New(env, (char *)ptr, len);
+  return Napi::Buffer<char>::New(env, (char *)ptr, len, serializeFinalizeCallback);
 }
 
 Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
