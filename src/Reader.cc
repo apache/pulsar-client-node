@@ -222,7 +222,7 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
 
 Napi::Value Reader::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::Number::New(env, pulsar_reader_is_connected(this->wrapper->cReader));
+  return Napi::Boolean::New(env, pulsar_reader_is_connected(this->wrapper->cReader));
 }
 
 class ReaderCloseWorker : public Napi::AsyncWorker {

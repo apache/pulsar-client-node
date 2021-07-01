@@ -290,7 +290,7 @@ void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
 
 Napi::Value Consumer::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::Number::New(env, pulsar_consumer_is_connected(this->wrapper->cConsumer));
+  return Napi::Boolean::New(env, pulsar_consumer_is_connected(this->wrapper->cConsumer));
 }
 
 class ConsumerCloseWorker : public Napi::AsyncWorker {

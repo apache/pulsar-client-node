@@ -202,7 +202,7 @@ Napi::Value Producer::GetTopic(const Napi::CallbackInfo &info) {
 
 Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::Number::New(env, pulsar_producer_is_connected(this->cProducer));
+  return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer));
 }
 
 Producer::~Producer() { pulsar_producer_free(this->cProducer); }

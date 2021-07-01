@@ -181,6 +181,7 @@ import Pulsar = require('./index');
 
   const producerName: string = producer1.getProducerName();
   const topicName1: string = producer1.getTopic();
+  const producerIsConnected: boolean = producer1.isConnected();
 
   const messageId1: Pulsar.MessageId = await producer1.send({
     data: Buffer.from('my-message'),
@@ -207,6 +208,7 @@ import Pulsar = require('./index');
 
   const message1: Pulsar.Message = await consumer1.receive();
   const message2: Pulsar.Message = await consumer2.receive(1000);
+  const consumerIsConnected: boolean = consumer1.isConnected();
 
   consumer1.negativeAcknowledge(message1);
   consumer1.negativeAcknowledgeId(messageId1);
@@ -227,6 +229,7 @@ import Pulsar = require('./index');
   const message3: Pulsar.Message = await reader1.readNext();
   const message4: Pulsar.Message = await reader2.readNext(1000);
   const hasNext: boolean = reader1.hasNext();
+  const readerIsConnected: boolean = reader1.isConnected();
 
   await producer1.flush();
   await producer1.close();
