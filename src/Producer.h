@@ -40,6 +40,7 @@ class Producer : public Napi::ObjectWrap<Producer> {
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value GetProducerName(const Napi::CallbackInfo &info);
   Napi::Value GetTopic(const Napi::CallbackInfo &info);
+  Napi::Value IsConnected(const Napi::CallbackInfo &info);
 };
 
 #endif

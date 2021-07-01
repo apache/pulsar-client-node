@@ -34,6 +34,7 @@ void Reader::Init(Napi::Env env, Napi::Object exports) {
                                     {
                                         InstanceMethod("readNext", &Reader::ReadNext),
                                         InstanceMethod("hasNext", &Reader::HasNext),
+                                        InstanceMethod("isConnected", &Reader::IsConnected),
                                         InstanceMethod("close", &Reader::Close),
                                     });
 
@@ -217,6 +218,11 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
   } else {
     return Napi::Boolean::New(info.Env(), false);
   }
+}
+
+Napi::Value Reader::IsConnected(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  return Napi::Number::New(env, pulsar_reader_is_connected(this->wrapper->cReader));
 }
 
 class ReaderCloseWorker : public Napi::AsyncWorker {

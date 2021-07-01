@@ -40,6 +40,7 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
                       InstanceMethod("negativeAcknowledgeId", &Consumer::NegativeAcknowledgeId),
                       InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
                       InstanceMethod("acknowledgeCumulativeId", &Consumer::AcknowledgeCumulativeId),
+                      InstanceMethod("isConnected", &Consumer::IsConnected),
                       InstanceMethod("close", &Consumer::Close),
                       InstanceMethod("unsubscribe", &Consumer::Unsubscribe),
                   });
@@ -285,6 +286,11 @@ void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
   MessageId *msgId = MessageId::Unwrap(obj);
   pulsar_consumer_acknowledge_cumulative_async_id(this->wrapper->cConsumer, msgId->GetCMessageId(), NULL,
                                                   NULL);
+}
+
+Napi::Value Consumer::IsConnected(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  return Napi::Number::New(env, pulsar_consumer_is_connected(this->wrapper->cConsumer));
 }
 
 class ConsumerCloseWorker : public Napi::AsyncWorker {
