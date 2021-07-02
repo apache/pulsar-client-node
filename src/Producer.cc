@@ -33,7 +33,8 @@ void Producer::Init(Napi::Env env, Napi::Object exports) {
                   {InstanceMethod("send", &Producer::Send), InstanceMethod("flush", &Producer::Flush),
                    InstanceMethod("close", &Producer::Close),
                    InstanceMethod("getProducerName", &Producer::GetProducerName),
-                   InstanceMethod("getTopic", &Producer::GetTopic)});
+                   InstanceMethod("getTopic", &Producer::GetTopic),
+                   InstanceMethod("isConnected", &Producer::IsConnected)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -197,6 +198,11 @@ Napi::Value Producer::GetProducerName(const Napi::CallbackInfo &info) {
 Napi::Value Producer::GetTopic(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   return Napi::String::New(env, pulsar_producer_get_topic(this->cProducer));
+}
+
+Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer));
 }
 
 Producer::~Producer() { pulsar_producer_free(this->cProducer); }

@@ -41,6 +41,7 @@ class Reader : public Napi::ObjectWrap<Reader> {
 
   Napi::Value ReadNext(const Napi::CallbackInfo &info);
   Napi::Value HasNext(const Napi::CallbackInfo &info);
+  Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   void CleanupListener();
 };

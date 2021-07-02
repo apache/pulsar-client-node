@@ -806,5 +806,46 @@ const Pulsar = require('../index.js');
       await consumer.close();
       await client.close();
     });
+    test('Produce/Consume/Read/IsConnected', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/produce-consume';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+      expect(producer.isConnected()).toEqual(true);
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        ackTimeoutMs: 10000,
+      });
+      expect(consumer).not.toBeNull();
+      expect(consumer.isConnected()).toEqual(true);
+
+      const reader = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.latest(),
+      });
+      expect(reader).not.toBeNull();
+      expect(reader.isConnected()).toEqual(true);
+
+      await producer.close();
+      expect(producer.isConnected()).toEqual(false);
+
+      await consumer.close();
+      expect(consumer.isConnected()).toEqual(false);
+
+      await reader.close();
+      expect(reader.isConnected()).toEqual(false);
+
+      await client.close();
+    });
   });
 })();

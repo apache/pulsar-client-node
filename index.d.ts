@@ -67,6 +67,7 @@ export class Producer {
   close(): Promise<null>;
   getProducerName(): string;
   getTopic(): string;
+  isConnected(): boolean;
 }
 
 export interface ConsumerConfig {
@@ -96,6 +97,7 @@ export class Consumer {
   negativeAcknowledgeId(messageId: MessageId): void;
   acknowledgeCumulative(message: Message): void;
   acknowledgeCumulativeId(messageId: MessageId): void;
+  isConnected(): boolean;
   close(): Promise<null>;
   unsubscribe(): Promise<null>;
 }
@@ -113,6 +115,7 @@ export interface ReaderConfig {
 export class Reader {
   readNext(timeout?: number): Promise<Message>;
   hasNext(): boolean;
+  isConnected(): boolean;
   close(): Promise<null>;
 }
 
