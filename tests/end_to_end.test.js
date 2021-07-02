@@ -819,7 +819,7 @@ const Pulsar = require('../index.js');
         batchingEnabled: true,
       });
       expect(producer).not.toBeNull();
-      expect(producer.isConnected()).not.toEqual(0);
+      expect(producer.isConnected()).toEqual(true);
 
       const consumer = await client.subscribe({
         topic,
@@ -827,23 +827,23 @@ const Pulsar = require('../index.js');
         ackTimeoutMs: 10000,
       });
       expect(consumer).not.toBeNull();
-      expect(consumer.isConnected()).not.toEqual(0);
+      expect(consumer.isConnected()).toEqual(true);
 
       const reader = await client.createReader({
         topic,
         startMessageId: Pulsar.MessageId.latest(),
       });
       expect(reader).not.toBeNull();
-      expect(reader.isConnected()).not.toEqual(0);
+      expect(reader.isConnected()).toEqual(true);
 
       await producer.close();
-      expect(producer.isConnected()).toEqual(0);
+      expect(producer.isConnected()).toEqual(false);
 
       await consumer.close();
-      expect(consumer.isConnected()).toEqual(0);
+      expect(consumer.isConnected()).toEqual(false);
 
       await client.close();
-      expect(reader.isConnected()).toEqual(0);
+      expect(reader.isConnected()).toEqual(false);
     });
   });
 })();
