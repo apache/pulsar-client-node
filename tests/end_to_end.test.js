@@ -842,8 +842,10 @@ const Pulsar = require('../index.js');
       await consumer.close();
       expect(consumer.isConnected()).toEqual(false);
 
-      await client.close();
+      await reader.close();
       expect(reader.isConnected()).toEqual(false);
+
+      await client.close();
     });
   });
 })();
