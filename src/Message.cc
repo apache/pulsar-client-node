@@ -102,7 +102,7 @@ Napi::Value Message::GetData(const Napi::CallbackInfo &info) {
   }
   void *data = const_cast<void *>(pulsar_message_get_data(this->cMessage));
   size_t size = (size_t)pulsar_message_get_length(this->cMessage);
-  return Napi::Buffer<char>::New(env, (char *)data, size);
+  return Napi::Buffer<char>::Copy(env, (char *)data, size);
 }
 
 Napi::Value Message::GetMessageId(const Napi::CallbackInfo &info) {
