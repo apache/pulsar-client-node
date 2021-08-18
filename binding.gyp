@@ -18,14 +18,24 @@
 #
 
 {
+  'conditions': [
+    ['OS=="win"', {
+      'variables': {
+        'PULSAR_CPP_PATH%': 'C:\pulsar\pulsar-client-cpp',
+      }
+    }]
+  ],
   "targets": [
     {
       "target_name": "Pulsar",
       "cflags!": ["-fno-exceptions"],
       "cflags_cc!": ["-fno-exceptions"],
-      "include_dirs": ["<!@(node -p \"require('node-addon-api').include\")"],
-      "dependencies": ["<!@(node -p \"require('node-addon-api').gyp\")"],
-      "defines": ["NAPI_DISABLE_CPP_EXCEPTIONS"],
+      "include_dirs": [
+        "<!@(node -p \"require('node-addon-api').include\")",
+        "<(PULSAR_CPP_PATH)\include",
+      ],
+      "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
+      "defines": ["NAPI_CPP_EXCEPTIONS"],
       "sources": [
         "src/addon.cc",
         "src/Message.cc",
@@ -39,7 +49,33 @@
         "src/Reader.cc",
         "src/ReaderConfig.cc",
       ],
-      "libraries": ["-lpulsar"],
+      'conditions': [
+        ['OS=="win"', {
+          "libraries": [
+            "-l<(PULSAR_CPP_PATH)\\build\lib\Release\pulsar.lib"
+          ],
+          "copies": [
+            {
+              "destination": "<(PRODUCT_DIR)",
+              "files": [
+                "<(PULSAR_CPP_PATH)\\build\lib\Release\pulsar.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libcurl.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libprotobuf.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libssl-1_1-x64.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libcrypto-1_1-x64.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\dl.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\snappy.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\zlib1.dll",
+                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\zstd.dll",
+              ]
+            }
+          ]
+        }, {  # 'OS!="win"'
+          "libraries": [
+            "-lpulsar"
+          ]
+        }]
+      ]
     }
   ]
 }
