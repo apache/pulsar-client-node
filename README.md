@@ -58,7 +58,7 @@ You need to clone the Pulsar repo and build the Pulsar c++ client in windows, re
 
 After building pulsar-client-cpp, you could open windows cmd tool, and using the pulsar-client-cpp path to set the variable `PULSAR_CPP_DIR`.
 
-Set the variable `PULSAR_CPP_DIR`, for example.
+Open windows cmd tool and set the variable `PULSAR_CPP_DIR`, for example.
 ```shell
 set PULSAR_CPP_DIR=C:\pulsar\pulsar-client-cpp
 ```
@@ -82,6 +82,8 @@ $ git clone https://github.com/apache/pulsar-client-node.git
 $ cd pulsar-client-node
 $ npm install
 ```
+
+> (Notice: If you build pulsar-client-node in windows,you need to set the variable `PULSAR_CPP_DIR` first, and run the command `npm install` in cmd tool)
 
 ### Rebuild Pulsar client library:
 
