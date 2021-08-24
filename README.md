@@ -54,8 +54,14 @@ If an incompatible version of the C++ client is installed, you may fail to build
 
 ### Install in windows
 
-You need to clone the Pulsar repo in root path of `C:`(the Pulsar repo path will be `C:\pulsar`),
-then build the Pulsar c++ client in windows, refer to https://pulsar.apache.org/docs/en/next/client-libraries-cpp/.
+You need to clone the Pulsar repo and build the Pulsar c++ client in windows, refer to https://pulsar.apache.org/docs/en/next/client-libraries-cpp/.
+
+After building pulsar-client-cpp, you could open windows cmd tool, and using the pulsar-client-cpp path to set the variable `PULSAR_CPP_DIR`.
+
+Set the variable `PULSAR_CPP_DIR`, for example.
+```shell
+set PULSAR_CPP_DIR=C:\pulsar\pulsar-client-cpp
+```
 
 ### Please install pulsar-client in your project:
 

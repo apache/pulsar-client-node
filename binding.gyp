@@ -21,8 +21,8 @@
   'conditions': [
     ['OS=="win"', {
       'variables': {
-        'PULSAR_CPP_PATH%': 'C:\pulsar\pulsar-client-cpp',
-      }
+       'pulsar_cpp_dir%': '<!(echo %PULSAR_CPP_DIR%)',
+      },
     }]
   ],
   "targets": [
@@ -32,10 +32,8 @@
       "cflags_cc!": ["-fno-exceptions"],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "<(PULSAR_CPP_PATH)\include",
       ],
-      "dependencies": ["<!(node -p \"require('node-addon-api').gyp\")"],
-      "defines": ["NAPI_CPP_EXCEPTIONS"],
+      "defines": ["NAPI_VERSION=4", "NAPI_DISABLE_CPP_EXCEPTIONS=1"],
       "sources": [
         "src/addon.cc",
         "src/Message.cc",
@@ -51,29 +49,38 @@
       ],
       'conditions': [
         ['OS=="win"', {
+          "include_dirs": [
+            "<(pulsar_cpp_dir)\include",
+          ],
           "libraries": [
-            "-l<(PULSAR_CPP_PATH)\\build\lib\Release\pulsar.lib"
+            "-l<(pulsar_cpp_dir)\\build\lib\Release\pulsar.lib"
+          ],
+          "dependencies": [
+            "<!(node -p \"require('node-addon-api').gyp\")"
           ],
           "copies": [
             {
               "destination": "<(PRODUCT_DIR)",
               "files": [
-                "<(PULSAR_CPP_PATH)\\build\lib\Release\pulsar.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libcurl.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libprotobuf.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libssl-1_1-x64.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\libcrypto-1_1-x64.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\dl.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\snappy.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\zlib1.dll",
-                "<(PULSAR_CPP_PATH)\\vcpkg_installed\\x64-windows\\bin\zstd.dll",
+                "<(pulsar_cpp_dir)\\build\lib\Release\pulsar.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libcurl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libprotobuf.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libssl-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libcrypto-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\dl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\snappy.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\zlib1.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\zstd.dll",
               ]
             }
           ]
         }, {  # 'OS!="win"'
           "libraries": [
-            "-lpulsar"
-          ]
+            "-lpulsar",
+          ],
+          "dependencies": [
+            "<!@(node -p \"require('node-addon-api').gyp\")"
+          ],
         }]
       ]
     }
