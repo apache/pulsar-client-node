@@ -52,18 +52,18 @@ If an incompatible version of the C++ client is installed, you may fail to build
 
 ## How to install
 
-### Install in windows
+### Install on windows
 
-You need to clone the Pulsar repo and build the Pulsar c++ client in windows, refer to https://pulsar.apache.org/docs/en/next/client-libraries-cpp/.
+1. [Build the Pulsar C++ client on windows](https://pulsar.apache.org/docs/en/next/client-libraries-cpp/).
 
-After building pulsar-client-cpp, you could open windows cmd tool, and using the pulsar-client-cpp path to set the variable `PULSAR_CPP_DIR`.
+2. Set the variable `PULSAR_CPP_DIR` with the `pulsar-client-cpp` path in a Windows command tool.
 
-Open windows cmd tool and set the variable `PULSAR_CPP_DIR`, for example.
 ```shell
+# for example
 set PULSAR_CPP_DIR=C:\pulsar\pulsar-client-cpp
 ```
 
-### Please install pulsar-client in your project:
+### Install pulsar-client to your project
 
 ```shell
 $ npm install pulsar-client
@@ -83,7 +83,9 @@ $ cd pulsar-client-node
 $ npm install
 ```
 
-> (Notice: If you build pulsar-client-node in windows,you need to set the variable `PULSAR_CPP_DIR` first, and run the command `npm install` in cmd tool)
+> **Note**
+>
+> If you build `pulsar-client-node on` windows, you need to set the variable `PULSAR_CPP_DIR` first, then install npm (run the command `npm install`) in a Windows command-line tool.
 
 ### Rebuild Pulsar client library:
 
