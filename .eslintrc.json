@@ -1,5 +1,5 @@
 {
-  "extends": "airbnb-base",
+  "extends": ["airbnb-base","plugin:jest/recommended"],
   "rules": {
     "class-methods-use-this": "warn",
     "no-await-in-loop": "warn",
