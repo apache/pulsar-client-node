@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#include <stdlib.h>
+
 #include "MessageId.h"
 #include <pulsar/c/message.h>
 #include <pulsar/c/message_id.h>
@@ -87,13 +89,15 @@ Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
   return obj;
 }
 
+void serializeFinalizeCallback(Napi::Env env, char *ptr) { free(ptr); }
+
 Napi::Value MessageId::Serialize(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   int len;
   void *ptr = pulsar_message_id_serialize(GetCMessageId(), &len);
 
-  return Napi::Buffer<char>::New(env, (char *)ptr, len);
+  return Napi::Buffer<char>::New(env, (char *)ptr, len, serializeFinalizeCallback);
 }
 
 Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
@@ -117,7 +121,10 @@ Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
 pulsar_message_id_t *MessageId::GetCMessageId() { return this->cMessageId; }
 
 Napi::Value MessageId::ToString(const Napi::CallbackInfo &info) {
-  return Napi::String::New(info.Env(), pulsar_message_id_str(this->cMessageId));
+  char *cStr = pulsar_message_id_str(this->cMessageId);
+  std::string s(cStr);
+  free(cStr);
+  return Napi::String::New(info.Env(), s);
 }
 
 MessageId::~MessageId() {
