@@ -164,6 +164,12 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
 
     consumer->SetCConsumer(this->consumerWrapper);
     consumer->SetListenerCallback(this->listener);
+
+    if (this->listener) {
+      // resume to enable MessageListener function callback
+      resume_message_listener(this->consumerWrapper->cConsumer);
+    }
+
     this->deferred.Resolve(obj);
   }
   void OnError(const Napi::Error &e) { this->deferred.Reject(Napi::Error::New(Env(), e.Message()).Value()); }
@@ -183,6 +189,11 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
     } else {
       worker->consumerWrapper->cConsumer = consumer;
       worker->listener = worker->consumerConfig->GetListenerCallback();
+
+      if (worker->listener) {
+        // pause, will resume in OnOK, to prevent MessageListener get a nullptr of consumer
+        pulsar_consumer_pause_message_listener(consumer);
+      }
     }
 
     delete worker->consumerConfig;
