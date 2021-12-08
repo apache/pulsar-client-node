@@ -21,3 +21,5 @@ build/
 node_modules/
 report/
 .idea
+*.tar.gz
+*.tgz
