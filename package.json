@@ -51,10 +51,10 @@
     "typescript": "^4.1.3"
   },
   "dependencies": {
+    "@mapbox/node-pre-gyp": "^1.0.7",
     "bindings": "^1.5.0",
-    "node-addon-api": "^3.0.0",
-    "node-gyp": "^8.2.0",
-    "node-pre-gyp": "^0.15.0"
+    "node-addon-api": "^3.2.1",
+    "node-gyp": "^8.4.1"
   },
   "binary": {
     "module_name": "libpulsar",
