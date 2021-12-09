@@ -46,7 +46,7 @@ Compatibility between each version of the Node.js client and the C++ client is a
 | 1.1.x          | 2.4.0 or later |
 | 1.2.x          | 2.5.0 or later |
 | 1.3.x          | 2.7.0 or later |
-| 1.4.x          | 2.8.0 or later |
+| 1.4.x - 1.5.x  | 2.8.0 or later |
 
 If an incompatible version of the C++ client is installed, you may fail to build or run this library.
 
