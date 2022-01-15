@@ -21,6 +21,7 @@ const PulsarBinding = require('bindings')('Pulsar');
 const AuthenticationTls = require('./src/AuthenticationTls.js');
 const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
 const AuthenticationToken = require('./src/AuthenticationToken.js');
+const AuthenticationOauth2 = require('./src/AuthenticationOauth2.js');
 
 const LogLevel = {
   DEBUG: 0,
@@ -36,6 +37,7 @@ const Pulsar = {
   AuthenticationTls,
   AuthenticationAthenz,
   AuthenticationToken,
+  AuthenticationOauth2,
   LogLevel,
 };
 
