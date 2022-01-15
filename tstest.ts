@@ -45,7 +45,7 @@ import Pulsar = require('./index');
     private_key: "credentials-file-path",
     audience: "audience",
     scope: "your-scope",
-  })
+  });
 
   const authOauth2ClientId: Pulsar.AuthenticationOauth2 = new Pulsar.AuthenticationOauth2({
     type: "client_credentials",
@@ -54,7 +54,7 @@ import Pulsar = require('./index');
     client_secret: "client-secret",
     audience: "audience",
     scope: "scope"
-  })
+  });
 
   const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
     token: 'foobar',
