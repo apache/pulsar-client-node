@@ -22,13 +22,6 @@
 static const std::string PARAM_TLS_CERT = "certificatePath";
 static const std::string PARAM_TLS_KEY = "privateKeyPath";
 static const std::string PARAM_TOKEN = "token";
-static const std::string PARAM_OAUTH2_TYPE = "type";
-static const std::string PARAM_OAUTH2_ISSUER_URL = "issuer_url";
-static const std::string PARAM_OAUTH2_PRIVATE_KEY = "private_key";
-static const std::string PARAM_OAUTH2_CLIENT_ID = "client_id";
-static const std::string PARAM_OAUTH2_CLIENT_SECRET = "client_secret";
-static const std::string PARAM_OAUTH2_SCOPE = "scope";
-static const std::string PARAM_OAUTH2_AUDIENCE = "audience";
 
 Napi::FunctionReference Authentication::constructor;
 
@@ -56,7 +49,7 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
 
   std::string authMethod = info[0].ToString().Utf8Value();
 
-  if (authMethod == "tls" || authMethod == "token" || authMethod == "oauth2") {
+  if (authMethod == "tls" || authMethod == "token") {
     if (info.Length() < 2 || !info[1].IsObject()) {
       Napi::Error::New(env, "Authentication parameter must be a object").ThrowAsJavaScriptException();
       return;
@@ -80,43 +73,6 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       }
       this->cAuthentication =
           pulsar_authentication_token_create(obj.Get(PARAM_TOKEN).ToString().Utf8Value().c_str());
-    } else if (authMethod == "oauth2") {
-      if (!obj.Has(PARAM_OAUTH2_TYPE) || !obj.Get(PARAM_OAUTH2_TYPE).IsString() ||
-          !obj.Has(PARAM_OAUTH2_ISSUER_URL) || !obj.Get(PARAM_OAUTH2_ISSUER_URL).IsString()) {
-        Napi::Error::New(env, "Missing required parameter type and issuer_url").ThrowAsJavaScriptException();
-        return;
-      }
-      // Two ways are supported to configure the key
-      // The first one is to specify the path of the private_key file, and the other one is to configure
-      // client_id and client_secret
-      if (obj.Has(PARAM_OAUTH2_PRIVATE_KEY)) {
-        if (!obj.Get(PARAM_OAUTH2_PRIVATE_KEY).IsString()) {
-          Napi::Error::New(env, "Missing required parameter private_key").ThrowAsJavaScriptException();
-          return;
-        }
-      }
-      if (obj.Has(PARAM_OAUTH2_CLIENT_ID) || obj.Has(PARAM_OAUTH2_CLIENT_SECRET)) {
-        if (!obj.Has(PARAM_OAUTH2_CLIENT_ID) || !obj.Has(PARAM_OAUTH2_CLIENT_SECRET)) {
-          Napi::Error::New(env, "Missing required parameter client_id or client_secret")
-              .ThrowAsJavaScriptException();
-          return;
-        }
-      }
-      // According to the oauth2 protocol specification, it is not a field in the oauth2 specification, so
-      // setting it as optional
-      if (obj.Has(PARAM_OAUTH2_AUDIENCE)) {
-        if (!obj.Has(PARAM_OAUTH2_AUDIENCE)) {
-          Napi::Error::New(env, "Missing required parameter audience").ThrowAsJavaScriptException();
-          return;
-        }
-      }
-      // https://datatracker.ietf.org/doc/html/rfc6749#section-3.3 this field is optional
-      if (obj.Has(PARAM_OAUTH2_SCOPE)) {
-        if (!obj.Has(PARAM_OAUTH2_SCOPE)) {
-          Napi::Error::New(env, "Missing required parameter scope").ThrowAsJavaScriptException();
-          return;
-        }
-      }
     }
   } else if (authMethod == "athenz") {
     if (info.Length() < 2 || !info[1].IsString()) {
@@ -124,6 +80,13 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       return;
     }
     this->cAuthentication = pulsar_authentication_athenz_create(info[1].ToString().Utf8Value().c_str());
+  } else if (authMethod == "oauth2") {
+    if (info.Length() < 2 || !info[1].IsString()) {
+      Napi::Error::New(env, "Authentication parameter must be a JSON string for oauth2")
+          .ThrowAsJavaScriptException();
+      return;
+    }
+    this->cAuthentication = pulsar_authentication_oauth2_create(info[1].ToString().Utf8Value().c_str());
   } else {
     Napi::Error::New(env, "Unsupported authentication method").ThrowAsJavaScriptException();
     return;
