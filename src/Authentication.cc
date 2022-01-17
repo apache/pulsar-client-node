@@ -80,6 +80,13 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       return;
     }
     this->cAuthentication = pulsar_authentication_athenz_create(info[1].ToString().Utf8Value().c_str());
+  } else if (authMethod == "oauth2") {
+    if (info.Length() < 2 || !info[1].IsString()) {
+      Napi::Error::New(env, "Authentication parameter must be a JSON string for oauth2")
+          .ThrowAsJavaScriptException();
+      return;
+    }
+    this->cAuthentication = pulsar_authentication_oauth2_create(info[1].ToString().Utf8Value().c_str());
   } else {
     Napi::Error::New(env, "Unsupported authentication method").ThrowAsJavaScriptException();
     return;

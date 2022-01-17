@@ -20,7 +20,7 @@
 
 export interface ClientConfig {
   serviceUrl: string;
-  authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken;
+  authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken | AuthenticationOauth2;
   operationTimeoutSeconds?: number;
   ioThreads?: number;
   messageListenerThreads?: number;
@@ -173,6 +173,18 @@ export interface AthenzConfig {
 
 export class AuthenticationToken {
   constructor(params: { token: string });
+}
+
+export class AuthenticationOauth2 {
+  constructor(params: {
+    type: string;
+    issuer_url: string;
+    client_id?: string;
+    client_secret?: string;
+    private_key?: string;
+    audience?: string;
+    scope?: string;
+  });
 }
 
 export enum LogLevel {

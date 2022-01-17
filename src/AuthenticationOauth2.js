@@ -16,29 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-
 const PulsarBinding = require('bindings')('Pulsar');
-const AuthenticationTls = require('./src/AuthenticationTls.js');
-const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
-const AuthenticationToken = require('./src/AuthenticationToken.js');
-const AuthenticationOauth2 = require('./src/AuthenticationOauth2.js');
 
-const LogLevel = {
-  DEBUG: 0,
-  INFO: 1,
-  WARN: 2,
-  ERROR: 3,
-};
+class AuthenticationOauth2 {
+  constructor(params) {
+    const paramsStr = (typeof params === 'object') ? JSON.stringify(params) : params;
+    this.binding = new PulsarBinding.Authentication('oauth2', paramsStr);
+  }
+}
 
-const Pulsar = {
-  Client: PulsarBinding.Client,
-  Message: PulsarBinding.Message,
-  MessageId: PulsarBinding.MessageId,
-  AuthenticationTls,
-  AuthenticationAthenz,
-  AuthenticationToken,
-  AuthenticationOauth2,
-  LogLevel,
-};
-
-module.exports = Pulsar;
+module.exports = AuthenticationOauth2;

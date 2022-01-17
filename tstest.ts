@@ -39,6 +39,23 @@ import Pulsar = require('./index');
     tokenExpirationTime: '3600',
   });
 
+  const authOauth2PrivateKey: Pulsar.AuthenticationOauth2 = new Pulsar.AuthenticationOauth2({
+    type: "client_credentials",
+    issuer_url: "issuer-url",
+    private_key: "credentials-file-path",
+    audience: "audience",
+    scope: "your-scope",
+  });
+
+  const authOauth2ClientId: Pulsar.AuthenticationOauth2 = new Pulsar.AuthenticationOauth2({
+    type: "client_credentials",
+    issuer_url: "issuer-url",
+    client_id: "client-id",
+    client_secret: "client-secret",
+    audience: "audience",
+    scope: "scope"
+  });
+
   const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
     token: 'foobar',
   });
