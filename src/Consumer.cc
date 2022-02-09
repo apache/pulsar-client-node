@@ -71,6 +71,7 @@ void MessageListener(pulsar_consumer_t *cConsumer, pulsar_message_t *cMessage, v
   Consumer *consumer = (Consumer *)listenerCallback->consumer;
 
   if (listenerCallback->callback.Acquire() != napi_ok) {
+    pulsar_message_free(cMessage);
     return;
   }
 
