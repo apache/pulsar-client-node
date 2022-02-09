@@ -53,6 +53,7 @@
         "src/ConsumerConfig.cc",
         "src/Reader.cc",
         "src/ReaderConfig.cc",
+        "src/ThreadSafeDeferred.cc"
       ],
       'conditions': [
         ['OS=="mac"', {
