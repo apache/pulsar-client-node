@@ -43,10 +43,11 @@ void Reader::Init(Napi::Env env, Napi::Object exports) {
 }
 
 struct ReaderListenerProxyData {
-  pulsar_message_t *cMessage;
+  std::shared_ptr<pulsar_message_t> cMessage;
   Reader *reader;
 
-  ReaderListenerProxyData(pulsar_message_t *cMessage, Reader *reader) : cMessage(cMessage), reader(reader) {}
+  ReaderListenerProxyData(std::shared_ptr<pulsar_message_t> cMessage, Reader *reader)
+    : cMessage(cMessage), reader(reader) {}
 };
 
 void ReaderListenerProxy(Napi::Env env, Napi::Function jsCallback, ReaderListenerProxyData *data) {
@@ -57,7 +58,8 @@ void ReaderListenerProxy(Napi::Env env, Napi::Function jsCallback, ReaderListene
   jsCallback.Call({msg, reader->Value()});
 }
 
-void ReaderListener(pulsar_reader_t *cReader, pulsar_message_t *cMessage, void *ctx) {
+void ReaderListener(pulsar_reader_t *rawReader, pulsar_message_t *rawMessage, void *ctx) {
+  std::shared_ptr<pulsar_message_t> cMessage(rawMessage, pulsar_message_free);
   ReaderListenerCallback *readerListenerCallback = (ReaderListenerCallback *)ctx;
   Reader *reader = (Reader *)readerListenerCallback->reader;
   if (readerListenerCallback->callback.Acquire() != napi_ok) {
@@ -68,15 +70,17 @@ void ReaderListener(pulsar_reader_t *cReader, pulsar_message_t *cMessage, void *
   readerListenerCallback->callback.Release();
 }
 
-void Reader::SetCReader(std::shared_ptr<CReaderWrapper> cReader) { this->wrapper = cReader; }
+void Reader::SetCReader(std::shared_ptr<pulsar_reader_t> cReader) { this->cReader = cReader; }
 void Reader::SetListenerCallback(ReaderListenerCallback *listener) {
   if (listener) {
+    // Pass reader as argument
+    listener->reader = this;
+  }
+
+  if (this->listener == nullptr) {
     // Maintain reference to reader, so it won't get garbage collected
     // since, when we have a listener, we don't have to maintain reference to reader (in js code)
     this->Ref();
-
-    // Pass reader as argument
-    listener->reader = this;
   }
 
   this->listener = listener;
@@ -86,13 +90,12 @@ Reader::Reader(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Reader>(info),
 
 class ReaderNewInstanceWorker : public Napi::AsyncWorker {
  public:
-  ReaderNewInstanceWorker(const Napi::Promise::Deferred &deferred, pulsar_client_t *cClient,
-                          ReaderConfig *readerConfig, std::shared_ptr<CReaderWrapper> readerWrapper)
+  ReaderNewInstanceWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_client_t> cClient,
+                          ReaderConfig *readerConfig)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cClient(cClient),
         readerConfig(readerConfig),
-        readerWrapper(readerWrapper),
         done(false) {}
   ~ReaderNewInstanceWorker() {}
   void Execute() {
@@ -102,15 +105,16 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
       SetError(msg);
       return;
     }
-    if (this->readerConfig->GetCStartMessageId() == nullptr) {
+    if (this->readerConfig->GetCStartMessageId().get() == nullptr) {
       std::string msg(
           "StartMessageId is required and must be specified as a MessageId object when creating reader");
       SetError(msg);
       return;
     }
 
-    pulsar_client_create_reader_async(this->cClient, topic.c_str(), this->readerConfig->GetCStartMessageId(),
-                                      this->readerConfig->GetCReaderConfig(),
+    pulsar_client_create_reader_async(this->cClient.get(), topic.c_str(),
+                                      this->readerConfig->GetCStartMessageId().get(),
+                                      this->readerConfig->GetCReaderConfig().get(),
                                       &ReaderNewInstanceWorker::createReaderCallback, (void *)this);
 
     while (!done) {
@@ -120,7 +124,7 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
   void OnOK() {
     Napi::Object obj = Reader::constructor.New({});
     Reader *reader = Reader::Unwrap(obj);
-    reader->SetCReader(this->readerWrapper);
+    reader->SetCReader(this->cReader);
     reader->SetListenerCallback(this->listener);
     this->deferred.Resolve(obj);
   }
@@ -128,18 +132,17 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_client_t *cClient;
-  pulsar_reader_t *cReader;
+  std::shared_ptr<pulsar_client_t> cClient;
+  std::shared_ptr<pulsar_reader_t> cReader;
   ReaderConfig *readerConfig;
   ReaderListenerCallback *listener;
-  std::shared_ptr<CReaderWrapper> readerWrapper;
   std::atomic<bool> done;
-  static void createReaderCallback(pulsar_result result, pulsar_reader_t *reader, void *ctx) {
+  static void createReaderCallback(pulsar_result result, pulsar_reader_t *rawReader, void *ctx) {
     ReaderNewInstanceWorker *worker = (ReaderNewInstanceWorker *)ctx;
     if (result != pulsar_result_Ok) {
       worker->SetError(std::string("Failed to create reader: ") + pulsar_result_str(result));
     } else {
-      worker->readerWrapper->cReader = reader;
+      worker->cReader = std::shared_ptr<pulsar_reader_t>(rawReader, pulsar_reader_free);
       worker->listener = worker->readerConfig->GetListenerCallback();
     }
 
@@ -148,21 +151,19 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
   }
 };
 
-Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
+Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   Napi::Object config = info[0].As<Napi::Object>();
 
-  std::shared_ptr<CReaderWrapper> readerWrapper = std::make_shared<CReaderWrapper>();
-
-  ReaderConfig *readerConfig = new ReaderConfig(config, readerWrapper, &ReaderListener);
-  ReaderNewInstanceWorker *wk = new ReaderNewInstanceWorker(deferred, cClient, readerConfig, readerWrapper);
+  ReaderConfig *readerConfig = new ReaderConfig(config, &ReaderListener);
+  ReaderNewInstanceWorker *wk = new ReaderNewInstanceWorker(deferred, cClient, readerConfig);
   wk->Queue();
   return deferred.Promise();
 }
 
 class ReaderReadNextWorker : public Napi::AsyncWorker {
  public:
-  ReaderReadNextWorker(const Napi::Promise::Deferred &deferred, pulsar_reader_t *cReader,
+  ReaderReadNextWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_reader_t> cReader,
                        int64_t timeout = -1)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
@@ -171,14 +172,16 @@ class ReaderReadNextWorker : public Napi::AsyncWorker {
   ~ReaderReadNextWorker() {}
   void Execute() {
     pulsar_result result;
+    pulsar_message_t *rawMessage;
     if (timeout > 0) {
-      result = pulsar_reader_read_next_with_timeout(this->cReader, &(this->cMessage), timeout);
+      result = pulsar_reader_read_next_with_timeout(this->cReader.get(), &rawMessage, timeout);
     } else {
-      result = pulsar_reader_read_next(this->cReader, &(this->cMessage));
+      result = pulsar_reader_read_next(this->cReader.get(), &rawMessage);
     }
     if (result != pulsar_result_Ok) {
       SetError(std::string("Failed to received message ") + pulsar_result_str(result));
     }
+    this->cMessage = std::shared_ptr<pulsar_message_t>(rawMessage, pulsar_message_free);
   }
   void OnOK() {
     Napi::Object obj = Message::NewInstance({}, this->cMessage);
@@ -188,20 +191,20 @@ class ReaderReadNextWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_reader_t *cReader;
-  pulsar_message_t *cMessage;
+  std::shared_ptr<pulsar_reader_t> cReader;
+  std::shared_ptr<pulsar_message_t> cMessage;
   int64_t timeout;
 };
 
 Napi::Value Reader::ReadNext(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   if (info[0].IsUndefined()) {
-    ReaderReadNextWorker *wk = new ReaderReadNextWorker(deferred, this->wrapper->cReader);
+    ReaderReadNextWorker *wk = new ReaderReadNextWorker(deferred, this->cReader);
     wk->Queue();
   } else {
     Napi::Number timeout = info[0].As<Napi::Object>().ToNumber();
     ReaderReadNextWorker *wk =
-        new ReaderReadNextWorker(deferred, this->wrapper->cReader, timeout.Int64Value());
+        new ReaderReadNextWorker(deferred, this->cReader, timeout.Int64Value());
     wk->Queue();
   }
   return deferred.Promise();
@@ -209,7 +212,7 @@ Napi::Value Reader::ReadNext(const Napi::CallbackInfo &info) {
 
 Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
   int value = 0;
-  pulsar_result result = pulsar_reader_has_message_available(this->wrapper->cReader, &value);
+  pulsar_result result = pulsar_reader_has_message_available(this->cReader.get(), &value);
   if (result != pulsar_result_Ok) {
     Napi::Error::New(info.Env(), "Failed to check if next message is available").ThrowAsJavaScriptException();
     return Napi::Boolean::New(info.Env(), false);
@@ -222,19 +225,19 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
 
 Napi::Value Reader::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::Boolean::New(env, pulsar_reader_is_connected(this->wrapper->cReader));
+  return Napi::Boolean::New(env, pulsar_reader_is_connected(this->cReader.get()));
 }
 
 class ReaderCloseWorker : public Napi::AsyncWorker {
  public:
-  ReaderCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_reader_t *cReader, Reader *reader)
+  ReaderCloseWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_reader_t> cReader, Reader *reader)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cReader(cReader),
         reader(reader) {}
   ~ReaderCloseWorker() {}
   void Execute() {
-    pulsar_result result = pulsar_reader_close(this->cReader);
+    pulsar_result result = pulsar_reader_close(this->cReader.get());
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
   void OnOK() {
@@ -248,13 +251,13 @@ class ReaderCloseWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_reader_t *cReader;
+  std::shared_ptr<pulsar_reader_t> cReader;
   Reader *reader;
 };
 
 Napi::Value Reader::Close(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ReaderCloseWorker *wk = new ReaderCloseWorker(deferred, this->wrapper->cReader, this);
+  ReaderCloseWorker *wk = new ReaderCloseWorker(deferred, this->cReader, this);
   wk->Queue();
   return deferred.Promise();
 }

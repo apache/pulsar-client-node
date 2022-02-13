@@ -28,18 +28,18 @@
 class Consumer : public Napi::ObjectWrap<Consumer> {
  public:
   static void Init(Napi::Env env, Napi::Object exports);
-  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient);
   static Napi::FunctionReference constructor;
   Consumer(const Napi::CallbackInfo &info);
   ~Consumer();
-  void SetCConsumer(std::shared_ptr<CConsumerWrapper> cConsumer);
-  void SetListenerCallback(ListenerCallback *listener);
+  void SetCConsumer(std::shared_ptr<pulsar_consumer_t> cConsumer);
+  void SetListenerCallback(MessageListenerCallback *listener);
   void Cleanup();
   void CleanupListener();
 
  private:
-  std::shared_ptr<CConsumerWrapper> wrapper;
-  ListenerCallback *listener;
+  std::shared_ptr<pulsar_consumer_t> cConsumer;
+  MessageListenerCallback *listener;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
   void Acknowledge(const Napi::CallbackInfo &info);

@@ -149,13 +149,14 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig, statsIntervalInSeconds);
   }
 
-  this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig);
+  this->cClient = std::shared_ptr<pulsar_client_t>(
+    pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig),
+    pulsar_client_free);
   pulsar_client_configuration_free(cClientConfig);
   this->Ref();
 }
 
 Client::~Client() {
-  pulsar_client_free(this->cClient);
   if (this->logCallback != nullptr) {
     this->logCallback->callback.Release();
     this->logCallback = nullptr;
@@ -198,13 +199,13 @@ void LogMessage(pulsar_logger_level_t level, const char *file, int line, const c
 
 class ClientCloseWorker : public Napi::AsyncWorker {
  public:
-  ClientCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_client_t *cClient)
+  ClientCloseWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_client_t> cClient)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cClient(cClient) {}
   ~ClientCloseWorker() {}
   void Execute() {
-    pulsar_result result = pulsar_client_close(this->cClient);
+    pulsar_result result = pulsar_client_close(this->cClient.get());
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
   void OnOK() { this->deferred.Resolve(Env().Null()); }
@@ -215,7 +216,7 @@ class ClientCloseWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_client_t *cClient;
+  std::shared_ptr<pulsar_client_t> cClient;
 };
 
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {

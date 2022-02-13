@@ -27,10 +27,9 @@
 
 class ConsumerConfig {
  public:
-  ConsumerConfig(const Napi::Object &consumerConfig, std::shared_ptr<CConsumerWrapper> consumerWrapper,
-                 pulsar_message_listener messageListener);
+  ConsumerConfig(const Napi::Object &consumerConfig, pulsar_message_listener messageListener);
   ~ConsumerConfig();
-  pulsar_consumer_configuration_t *GetCConsumerConfig();
+  std::shared_ptr<pulsar_consumer_configuration_t> GetCConsumerConfig();
   std::string GetTopic();
   std::vector<std::string> GetTopics();
   std::string GetTopicsPattern();
@@ -38,17 +37,17 @@ class ConsumerConfig {
   int64_t GetAckTimeoutMs();
   int64_t GetNAckRedeliverTimeoutMs();
 
-  ListenerCallback *GetListenerCallback();
+  MessageListenerCallback *GetListenerCallback();
 
  private:
-  pulsar_consumer_configuration_t *cConsumerConfig;
+  std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfig;
   std::string topic;
   std::vector<std::string> topics;
   std::string topicsPattern;
   std::string subscription;
   int64_t ackTimeoutMs;
   int64_t nAckRedeliverTimeoutMs;
-  ListenerCallback *listener;
+  MessageListenerCallback *listener;
 };
 
 #endif

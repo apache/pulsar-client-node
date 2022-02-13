@@ -28,21 +28,20 @@ class MessageId : public Napi::ObjectWrap<MessageId> {
  public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
   static Napi::Object NewInstance(Napi::Value arg);
-  static Napi::Object NewInstance(pulsar_message_id_t *cMessageId);
-  static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage);
+  static Napi::Object NewInstance(std::shared_ptr<pulsar_message_id_t> cMessageId);
+  static Napi::Object NewInstanceFromMessage(const Napi::CallbackInfo &info,
+                                             std::shared_ptr<pulsar_message_t> cMessage);
   static Napi::Value Earliest(const Napi::CallbackInfo &info);
   static Napi::Value Latest(const Napi::CallbackInfo &info);
   Napi::Value Serialize(const Napi::CallbackInfo &info);
   static Napi::Value Deserialize(const Napi::CallbackInfo &info);
-  static void Free(const Napi::CallbackInfo &info);
   MessageId(const Napi::CallbackInfo &info);
   ~MessageId();
-  pulsar_message_id_t *GetCMessageId();
+  std::shared_ptr<pulsar_message_id_t> GetCMessageId();
 
  private:
   static Napi::FunctionReference constructor;
-  pulsar_message_id_t *cMessageId;
-  bool skipCMessageIdFree = false;
+  std::shared_ptr<pulsar_message_id_t> cMessageId;
 
   Napi::Value ToString(const Napi::CallbackInfo &info);
 };

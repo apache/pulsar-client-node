@@ -21,13 +21,6 @@
 #define READER_LISTENER_H
 
 #include <napi.h>
-#include <pulsar/c/client.h>
-
-struct CReaderWrapper {
-  pulsar_reader_t *cReader;
-  CReaderWrapper();
-  ~CReaderWrapper();
-};
 
 struct ReaderListenerCallback {
   Napi::ThreadSafeFunction callback;

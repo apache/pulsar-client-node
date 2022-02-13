@@ -40,11 +40,12 @@ void Producer::Init(Napi::Env env, Napi::Object exports) {
   constructor.SuppressDestruct();
 }
 
-void Producer::SetCProducer(pulsar_producer_t *cProducer) { this->cProducer = cProducer; }
+void Producer::SetCProducer(std::shared_ptr<pulsar_producer_t> cProducer) { this->cProducer = cProducer; }
 
 class ProducerNewInstanceWorker : public Napi::AsyncWorker {
  public:
-  ProducerNewInstanceWorker(const Napi::Promise::Deferred &deferred, pulsar_client_t *cClient,
+  ProducerNewInstanceWorker(const Napi::Promise::Deferred &deferred,
+                            std::shared_ptr<pulsar_client_t> cClient,
                             ProducerConfig *producerConfig)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
@@ -58,13 +59,16 @@ class ProducerNewInstanceWorker : public Napi::AsyncWorker {
       return;
     }
 
+    pulsar_producer_t *rawProducer;
+
     pulsar_result result = pulsar_client_create_producer(
-        this->cClient, topic.c_str(), this->producerConfig->GetCProducerConfig(), &(this->cProducer));
+        this->cClient.get(), topic.c_str(), this->producerConfig->GetCProducerConfig().get(), &rawProducer);
     delete this->producerConfig;
     if (result != pulsar_result_Ok) {
       SetError(std::string("Failed to create producer: ") + pulsar_result_str(result));
       return;
     }
+    this->cProducer = std::shared_ptr<pulsar_producer_t>(rawProducer, pulsar_producer_free);
   }
   void OnOK() {
     Napi::Object obj = Producer::constructor.New({});
@@ -76,12 +80,12 @@ class ProducerNewInstanceWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_client_t *cClient;
+  std::shared_ptr<pulsar_client_t> cClient;
   ProducerConfig *producerConfig;
-  pulsar_producer_t *cProducer;
+  std::shared_ptr<pulsar_producer_t> cProducer;
 };
 
-Napi::Value Producer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
+Napi::Value Producer::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
   Napi::Object config = info[0].As<Napi::Object>();
   ProducerConfig *producerConfig = new ProducerConfig(config);
@@ -94,19 +98,22 @@ Producer::Producer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Producer>(
 
 class ProducerSendWorker : public Napi::AsyncWorker {
  public:
-  ProducerSendWorker(const Napi::Promise::Deferred &deferred, pulsar_producer_t *cProducer,
-                     pulsar_message_t *cMessage)
+  ProducerSendWorker(const Napi::Promise::Deferred &deferred,
+                     std::shared_ptr<pulsar_producer_t> cProducer,
+                     std::shared_ptr<pulsar_message_t> cMessage)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cProducer(cProducer),
         cMessage(cMessage) {}
-  ~ProducerSendWorker() { pulsar_message_free(this->cMessage); }
+  ~ProducerSendWorker() {}
   void Execute() {
-    pulsar_result result = pulsar_producer_send(this->cProducer, this->cMessage);
+    pulsar_result result = pulsar_producer_send(this->cProducer.get(), this->cMessage.get());
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
   void OnOK() {
-    Napi::Object messageId = MessageId::NewInstance(pulsar_message_get_message_id(this->cMessage));
+    std::shared_ptr<pulsar_message_id_t> cMessageId(pulsar_message_get_message_id(this->cMessage.get()),
+                                                    pulsar_message_id_free);
+    Napi::Object messageId = MessageId::NewInstance(cMessageId);
     this->deferred.Resolve(messageId);
   }
   void OnError(const Napi::Error &e) {
@@ -116,13 +123,13 @@ class ProducerSendWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_producer_t *cProducer;
-  pulsar_message_t *cMessage;
+  std::shared_ptr<pulsar_producer_t> cProducer;
+  std::shared_ptr<pulsar_message_t> cMessage;
 };
 
 Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
   Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  pulsar_message_t *cMessage = Message::BuildMessage(info[0].As<Napi::Object>());
+  std::shared_ptr<pulsar_message_t> cMessage = Message::BuildMessage(info[0].As<Napi::Object>());
   ProducerSendWorker *wk = new ProducerSendWorker(deferred, this->cProducer, cMessage);
   wk->Queue();
   return deferred.Promise();
@@ -130,7 +137,7 @@ Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
 
 class ProducerFlushWorker : public Napi::AsyncWorker {
  public:
-  ProducerFlushWorker(const Napi::Promise::Deferred &deferred, pulsar_producer_t *cProducer)
+  ProducerFlushWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_producer_t> cProducer)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cProducer(cProducer) {}
@@ -138,7 +145,7 @@ class ProducerFlushWorker : public Napi::AsyncWorker {
   ~ProducerFlushWorker() {}
 
   void Execute() {
-    pulsar_result result = pulsar_producer_flush(this->cProducer);
+    pulsar_result result = pulsar_producer_flush(this->cProducer.get());
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
 
@@ -151,7 +158,7 @@ class ProducerFlushWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_producer_t *cProducer;
+  std::shared_ptr<pulsar_producer_t> cProducer;
 };
 
 Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
@@ -163,13 +170,13 @@ Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
 
 class ProducerCloseWorker : public Napi::AsyncWorker {
  public:
-  ProducerCloseWorker(const Napi::Promise::Deferred &deferred, pulsar_producer_t *cProducer)
+  ProducerCloseWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_producer_t> cProducer)
       : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
         deferred(deferred),
         cProducer(cProducer) {}
   ~ProducerCloseWorker() {}
   void Execute() {
-    pulsar_result result = pulsar_producer_close(this->cProducer);
+    pulsar_result result = pulsar_producer_close(this->cProducer.get());
     if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
   }
   void OnOK() { this->deferred.Resolve(Env().Null()); }
@@ -180,7 +187,7 @@ class ProducerCloseWorker : public Napi::AsyncWorker {
 
  private:
   Napi::Promise::Deferred deferred;
-  pulsar_producer_t *cProducer;
+  std::shared_ptr<pulsar_producer_t> cProducer;
 };
 
 Napi::Value Producer::Close(const Napi::CallbackInfo &info) {
@@ -192,17 +199,17 @@ Napi::Value Producer::Close(const Napi::CallbackInfo &info) {
 
 Napi::Value Producer::GetProducerName(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::String::New(env, pulsar_producer_get_producer_name(this->cProducer));
+  return Napi::String::New(env, pulsar_producer_get_producer_name(this->cProducer.get()));
 }
 
 Napi::Value Producer::GetTopic(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::String::New(env, pulsar_producer_get_topic(this->cProducer));
+  return Napi::String::New(env, pulsar_producer_get_topic(this->cProducer.get()));
 }
 
 Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer));
+  return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer.get()));
 }
 
-Producer::~Producer() { pulsar_producer_free(this->cProducer); }
+Producer::~Producer() {}
