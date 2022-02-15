@@ -22,6 +22,7 @@
     ['OS=="win"', {
       'variables': {
        'pulsar_cpp_dir%': '<!(echo %PULSAR_CPP_DIR%)',
+       'os_arch%': '<!(echo %OS_ARCH%)',
       },
     }]
   ],
@@ -54,7 +55,7 @@
             "<(pulsar_cpp_dir)\include",
           ],
           "libraries": [
-            "-l<(pulsar_cpp_dir)\\build\lib\Release\pulsar.lib"
+            "-l<(pulsar_cpp_dir)\\lib\Release\pulsar.lib"
           ],
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
@@ -64,14 +65,14 @@
               "destination": "<(PRODUCT_DIR)",
               "files": [
                 "<(pulsar_cpp_dir)\\build\lib\Release\pulsar.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libcurl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libprotobuf.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libssl-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\libcrypto-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\dl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\snappy.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\zlib1.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\x64-windows\\bin\zstd.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\libcurl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\libprotobuf.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\libssl-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\libcrypto-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\dl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\snappy.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\zlib1.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\bin\zstd.dll",
               ]
             }
           ]
