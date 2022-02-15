@@ -65,14 +65,14 @@
               "destination": "<(PRODUCT_DIR)",
               "files": [
                 "<(pulsar_cpp_dir)\\lib\Release\pulsar.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcurl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libprotobuf.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libssl-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcrypto-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\dl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\snappy.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zlib1.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zstd.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\libcurl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\libprotobuf.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\libssl-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\libcrypto-1_1-x64.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\dl.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\snappy.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\zlib1.dll",
+                "<(pulsar_cpp_dir)\\vcpkg_installed\<(os_arch)\\bin\zstd.dll",
               ]
             }
           ]
