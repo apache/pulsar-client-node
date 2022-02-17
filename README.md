@@ -54,7 +54,17 @@ If an incompatible version of the C++ client is installed, you may fail to build
 
 ### Install on windows
 
-1. [Build the Pulsar C++ client on windows](https://pulsar.apache.org/docs/en/next/client-libraries-cpp/).
+1. Build the Pulsar C++ client on windows.
+
+```shell
+cmake \
+ -A x64 \
+ -DBUILD_PYTHON_WRAPPER=OFF -DBUILD_TESTS=OFF \
+ -DVCPKG_TRIPLET=x64-windows \
+ -DCMAKE_BUILD_TYPE=Release \
+ -S .
+cmake --config Release
+```
 
 2. Set the variable `PULSAR_CPP_DIR` with the `pulsar-client-cpp` path in a Windows command tool.
 
@@ -62,6 +72,13 @@ If an incompatible version of the C++ client is installed, you may fail to build
 # for example
 set PULSAR_CPP_DIR=C:\pulsar\pulsar-client-cpp
 ```
+
+3. Set the variable `OS_ARCH` in a Windows command tool, `OS_ARCH` is related to the configuration of VCPKG_TRIPLET on the command line above.(Optional)
+
+```shell
+set OS_ARCH=x64-windows
+```
+
 
 ### Install pulsar-client to your project
 
