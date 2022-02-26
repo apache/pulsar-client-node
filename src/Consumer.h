@@ -42,12 +42,12 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   MessageListenerCallback *listener;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
-  void Acknowledge(const Napi::CallbackInfo &info);
-  void AcknowledgeId(const Napi::CallbackInfo &info);
+  Napi::Value Acknowledge(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeId(const Napi::CallbackInfo &info);
   void NegativeAcknowledge(const Napi::CallbackInfo &info);
   void NegativeAcknowledgeId(const Napi::CallbackInfo &info);
-  void AcknowledgeCumulative(const Napi::CallbackInfo &info);
-  void AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeCumulative(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
   Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value Unsubscribe(const Napi::CallbackInfo &info);

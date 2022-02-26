@@ -21,6 +21,7 @@
 #include "ConsumerConfig.h"
 #include "Message.h"
 #include "MessageId.h"
+#include "ThreadSafeDeferred.h"
 #include <pulsar/c/result.h>
 #include <atomic>
 #include <thread>
@@ -98,121 +99,110 @@ void Consumer::SetListenerCallback(MessageListenerCallback *listener) {
 
 Consumer::Consumer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Consumer>(info), listener(nullptr) {}
 
-class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
- public:
-  ConsumerNewInstanceWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_client_t> cClient,
-                            ConsumerConfig *consumerConfig)
-      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
-        deferred(deferred),
-        cClient(cClient),
-        consumerConfig(consumerConfig) {}
-  ~ConsumerNewInstanceWorker() {}
-  void Execute() {
-    const std::string &topic = this->consumerConfig->GetTopic();
-    const std::vector<std::string> &topics = this->consumerConfig->GetTopics();
-    const std::string &topicsPattern = this->consumerConfig->GetTopicsPattern();
-    if (topic.empty() && topics.size() == 0 && topicsPattern.empty()) {
-      SetError(
-          std::string("Topic, topics or topicsPattern is required and must be specified as a string when "
-                      "creating consumer"));
-      return;
-    }
-    const std::string &subscription = this->consumerConfig->GetSubscription();
-    if (subscription.empty()) {
-      SetError(
-          std::string("Subscription is required and must be specified as a string when creating consumer"));
-      return;
-    }
-    int32_t ackTimeoutMs = this->consumerConfig->GetAckTimeoutMs();
-    if (ackTimeoutMs != 0 && ackTimeoutMs < MIN_ACK_TIMEOUT_MILLIS) {
-      std::string msg("Ack timeout should be 0 or greater than or equal to " +
-                      std::to_string(MIN_ACK_TIMEOUT_MILLIS));
-      SetError(msg);
-      return;
-    }
-    int32_t nAckRedeliverTimeoutMs = this->consumerConfig->GetNAckRedeliverTimeoutMs();
-    if (nAckRedeliverTimeoutMs < 0) {
-      std::string msg("NAck timeout should be greater than or equal to zero");
-      SetError(msg);
-      return;
-    }
-
-    this->done = false;
-    if (!topicsPattern.empty()) {
-      pulsar_client_subscribe_pattern_async(this->cClient.get(), topicsPattern.c_str(), subscription.c_str(),
-                                            this->consumerConfig->GetCConsumerConfig().get(),
-                                            &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
-    } else if (topics.size() > 0) {
-      const char **cTopics = new const char *[topics.size()];
-      for (size_t i = 0; i < topics.size(); i++) {
-        cTopics[i] = topics[i].c_str();
-      }
-      pulsar_client_subscribe_multi_topics_async(this->cClient.get(), cTopics, topics.size(), subscription.c_str(),
-                                                 this->consumerConfig->GetCConsumerConfig().get(),
-                                                 &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
-      delete cTopics;
-    } else {
-      pulsar_client_subscribe_async(this->cClient.get(), topic.c_str(), subscription.c_str(),
-                                    this->consumerConfig->GetCConsumerConfig().get(),
-                                    &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
-    }
-    while (!done) {
-      std::this_thread::yield();
-    }
-  }
-  void OnOK() {
-    Napi::Object obj = Consumer::constructor.New({});
-    Consumer *consumer = Consumer::Unwrap(obj);
-
-    consumer->SetCConsumer(this->cConsumer);
-    consumer->SetListenerCallback(this->listener);
-
-    if (this->listener) {
-      // resume to enable MessageListener function callback
-      resume_message_listener(this->cConsumer.get());
-    }
-
-    this->deferred.Resolve(obj);
-  }
-  void OnError(const Napi::Error &e) { this->deferred.Reject(Napi::Error::New(Env(), e.Message()).Value()); }
-
- private:
-  Napi::Promise::Deferred deferred;
+struct ConsumerNewInstanceContext {
+  ConsumerNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred,
+                             std::shared_ptr<pulsar_client_t> cClient,
+                             std::shared_ptr<ConsumerConfig> consumerConfig)
+      : deferred(deferred), cClient(cClient), consumerConfig(consumerConfig){};
+  std::shared_ptr<ThreadSafeDeferred> deferred;
   std::shared_ptr<pulsar_client_t> cClient;
-  std::shared_ptr<pulsar_consumer_t> cConsumer;
-  ConsumerConfig *consumerConfig;
-  MessageListenerCallback *listener;
-  std::atomic<bool> done;
-  static void subscribeCallback(pulsar_result result, pulsar_consumer_t *rawConsumer, void *ctx) {
-    ConsumerNewInstanceWorker *worker = (ConsumerNewInstanceWorker *)ctx;
-    if (result != pulsar_result_Ok) {
-      worker->SetError(std::string("Failed to create consumer: ") + pulsar_result_str(result));
-    } else {
-      worker->cConsumer = std::shared_ptr<pulsar_consumer_t>(rawConsumer, pulsar_consumer_free);
-      worker->listener = worker->consumerConfig->GetListenerCallback();
+  std::shared_ptr<ConsumerConfig> consumerConfig;
 
-      if (worker->listener) {
-        // pause, will resume in OnOK, to prevent MessageListener get a nullptr of consumer
-        pulsar_consumer_pause_message_listener(worker->cConsumer.get());
-      }
+  static void subscribeCallback(pulsar_result result, pulsar_consumer_t *rawConsumer, void *ctx) {
+    auto instanceContext = static_cast<ConsumerNewInstanceContext *>(ctx);
+    auto deferred = instanceContext->deferred;
+    auto cClient = instanceContext->cClient;
+    auto consumerConfig = instanceContext->consumerConfig;
+    delete instanceContext;
+
+    if (result != pulsar_result_Ok) {
+      return deferred->Reject(std::string("Failed to create consumer: ") + pulsar_result_str(result));
     }
 
-    delete worker->consumerConfig;
-    worker->done = true;
+    auto cConsumer = std::shared_ptr<pulsar_consumer_t>(rawConsumer, pulsar_consumer_free);
+    auto listener = consumerConfig->GetListenerCallback();
+
+    if (listener) {
+      // pause, will resume in OnOK, to prevent MessageListener get a nullptr of consumer
+      pulsar_consumer_pause_message_listener(cConsumer.get());
+    }
+
+    deferred->Resolve([cConsumer, consumerConfig, listener](const Napi::Env env) {
+      Napi::Object obj = Consumer::constructor.New({});
+      Consumer *consumer = Consumer::Unwrap(obj);
+
+      consumer->SetCConsumer(cConsumer);
+      consumer->SetListenerCallback(listener);
+
+      if (listener) {
+        // resume to enable MessageListener function callback
+        resume_message_listener(cConsumer.get());
+      }
+
+      return obj;
+    });
   }
 };
 
 Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  Napi::Object config = info[0].As<Napi::Object>();
+  auto deferred = ThreadSafeDeferred::New(info.Env());
+  auto config = info[0].As<Napi::Object>();
+  std::shared_ptr<ConsumerConfig> consumerConfig = std::make_shared<ConsumerConfig>(config, &MessageListener);
 
-  ConsumerConfig *consumerConfig = new ConsumerConfig(config, &MessageListener);
-  ConsumerNewInstanceWorker *wk =
-      new ConsumerNewInstanceWorker(deferred, cClient, consumerConfig);
-  wk->Queue();
-  return deferred.Promise();
+  const std::string &topic = consumerConfig->GetTopic();
+  const std::vector<std::string> &topics = consumerConfig->GetTopics();
+  const std::string &topicsPattern = consumerConfig->GetTopicsPattern();
+  if (topic.empty() && topics.size() == 0 && topicsPattern.empty()) {
+    deferred->Reject(
+        std::string("Topic, topics or topicsPattern is required and must be specified as a string when "
+                    "creating consumer"));
+    return deferred->Promise();
+  }
+  const std::string &subscription = consumerConfig->GetSubscription();
+  if (subscription.empty()) {
+    deferred->Reject(
+        std::string("Subscription is required and must be specified as a string when creating consumer"));
+    return deferred->Promise();
+  }
+  int32_t ackTimeoutMs = consumerConfig->GetAckTimeoutMs();
+  if (ackTimeoutMs != 0 && ackTimeoutMs < MIN_ACK_TIMEOUT_MILLIS) {
+    std::string msg("Ack timeout should be 0 or greater than or equal to " +
+                    std::to_string(MIN_ACK_TIMEOUT_MILLIS));
+    deferred->Reject(msg);
+    return deferred->Promise();
+  }
+  int32_t nAckRedeliverTimeoutMs = consumerConfig->GetNAckRedeliverTimeoutMs();
+  if (nAckRedeliverTimeoutMs < 0) {
+    std::string msg("NAck timeout should be greater than or equal to zero");
+    deferred->Reject(msg);
+    return deferred->Promise();
+  }
+
+  auto ctx = new ConsumerNewInstanceContext(deferred, cClient, consumerConfig);
+
+  if (!topicsPattern.empty()) {
+    pulsar_client_subscribe_pattern_async(cClient.get(), topicsPattern.c_str(), subscription.c_str(),
+                                          consumerConfig->GetCConsumerConfig().get(),
+                                          &ConsumerNewInstanceContext::subscribeCallback, ctx);
+  } else if (topics.size() > 0) {
+    const char **cTopics = new const char *[topics.size()];
+    for (size_t i = 0; i < topics.size(); i++) {
+      cTopics[i] = topics[i].c_str();
+    }
+    pulsar_client_subscribe_multi_topics_async(cClient.get(), cTopics, topics.size(), subscription.c_str(),
+                                               consumerConfig->GetCConsumerConfig().get(),
+                                               &ConsumerNewInstanceContext::subscribeCallback, ctx);
+    delete[] cTopics;
+  } else {
+    pulsar_client_subscribe_async(cClient.get(), topic.c_str(), subscription.c_str(),
+                                  consumerConfig->GetCConsumerConfig().get(),
+                                  &ConsumerNewInstanceContext::subscribeCallback, ctx);
+  }
+
+  return deferred->Promise();
 }
 
+// We still need a receive worker because the c api is missing the equivalent async definition
 class ConsumerReceiveWorker : public Napi::AsyncWorker {
  public:
   ConsumerReceiveWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_consumer_t> cConsumer,
@@ -232,7 +222,7 @@ class ConsumerReceiveWorker : public Napi::AsyncWorker {
     }
 
     if (result != pulsar_result_Ok) {
-      SetError(std::string("Failed to received message ") + pulsar_result_str(result));
+      SetError(std::string("Failed to consumer receive message: ") + pulsar_result_str(result));
     } else {
       this->cMessage = std::shared_ptr<pulsar_message_t>(rawMessage, pulsar_message_free);
     }
@@ -257,33 +247,72 @@ Napi::Value Consumer::Receive(const Napi::CallbackInfo &info) {
     wk->Queue();
   } else {
     Napi::Number timeout = info[0].As<Napi::Object>().ToNumber();
-    ConsumerReceiveWorker *wk =
-        new ConsumerReceiveWorker(deferred, this->cConsumer, timeout.Int64Value());
+    ConsumerReceiveWorker *wk = new ConsumerReceiveWorker(deferred, this->cConsumer, timeout.Int64Value());
     wk->Queue();
   }
   return deferred.Promise();
 }
 
-void Consumer::Acknowledge(const Napi::CallbackInfo &info) {
-  Napi::Object obj = info[0].As<Napi::Object>();
-  Message *msg = Message::Unwrap(obj);
-  std::shared_ptr<pulsar_message_t> cMessage = msg->GetCMessage();
-  pulsar_consumer_acknowledge_async(this->cConsumer.get(), cMessage.get(), NULL, NULL);
+Napi::Value Consumer::Acknowledge(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto msg = Message::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_acknowledge_async(
+      this->cConsumer.get(), msg->GetCMessage().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to consumer acknowledge: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
-void Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
-  Napi::Object obj = info[0].As<Napi::Object>();
-  MessageId *msgId = MessageId::Unwrap(obj);
-  std::shared_ptr<pulsar_message_id_t> cMessageId = msgId->GetCMessageId();
-  // TODO: wrapper and message id must persist for the duration of the function call
-  pulsar_consumer_acknowledge_async_id(this->cConsumer.get(), cMessageId.get(), NULL, NULL);
+Napi::Value Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto *msgId = MessageId::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_acknowledge_async_id(
+      this->cConsumer.get(), msgId->GetCMessageId().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to consumer acknowledge id: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
 void Consumer::NegativeAcknowledge(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   Message *msg = Message::Unwrap(obj);
   std::shared_ptr<pulsar_message_t> cMessage = msg->GetCMessage();
-  // TODO: wrapper and message must persist for the duration of the function call
   pulsar_consumer_negative_acknowledge(this->cConsumer.get(), cMessage.get());
 }
 
@@ -291,95 +320,71 @@ void Consumer::NegativeAcknowledgeId(const Napi::CallbackInfo &info) {
   Napi::Object obj = info[0].As<Napi::Object>();
   MessageId *msgId = MessageId::Unwrap(obj);
   std::shared_ptr<pulsar_message_id_t> cMessageId = msgId->GetCMessageId();
-  // TODO: wrapper and message id must persist for the duration of the function call
   pulsar_consumer_negative_acknowledge_id(this->cConsumer.get(), cMessageId.get());
 }
 
-void Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
-  Napi::Object obj = info[0].As<Napi::Object>();
-  Message *msg = Message::Unwrap(obj);
-  std::shared_ptr<pulsar_message_t> cMessage = msg->GetCMessage();
-  // TODO: wrapper and message must persist for the duration of the function call
-  pulsar_consumer_acknowledge_cumulative_async(this->cConsumer.get(), cMessage.get(), NULL, NULL);
+Napi::Value Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto *msg = Message::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_acknowledge_cumulative_async(
+      this->cConsumer.get(), msg->GetCMessage().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to consumer acknowledge cumulative: ") +
+                           pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
-void Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
-  Napi::Object obj = info[0].As<Napi::Object>();
-  MessageId *msgId = MessageId::Unwrap(obj);
-  std::shared_ptr<pulsar_message_id_t> cMessageId = msgId->GetCMessageId();
-  // TODO: wrapper and message id must persist for the duration of the function call
-  pulsar_consumer_acknowledge_cumulative_async_id(this->cConsumer.get(), cMessageId.get(), NULL,
-                                                  NULL);
+Napi::Value Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto *msgId = MessageId::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_acknowledge_cumulative_async_id(
+      this->cConsumer.get(), msgId->GetCMessageId().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to consumer acknowledge cumulative id: ") +
+                           pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
 Napi::Value Consumer::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   return Napi::Boolean::New(env, pulsar_consumer_is_connected(this->cConsumer.get()));
 }
-
-class ConsumerCloseWorker : public Napi::AsyncWorker {
- public:
-  ConsumerCloseWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_consumer_t> cConsumer,
-                      Consumer *consumer)
-      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
-        deferred(deferred),
-        cConsumer(cConsumer),
-        consumer(consumer) {}
-
-  ~ConsumerCloseWorker() {}
-  void Execute() {
-    pulsar_consumer_pause_message_listener(this->cConsumer.get());
-    pulsar_result result = pulsar_consumer_close(this->cConsumer.get());
-    if (result != pulsar_result_Ok) {
-      SetError(pulsar_result_str(result));
-    }
-  }
-  void OnOK() {
-    this->consumer->Cleanup();
-    this->deferred.Resolve(Env().Null());
-  }
-  void OnError(const Napi::Error &e) {
-    this->deferred.Reject(
-        Napi::Error::New(Env(), std::string("Failed to close consumer: ") + e.Message()).Value());
-  }
-
- private:
-  Napi::Promise::Deferred deferred;
-  std::shared_ptr<pulsar_consumer_t> cConsumer;
-  Consumer *consumer;
-};
-
-class ConsumerUnsubscribeWorker : public Napi::AsyncWorker {
- public:
-  ConsumerUnsubscribeWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_consumer_t> cConsumer,
-                            Consumer *consumer)
-      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
-        deferred(deferred),
-        cConsumer(cConsumer),
-        consumer(consumer) {}
-
-  ~ConsumerUnsubscribeWorker() {}
-  void Execute() {
-    pulsar_consumer_pause_message_listener(this->cConsumer.get());
-    pulsar_result result = pulsar_consumer_unsubscribe(this->cConsumer.get());
-    if (result != pulsar_result_Ok) {
-      SetError(pulsar_result_str(result));
-    }
-  }
-  void OnOK() {
-    this->consumer->Cleanup();
-    this->deferred.Resolve(Env().Null());
-  }
-  void OnError(const Napi::Error &e) {
-    this->deferred.Reject(
-        Napi::Error::New(Env(), std::string("Failed to unsubscribe consumer: ") + e.Message()).Value());
-  }
-
- private:
-  Napi::Promise::Deferred deferred;
-  std::shared_ptr<pulsar_consumer_t> cConsumer;
-  Consumer *consumer;
-};
 
 void Consumer::Cleanup() {
   if (this->listener) {
@@ -395,17 +400,59 @@ void Consumer::CleanupListener() {
 }
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerCloseWorker *wk = new ConsumerCloseWorker(deferred, this->cConsumer, this);
-  wk->Queue();
-  return deferred.Promise();
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_pause_message_listener(this->cConsumer.get());
+  pulsar_consumer_close_async(
+      this->cConsumer.get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to close consumer: ") + pulsar_result_str(result));
+        } else {
+          self->Cleanup();
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
 Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ConsumerUnsubscribeWorker *wk = new ConsumerUnsubscribeWorker(deferred, this->cConsumer, this);
-  wk->Queue();
-  return deferred.Promise();
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
+  this->Ref();
+
+  pulsar_consumer_pause_message_listener(this->cConsumer.get());
+  pulsar_consumer_unsubscribe_async(
+      this->cConsumer.get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to unsubscribe consumer: ") + pulsar_result_str(result));
+        } else {
+          self->Cleanup();
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
 Consumer::~Consumer() {
