@@ -244,11 +244,11 @@ Napi::Value Reader::Close(const Napi::CallbackInfo &info) {
 void Reader::Cleanup() {
   if (this->listener) {
     this->CleanupListener();
+    this->Unref();
   }
 }
 
 void Reader::CleanupListener() {
-  this->Unref();
   this->listener->callback.Release();
   this->listener = nullptr;
 }
