@@ -17,11 +17,12 @@
  * under the License.
  */
 
+#include "Authentication.h"
 #include "Client.h"
 #include "Consumer.h"
 #include "Producer.h"
 #include "Reader.h"
-#include "Authentication.h"
+#include "ThreadSafeDeferred.h"
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
@@ -77,8 +78,7 @@ Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
       env, "Client",
       {StaticMethod("setLogHandler", &Client::SetLogHandler),
        InstanceMethod("createProducer", &Client::CreateProducer),
-       InstanceMethod("subscribe", &Client::Subscribe),
-       InstanceMethod("createReader", &Client::CreateReader),
+       InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("createReader", &Client::CreateReader),
        InstanceMethod("close", &Client::Close)});
 
   constructor = Napi::Persistent(func);
@@ -102,9 +102,8 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   }
   Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
-  this->cClientConfig = std::shared_ptr<pulsar_client_configuration_t>(
-    pulsar_client_configuration_create(),
-    pulsar_client_configuration_free);
+  this->cClientConfig = std::shared_ptr<pulsar_client_configuration_t>(pulsar_client_configuration_create(),
+                                                                       pulsar_client_configuration_free);
 
   // The logger can only be set once per process, so we will take control of it
   pulsar_client_configuration_set_logger(cClientConfig.get(), &LogMessage, nullptr);
@@ -188,8 +187,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   }
 
   this->cClient = std::shared_ptr<pulsar_client_t>(
-    pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()),
-    pulsar_client_free);
+      pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
 }
 
 Client::~Client() {}
@@ -215,7 +213,8 @@ void LogMessageProxy(Napi::Env env, Napi::Function jsCallback, struct LogMessage
   jsCallback.Call({logLevel, file, line, message});
 }
 
-void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message, void *ctx) {
+void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message,
+                        void *ctx) {
   LogCallback *logCallback = Client::logCallback;
 
   if (logCallback == nullptr) {
@@ -232,33 +231,27 @@ void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line,
   logCallback->callback.Release();
 }
 
-class ClientCloseWorker : public Napi::AsyncWorker {
- public:
-  ClientCloseWorker(const Napi::Promise::Deferred &deferred, std::shared_ptr<pulsar_client_t> cClient)
-      : AsyncWorker(Napi::Function::New(deferred.Promise().Env(), [](const Napi::CallbackInfo &info) {})),
-        deferred(deferred),
-        cClient(cClient) {}
-  ~ClientCloseWorker() {}
-  void Execute() {
-    pulsar_result result = pulsar_client_close(this->cClient.get());
-    if (result != pulsar_result_Ok) SetError(pulsar_result_str(result));
-  }
-  void OnOK() { this->deferred.Resolve(Env().Null()); }
-  void OnError(const Napi::Error &e) {
-    this->deferred.Reject(
-        Napi::Error::New(Env(), std::string("Failed to close client: ") + e.Message()).Value());
-  }
-
- private:
-  Napi::Promise::Deferred deferred;
-  std::shared_ptr<pulsar_client_t> cClient;
-};
-
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
-  this->Unref();
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext<Client *>(this, deferred);
+  this->Ref();
 
-  Napi::Promise::Deferred deferred = Napi::Promise::Deferred::New(info.Env());
-  ClientCloseWorker *wk = new ClientCloseWorker(deferred, this->cClient);
-  wk->Queue();
-  return deferred.Promise();
+  pulsar_client_close_async(
+      this->cClient.get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext<Client *> *>(ctx);
+        auto deferred = deferredContext->deferred;
+        auto self = deferredContext->ref;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to close client: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+
+        self->Unref();
+      },
+      ctx);
+
+  return deferred->Promise();
 }
