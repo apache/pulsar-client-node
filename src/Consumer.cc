@@ -387,16 +387,17 @@ Napi::Value Consumer::IsConnected(const Napi::CallbackInfo &info) {
 }
 
 void Consumer::Cleanup() {
-  if (this->listener) {
+  if (this->listener != nullptr) {
     this->CleanupListener();
+    this->Unref();
   }
 }
 
 void Consumer::CleanupListener() {
   pulsar_consumer_pause_message_listener(this->cConsumer.get());
-  this->Unref();
   this->listener->callback.Release();
   this->listener = nullptr;
+  // The listener finalizer will delete itself
 }
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
@@ -456,7 +457,7 @@ Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
 }
 
 Consumer::~Consumer() {
-  if (this->listener) {
+  if (this->listener != nullptr) {
     this->CleanupListener();
   }
 }
