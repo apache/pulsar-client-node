@@ -24,6 +24,11 @@
        'pulsar_cpp_dir%': '<!(echo %PULSAR_CPP_DIR%)',
        'os_arch%': '<!(echo %OS_ARCH%)',
       },
+    }],
+    ['OS=="mac"', {
+      'variables': {
+        'pulsar_cpp_dir': '<!(echo $PULSAR_CPP_DIR)'
+      }
     }]
   ],
   "targets": [
@@ -50,6 +55,14 @@
         "src/ReaderConfig.cc",
       ],
       'conditions': [
+        ['OS=="mac"', {
+          "include_dirs": [
+            "<(pulsar_cpp_dir)/include",
+          ],
+          "libraries": [
+            "<(pulsar_cpp_dir)/lib/libpulsar.dylib"
+          ],
+        }],
         ['OS=="win"', {
           "include_dirs": [
             "<(pulsar_cpp_dir)\include",
