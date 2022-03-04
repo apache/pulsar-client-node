@@ -34,6 +34,7 @@ export interface ClientConfig {
 }
 
 export class Client {
+  static setLogHandler(logHandler: (level: LogLevel, file: string, line: number, message: string) => void): void;
   constructor(config: ClientConfig);
   createProducer(config: ProducerConfig): Promise<Producer>;
   subscribe(config: ConsumerConfig): Promise<Consumer>;
@@ -91,12 +92,12 @@ export interface ConsumerConfig {
 
 export class Consumer {
   receive(timeout?: number): Promise<Message>;
-  acknowledge(message: Message): void;
-  acknowledgeId(messageId: MessageId): void;
+  acknowledge(message: Message): Promise<null>;
+  acknowledgeId(messageId: MessageId): Promise<null>;
   negativeAcknowledge(message: Message): void;
   negativeAcknowledgeId(messageId: MessageId): void;
-  acknowledgeCumulative(message: Message): void;
-  acknowledgeCumulativeId(messageId: MessageId): void;
+  acknowledgeCumulative(message: Message): Promise<null>;
+  acknowledgeCumulativeId(messageId: MessageId): Promise<null>;
   isConnected(): boolean;
   close(): Promise<null>;
   unsubscribe(): Promise<null>;
