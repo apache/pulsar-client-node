@@ -76,7 +76,8 @@
     "file_types": [
       ".json",
       ".pem",
-      ".txt"
+      ".txt",
+      ".gz"
     ],
     "trailing_whitespace": "TRIM",
     "insert_license": true,
