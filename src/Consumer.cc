@@ -83,18 +83,18 @@ void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessag
 
 void Consumer::SetCConsumer(std::shared_ptr<pulsar_consumer_t> cConsumer) { this->cConsumer = cConsumer; }
 void Consumer::SetListenerCallback(MessageListenerCallback *listener) {
-  if (listener) {
-    // Pass consumer as argument
+  if (this->listener != nullptr) {
+    // It is only safe to set the listener once for the lifecycle of the Consumer
+    return;
+  }
+
+  if (listener != nullptr) {
     listener->consumer = this;
-  }
-
-  if (this->listener == nullptr) {
-    // Maintain reference to consumer, so it won't get garbage collected
-    // since, when we have a listener, we don't have to maintain reference to consumer (in js code)
+    // If a consumer listener is set, the Consumer instance is kept alive even if it goes out of scope in JS
+    // code.
     this->Ref();
+    this->listener = listener;
   }
-
-  this->listener = listener;
 }
 
 Consumer::Consumer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Consumer>(info), listener(nullptr) {}
@@ -387,16 +387,11 @@ Napi::Value Consumer::IsConnected(const Napi::CallbackInfo &info) {
 
 void Consumer::Cleanup() {
   if (this->listener != nullptr) {
-    this->CleanupListener();
+    pulsar_consumer_pause_message_listener(this->cConsumer.get());
+    this->listener->callback.Release();
+    this->listener = nullptr;
     this->Unref();
   }
-}
-
-void Consumer::CleanupListener() {
-  pulsar_consumer_pause_message_listener(this->cConsumer.get());
-  this->listener->callback.Release();
-  this->listener = nullptr;
-  // The listener finalizer will delete itself
 }
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
@@ -456,9 +451,7 @@ Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
 }
 
 Consumer::~Consumer() {
-  if (this->listener != nullptr) {
-    this->CleanupListener();
-  }
+  this->Cleanup();
   while (this->Unref() != 0) {
     // If Ref() > 0 then the process is shutting down. We must unref to prevent
     // double free (once for the env shutdown and once for non-zero refs)

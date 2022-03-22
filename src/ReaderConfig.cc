@@ -85,7 +85,7 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_liste
 }
 
 ReaderConfig::~ReaderConfig() {
-  if (this->listener) {
+  if (this->listener != nullptr) {
     this->listener->callback.Release();
   }
 }

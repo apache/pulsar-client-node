@@ -27,6 +27,8 @@ struct MessageListenerCallback {
 
   // Using consumer as void* since the ListenerCallback is shared between Config and Consumer.
   void *consumer;
+
+  MessageListenerCallback() : consumer(nullptr) {}
 };
 
 #endif

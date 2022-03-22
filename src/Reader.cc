@@ -73,18 +73,17 @@ void ReaderListener(pulsar_reader_t *rawReader, pulsar_message_t *rawMessage, vo
 
 void Reader::SetCReader(std::shared_ptr<pulsar_reader_t> cReader) { this->cReader = cReader; }
 void Reader::SetListenerCallback(ReaderListenerCallback *listener) {
-  if (listener) {
-    // Pass reader as argument
+  if (this->listener != nullptr) {
+    // It is only safe to set the listener once for the lifecycle of the Reader
+    return;
+  }
+
+  if (listener != nullptr) {
     listener->reader = this;
-  }
-
-  if (this->listener == nullptr) {
-    // Maintain reference to reader, so it won't get garbage collected
-    // since, when we have a listener, we don't have to maintain reference to reader (in js code)
+    // If a reader listener is set, the Reader instance is kept alive even if it goes out of scope in JS code.
     this->Ref();
+    this->listener = listener;
   }
-
-  this->listener = listener;
 }
 
 Reader::Reader(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Reader>(info), listener(nullptr) {}
@@ -242,21 +241,15 @@ Napi::Value Reader::Close(const Napi::CallbackInfo &info) {
 }
 
 void Reader::Cleanup() {
-  if (this->listener) {
-    this->CleanupListener();
+  if (this->listener != nullptr) {
+    this->listener->callback.Release();
     this->Unref();
+    this->listener = nullptr;
   }
-}
-
-void Reader::CleanupListener() {
-  this->listener->callback.Release();
-  this->listener = nullptr;
 }
 
 Reader::~Reader() {
-  if (this->listener) {
-    this->CleanupListener();
-  }
+  this->Cleanup();
   while (this->Unref() != 0) {
     // If Ref() > 0 then the process is shutting down. We must unref to prevent
     // double free (once for the env shutdown and once for non-zero refs)

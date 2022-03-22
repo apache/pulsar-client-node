@@ -27,6 +27,8 @@ struct ReaderListenerCallback {
 
   // Using reader as void* since the ReaderListenerCallback is shared between Config and Reader.
   void *reader;
+
+  ReaderListenerCallback() : reader(nullptr) {}
 };
 
 #endif

@@ -189,7 +189,7 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
 }
 
 ConsumerConfig::~ConsumerConfig() {
-  if (this->listener) {
+  if (this->listener != nullptr) {
     this->listener->callback.Release();
   }
 }
