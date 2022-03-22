@@ -222,7 +222,7 @@ class ConsumerReceiveWorker : public Napi::AsyncWorker {
     }
 
     if (result != pulsar_result_Ok) {
-      SetError(std::string("Failed to consumer receive message: ") + pulsar_result_str(result));
+      SetError(std::string("Failed to receive message: ") + pulsar_result_str(result));
     } else {
       this->cMessage = std::shared_ptr<pulsar_message_t>(rawMessage, pulsar_message_free);
     }
@@ -269,7 +269,7 @@ Napi::Value Consumer::Acknowledge(const Napi::CallbackInfo &info) {
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
-          deferred->Reject(std::string("Failed to consumer acknowledge: ") + pulsar_result_str(result));
+          deferred->Reject(std::string("Failed to acknowledge: ") + pulsar_result_str(result));
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
@@ -297,7 +297,7 @@ Napi::Value Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
-          deferred->Reject(std::string("Failed to consumer acknowledge id: ") + pulsar_result_str(result));
+          deferred->Reject(std::string("Failed to acknowledge id: ") + pulsar_result_str(result));
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
@@ -339,8 +339,7 @@ Napi::Value Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
-          deferred->Reject(std::string("Failed to consumer acknowledge cumulative: ") +
-                           pulsar_result_str(result));
+          deferred->Reject(std::string("Failed to acknowledge cumulatively: ") + pulsar_result_str(result));
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
@@ -368,7 +367,7 @@ Napi::Value Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
-          deferred->Reject(std::string("Failed to consumer acknowledge cumulative id: ") +
+          deferred->Reject(std::string("Failed to acknowledge cumulatively by id: ") +
                            pulsar_result_str(result));
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
