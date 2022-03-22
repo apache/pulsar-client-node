@@ -190,7 +190,12 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
       pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
 }
 
-Client::~Client() {}
+Client::~Client() {
+  while (this->Unref() != 0) {
+    // If Ref() > 0 then the process is shutting down. We must unref to prevent
+    // double free (once for the env shutdown and once for non-zero refs)
+  }
+}
 
 Napi::Value Client::CreateProducer(const Napi::CallbackInfo &info) {
   return Producer::NewInstance(info, this->cClient);

@@ -201,4 +201,9 @@ Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
   return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer.get()));
 }
 
-Producer::~Producer() {}
+Producer::~Producer() {
+  while (this->Unref() != 0) {
+    // If Ref() > 0 then the process is shutting down. We must unref to prevent
+    // double free (once for the env shutdown and once for non-zero refs)
+  }
+}

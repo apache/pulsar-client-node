@@ -257,4 +257,8 @@ Reader::~Reader() {
   if (this->listener) {
     this->CleanupListener();
   }
+  while (this->Unref() != 0) {
+    // If Ref() > 0 then the process is shutting down. We must unref to prevent
+    // double free (once for the env shutdown and once for non-zero refs)
+  }
 }
