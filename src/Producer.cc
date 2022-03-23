@@ -202,6 +202,7 @@ Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
 }
 
 Producer::~Producer() {
+  this->Ref();
   while (this->Unref() != 0) {
     // If Ref() > 0 then the process is shutting down. We must unref to prevent
     // double free (once for the env shutdown and once for non-zero refs)
