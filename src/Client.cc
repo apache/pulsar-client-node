@@ -248,6 +248,7 @@ Napi::Value Client::Close(const Napi::CallbackInfo &info) {
         auto deferredContext = static_cast<ExtDeferredContext<Client *> *>(ctx);
         auto deferred = deferredContext->deferred;
         auto self = deferredContext->ref;
+        delete deferredContext;
 
         if (result != pulsar_result_Ok) {
           deferred->Reject(std::string("Failed to close client: ") + pulsar_result_str(result));
