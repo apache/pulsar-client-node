@@ -77,10 +77,8 @@ class ThreadSafeDeferred : public Napi::Promise::Deferred {
   static std::shared_ptr<ThreadSafeDeferred> New(const Napi::Env env);
 };
 
-template <typename T>
 struct ExtDeferredContext {
-  ExtDeferredContext(T ref, std::shared_ptr<ThreadSafeDeferred> deferred) : ref(ref), deferred(deferred){};
-  T ref;
+  ExtDeferredContext(std::shared_ptr<ThreadSafeDeferred> deferred) : deferred(deferred){};
   std::shared_ptr<ThreadSafeDeferred> deferred;
 };
 

@@ -190,13 +190,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
       pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
 }
 
-Client::~Client() {
-  this->Ref();
-  while (this->Unref() != 0) {
-    // If Ref() > 0 then the process is shutting down. We must unref to prevent
-    // double free (once for the env shutdown and once for non-zero refs)
-  }
-}
+Client::~Client() {}
 
 Napi::Value Client::CreateProducer(const Napi::CallbackInfo &info) {
   return Producer::NewInstance(info, this->cClient);
@@ -239,15 +233,13 @@ void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line,
 
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Client *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_client_close_async(
       this->cClient.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Client *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -255,8 +247,6 @@ Napi::Value Client::Close(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 

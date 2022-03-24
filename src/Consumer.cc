@@ -257,15 +257,13 @@ Napi::Value Consumer::Acknowledge(const Napi::CallbackInfo &info) {
   auto obj = info[0].As<Napi::Object>();
   auto msg = Message::Unwrap(obj);
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_consumer_acknowledge_async(
       this->cConsumer.get(), msg->GetCMessage().get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -273,8 +271,6 @@ Napi::Value Consumer::Acknowledge(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -285,15 +281,13 @@ Napi::Value Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
   auto obj = info[0].As<Napi::Object>();
   auto *msgId = MessageId::Unwrap(obj);
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_consumer_acknowledge_async_id(
       this->cConsumer.get(), msgId->GetCMessageId().get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -301,8 +295,6 @@ Napi::Value Consumer::AcknowledgeId(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -327,15 +319,13 @@ Napi::Value Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
   auto obj = info[0].As<Napi::Object>();
   auto *msg = Message::Unwrap(obj);
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_consumer_acknowledge_cumulative_async(
       this->cConsumer.get(), msg->GetCMessage().get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -343,8 +333,6 @@ Napi::Value Consumer::AcknowledgeCumulative(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -355,15 +343,13 @@ Napi::Value Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
   auto obj = info[0].As<Napi::Object>();
   auto *msgId = MessageId::Unwrap(obj);
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_consumer_acknowledge_cumulative_async_id(
       this->cConsumer.get(), msgId->GetCMessageId().get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -372,8 +358,6 @@ Napi::Value Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -396,26 +380,21 @@ void Consumer::Cleanup() {
 
 Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
+  this->Cleanup();
 
-  pulsar_consumer_pause_message_listener(this->cConsumer.get());
   pulsar_consumer_close_async(
       this->cConsumer.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
           deferred->Reject(std::string("Failed to close consumer: ") + pulsar_result_str(result));
         } else {
-          self->Cleanup();
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -424,37 +403,25 @@ Napi::Value Consumer::Close(const Napi::CallbackInfo &info) {
 
 Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Consumer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_consumer_pause_message_listener(this->cConsumer.get());
   pulsar_consumer_unsubscribe_async(
       this->cConsumer.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Consumer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
           deferred->Reject(std::string("Failed to unsubscribe consumer: ") + pulsar_result_str(result));
         } else {
-          self->Cleanup();
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
   return deferred->Promise();
 }
 
-Consumer::~Consumer() {
-  this->Cleanup();
-  this->Ref();
-  while (this->Unref() != 0) {
-    // If Ref() > 0 then the process is shutting down. We must unref to prevent
-    // double free (once for the env shutdown and once for non-zero refs)
-  }
-}
+Consumer::~Consumer() { this->Cleanup(); }

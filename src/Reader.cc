@@ -215,25 +215,21 @@ Napi::Value Reader::IsConnected(const Napi::CallbackInfo &info) {
 
 Napi::Value Reader::Close(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Reader *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
+  this->Cleanup();
 
   pulsar_reader_close_async(
       this->cReader.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Reader *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
           deferred->Reject(std::string("Failed to close reader: ") + pulsar_result_str(result));
         } else {
-          self->Cleanup();
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -248,11 +244,4 @@ void Reader::Cleanup() {
   }
 }
 
-Reader::~Reader() {
-  this->Cleanup();
-  this->Ref();
-  while (this->Unref() != 0) {
-    // If Ref() > 0 then the process is shutting down. We must unref to prevent
-    // double free (once for the env shutdown and once for non-zero refs)
-  }
-}
+Reader::~Reader() { this->Cleanup(); }

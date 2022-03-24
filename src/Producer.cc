@@ -97,18 +97,16 @@ Producer::Producer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Producer>(
 
 struct ProducerSendContext {
   ProducerSendContext(std::shared_ptr<ThreadSafeDeferred> deferred,
-                      std::shared_ptr<pulsar_message_t> cMessage, Producer *self)
-      : deferred(deferred), cMessage(cMessage), self(self){};
+                      std::shared_ptr<pulsar_message_t> cMessage)
+      : deferred(deferred), cMessage(cMessage){};
   std::shared_ptr<ThreadSafeDeferred> deferred;
   std::shared_ptr<pulsar_message_t> cMessage;
-  Producer *self;
 };
 
 Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
   auto cMessage = Message::BuildMessage(info[0].As<Napi::Object>());
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ProducerSendContext(deferred, cMessage, this);
-  this->Ref();
+  auto ctx = new ProducerSendContext(deferred, cMessage);
 
   pulsar_producer_send_async(
       this->cProducer.get(), cMessage.get(),
@@ -116,7 +114,6 @@ Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
         auto producerSendContext = static_cast<ProducerSendContext *>(ctx);
         auto deferred = producerSendContext->deferred;
         auto cMessage = producerSendContext->cMessage;
-        auto self = producerSendContext->self;
         delete producerSendContext;
 
         std::shared_ptr<pulsar_message_id_t> cMessageId(msgId, pulsar_message_id_free);
@@ -126,8 +123,6 @@ Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve([cMessageId](const Napi::Env env) { return MessageId::NewInstance(cMessageId); });
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -136,15 +131,13 @@ Napi::Value Producer::Send(const Napi::CallbackInfo &info) {
 
 Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Producer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_producer_flush_async(
       this->cProducer.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Producer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -152,8 +145,6 @@ Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -162,15 +153,13 @@ Napi::Value Producer::Flush(const Napi::CallbackInfo &info) {
 
 Napi::Value Producer::Close(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext<Producer *>(this, deferred);
-  this->Ref();
+  auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_producer_close_async(
       this->cProducer.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext<Producer *> *>(ctx);
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
-        auto self = deferredContext->ref;
         delete deferredContext;
 
         if (result != pulsar_result_Ok) {
@@ -178,8 +167,6 @@ Napi::Value Producer::Close(const Napi::CallbackInfo &info) {
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
-
-        self->Unref();
       },
       ctx);
 
@@ -201,10 +188,4 @@ Napi::Value Producer::IsConnected(const Napi::CallbackInfo &info) {
   return Napi::Boolean::New(env, pulsar_producer_is_connected(this->cProducer.get()));
 }
 
-Producer::~Producer() {
-  this->Ref();
-  while (this->Unref() != 0) {
-    // If Ref() > 0 then the process is shutting down. We must unref to prevent
-    // double free (once for the env shutdown and once for non-zero refs)
-  }
-}
+Producer::~Producer() {}
