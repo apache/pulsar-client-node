@@ -26,16 +26,16 @@
 class Message : public Napi::ObjectWrap<Message> {
  public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  static Napi::Object NewInstance(Napi::Value arg, pulsar_message_t *cMessage);
-  static pulsar_message_t *BuildMessage(Napi::Object conf);
+  static Napi::Object NewInstance(Napi::Value arg, std::shared_ptr<pulsar_message_t> cMessage);
+  static std::shared_ptr<pulsar_message_t> BuildMessage(Napi::Object conf);
   Message(const Napi::CallbackInfo &info);
   ~Message();
-  pulsar_message_t *GetCMessage();
+  std::shared_ptr<pulsar_message_t> GetCMessage();
 
  private:
   static Napi::FunctionReference constructor;
 
-  pulsar_message_t *cMessage;
+  std::shared_ptr<pulsar_message_t> cMessage;
 
   Napi::Value GetTopicName(const Napi::CallbackInfo &info);
   Napi::Value GetProperties(const Napi::CallbackInfo &info);

@@ -54,7 +54,7 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
   return exports;
 }
 
-Napi::Object Message::NewInstance(Napi::Value arg, pulsar_message_t *cMessage) {
+Napi::Object Message::NewInstance(Napi::Value arg, std::shared_ptr<pulsar_message_t> cMessage) {
   Napi::Object obj = constructor.New({});
   Message *msg = Unwrap(obj);
   msg->cMessage = cMessage;
@@ -63,14 +63,14 @@ Napi::Object Message::NewInstance(Napi::Value arg, pulsar_message_t *cMessage) {
 
 Message::Message(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Message>(info), cMessage(nullptr) {}
 
-pulsar_message_t *Message::GetCMessage() { return this->cMessage; }
+std::shared_ptr<pulsar_message_t> Message::GetCMessage() { return this->cMessage; }
 
 Napi::Value Message::GetTopicName(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  return Napi::String::New(env, pulsar_message_get_topic_name(this->cMessage));
+  return Napi::String::New(env, pulsar_message_get_topic_name(this->cMessage.get()));
 }
 
 Napi::Value Message::GetRedeliveryCount(const Napi::CallbackInfo &info) {
@@ -78,7 +78,7 @@ Napi::Value Message::GetRedeliveryCount(const Napi::CallbackInfo &info) {
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  return Napi::Number::New(env, pulsar_message_get_redelivery_count(this->cMessage));
+  return Napi::Number::New(env, pulsar_message_get_redelivery_count(this->cMessage.get()));
 }
 
 Napi::Value Message::GetProperties(const Napi::CallbackInfo &info) {
@@ -87,11 +87,12 @@ Napi::Value Message::GetProperties(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   Napi::Array arr = Napi::Array::New(env);
-  pulsar_string_map_t *cProperties = pulsar_message_get_properties(this->cMessage);
+  pulsar_string_map_t *cProperties = pulsar_message_get_properties(this->cMessage.get());
   int size = pulsar_string_map_size(cProperties);
   for (int i = 0; i < size; i++) {
     arr.Set(pulsar_string_map_get_key(cProperties, i), pulsar_string_map_get_value(cProperties, i));
   }
+  pulsar_string_map_free(cProperties);
   return arr;
 }
 
@@ -100,8 +101,8 @@ Napi::Value Message::GetData(const Napi::CallbackInfo &info) {
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  void *data = const_cast<void *>(pulsar_message_get_data(this->cMessage));
-  size_t size = (size_t)pulsar_message_get_length(this->cMessage);
+  void *data = const_cast<void *>(pulsar_message_get_data(this->cMessage.get()));
+  size_t size = (size_t)pulsar_message_get_length(this->cMessage.get());
   return Napi::Buffer<char>::Copy(env, (char *)data, size);
 }
 
@@ -118,7 +119,7 @@ Napi::Value Message::GetEventTimestamp(const Napi::CallbackInfo &info) {
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  return Napi::Number::New(env, pulsar_message_get_event_timestamp(this->cMessage));
+  return Napi::Number::New(env, pulsar_message_get_event_timestamp(this->cMessage.get()));
 }
 
 Napi::Value Message::GetPublishTimestamp(const Napi::CallbackInfo &info) {
@@ -126,7 +127,7 @@ Napi::Value Message::GetPublishTimestamp(const Napi::CallbackInfo &info) {
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  return Napi::Number::New(env, pulsar_message_get_publish_timestamp(this->cMessage));
+  return Napi::Number::New(env, pulsar_message_get_publish_timestamp(this->cMessage.get()));
 }
 
 Napi::Value Message::GetPartitionKey(const Napi::CallbackInfo &info) {
@@ -134,11 +135,11 @@ Napi::Value Message::GetPartitionKey(const Napi::CallbackInfo &info) {
   if (!ValidateCMessage(env)) {
     return env.Null();
   }
-  return Napi::String::New(env, pulsar_message_get_partitionKey(this->cMessage));
+  return Napi::String::New(env, pulsar_message_get_partitionKey(this->cMessage.get()));
 }
 
 bool Message::ValidateCMessage(Napi::Env env) {
-  if (this->cMessage) {
+  if (this->cMessage.get()) {
     return true;
   } else {
     Napi::Error::New(env, "Message has not been built").ThrowAsJavaScriptException();
@@ -146,13 +147,13 @@ bool Message::ValidateCMessage(Napi::Env env) {
   }
 }
 
-pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
-  pulsar_message_t *cMessage = pulsar_message_create();
+std::shared_ptr<pulsar_message_t> Message::BuildMessage(Napi::Object conf) {
+  std::shared_ptr<pulsar_message_t> cMessage(pulsar_message_create(), pulsar_message_free);
 
   if (conf.Has(CFG_DATA) && conf.Get(CFG_DATA).IsBuffer()) {
     Napi::Buffer<char> buf = conf.Get(CFG_DATA).As<Napi::Buffer<char>>();
     char *data = buf.Data();
-    pulsar_message_set_content(cMessage, data, buf.Length());
+    pulsar_message_set_content(cMessage.get(), data, buf.Length());
   }
 
   if (conf.Has(CFG_PROPS) && conf.Get(CFG_PROPS).IsObject()) {
@@ -162,25 +163,25 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
     for (int i = 0; i < size; i++) {
       Napi::String key = arr.Get(i).ToString();
       Napi::String value = propObj.Get(key).ToString();
-      pulsar_message_set_property(cMessage, key.Utf8Value().c_str(), value.Utf8Value().c_str());
+      pulsar_message_set_property(cMessage.get(), key.Utf8Value().c_str(), value.Utf8Value().c_str());
     }
   }
 
   if (conf.Has(CFG_EVENT_TIME) && conf.Get(CFG_EVENT_TIME).IsNumber()) {
     int64_t eventTimestamp = conf.Get(CFG_EVENT_TIME).ToNumber().Int64Value();
     if (eventTimestamp >= 0) {
-      pulsar_message_set_event_timestamp(cMessage, eventTimestamp);
+      pulsar_message_set_event_timestamp(cMessage.get(), eventTimestamp);
     }
   }
 
   if (conf.Has(CFG_SEQUENCE_ID) && conf.Get(CFG_SEQUENCE_ID).IsNumber()) {
     Napi::Number sequenceId = conf.Get(CFG_SEQUENCE_ID).ToNumber();
-    pulsar_message_set_sequence_id(cMessage, sequenceId.Int64Value());
+    pulsar_message_set_sequence_id(cMessage.get(), sequenceId.Int64Value());
   }
 
   if (conf.Has(CFG_PARTITION_KEY) && conf.Get(CFG_PARTITION_KEY).IsString()) {
     Napi::String partitionKey = conf.Get(CFG_PARTITION_KEY).ToString();
-    pulsar_message_set_partition_key(cMessage, partitionKey.Utf8Value().c_str());
+    pulsar_message_set_partition_key(cMessage.get(), partitionKey.Utf8Value().c_str());
   }
 
   if (conf.Has(CFG_REPL_CLUSTERS) && conf.Get(CFG_REPL_CLUSTERS).IsArray()) {
@@ -188,44 +189,40 @@ pulsar_message_t *Message::BuildMessage(Napi::Object conf) {
     // Empty list means to disable replication
     int length = clusters.Length();
     if (length == 0) {
-      pulsar_message_disable_replication(cMessage, 1);
+      pulsar_message_disable_replication(cMessage.get(), 1);
     } else {
       char **arr = NewStringArray(length);
       for (int i = 0; i < length; i++) {
         SetString(arr, clusters.Get(i).ToString().Utf8Value().c_str(), i);
       }
-      pulsar_message_set_replication_clusters(cMessage, (const char **)arr, length);
+      pulsar_message_set_replication_clusters(cMessage.get(), (const char **)arr, length);
       FreeStringArray(arr, length);
     }
   }
 
   if (conf.Has(CFG_DELIVER_AFTER) && conf.Get(CFG_DELIVER_AFTER).IsNumber()) {
     Napi::Number deliverAfter = conf.Get(CFG_DELIVER_AFTER).ToNumber();
-    pulsar_message_set_deliver_after(cMessage, deliverAfter.Int64Value());
+    pulsar_message_set_deliver_after(cMessage.get(), deliverAfter.Int64Value());
   }
 
   if (conf.Has(CFG_DELIVER_AT) && conf.Get(CFG_DELIVER_AT).IsNumber()) {
     Napi::Number deliverAt = conf.Get(CFG_DELIVER_AT).ToNumber();
-    pulsar_message_set_deliver_at(cMessage, deliverAt.Int64Value());
+    pulsar_message_set_deliver_at(cMessage.get(), deliverAt.Int64Value());
   }
 
   if (conf.Has(CFG_DISABLE_REPLICATION) && conf.Get(CFG_DISABLE_REPLICATION).IsBoolean()) {
     Napi::Boolean disableReplication = conf.Get(CFG_DISABLE_REPLICATION).ToBoolean();
     if (disableReplication.Value()) {
-      pulsar_message_disable_replication(cMessage, 1);
+      pulsar_message_disable_replication(cMessage.get(), 1);
     }
   }
 
   if (conf.Has(CFG_ORDERING_KEY) && conf.Get(CFG_ORDERING_KEY).IsString()) {
     Napi::String orderingKey = conf.Get(CFG_ORDERING_KEY).ToString();
-    pulsar_message_set_ordering_key(cMessage, orderingKey.Utf8Value().c_str());
+    pulsar_message_set_ordering_key(cMessage.get(), orderingKey.Utf8Value().c_str());
   }
 
   return cMessage;
 }
 
-Message::~Message() {
-  if (this->cMessage != nullptr) {
-    pulsar_message_free(this->cMessage);
-  }
-}
+Message::~Message() {}

@@ -28,18 +28,17 @@
 
 class ReaderConfig {
  public:
-  ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CReaderWrapper> readerWrapper,
-               pulsar_reader_listener readerListener);
+  ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_listener readerListener);
   ~ReaderConfig();
-  pulsar_reader_configuration_t *GetCReaderConfig();
-  pulsar_message_id_t *GetCStartMessageId();
+  std::shared_ptr<pulsar_reader_configuration_t> GetCReaderConfig();
+  std::shared_ptr<pulsar_message_id_t> GetCStartMessageId();
   std::string GetTopic();
   ReaderListenerCallback *GetListenerCallback();
 
  private:
   std::string topic;
-  pulsar_message_id_t *cStartMessageId;
-  pulsar_reader_configuration_t *cReaderConfig;
+  std::shared_ptr<pulsar_message_id_t> cStartMessageId;
+  std::shared_ptr<pulsar_reader_configuration_t> cReaderConfig;
   ReaderListenerCallback *listener;
 };
 

@@ -21,5 +21,6 @@ build/
 node_modules/
 report/
 .idea
+.vscode
 *.tar.gz
 *.tgz

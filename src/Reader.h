@@ -27,16 +27,16 @@
 class Reader : public Napi::ObjectWrap<Reader> {
  public:
   static void Init(Napi::Env env, Napi::Object exports);
-  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient);
   static Napi::FunctionReference constructor;
   Reader(const Napi::CallbackInfo &info);
   ~Reader();
-  void SetCReader(std::shared_ptr<CReaderWrapper> cReader);
+  void SetCReader(std::shared_ptr<pulsar_reader_t> cReader);
   void SetListenerCallback(ReaderListenerCallback *listener);
   void Cleanup();
 
  private:
-  std::shared_ptr<CReaderWrapper> wrapper;
+  std::shared_ptr<pulsar_reader_t> cReader;
   ReaderListenerCallback *listener;
 
   Napi::Value ReadNext(const Napi::CallbackInfo &info);

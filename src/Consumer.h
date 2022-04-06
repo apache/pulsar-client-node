@@ -28,26 +28,26 @@
 class Consumer : public Napi::ObjectWrap<Consumer> {
  public:
   static void Init(Napi::Env env, Napi::Object exports);
-  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient);
   static Napi::FunctionReference constructor;
   Consumer(const Napi::CallbackInfo &info);
   ~Consumer();
-  void SetCConsumer(std::shared_ptr<CConsumerWrapper> cConsumer);
-  void SetListenerCallback(ListenerCallback *listener);
+  void SetCConsumer(std::shared_ptr<pulsar_consumer_t> cConsumer);
+  void SetListenerCallback(MessageListenerCallback *listener);
   void Cleanup();
   void CleanupListener();
 
  private:
-  std::shared_ptr<CConsumerWrapper> wrapper;
-  ListenerCallback *listener;
+  std::shared_ptr<pulsar_consumer_t> cConsumer;
+  MessageListenerCallback *listener;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
-  void Acknowledge(const Napi::CallbackInfo &info);
-  void AcknowledgeId(const Napi::CallbackInfo &info);
+  Napi::Value Acknowledge(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeId(const Napi::CallbackInfo &info);
   void NegativeAcknowledge(const Napi::CallbackInfo &info);
   void NegativeAcknowledgeId(const Napi::CallbackInfo &info);
-  void AcknowledgeCumulative(const Napi::CallbackInfo &info);
-  void AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeCumulative(const Napi::CallbackInfo &info);
+  Napi::Value AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
   Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value Unsubscribe(const Napi::CallbackInfo &info);

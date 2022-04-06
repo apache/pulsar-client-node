@@ -31,10 +31,10 @@ static const std::string CFG_LISTENER = "listener";
 
 void FinalizeListenerCallback(Napi::Env env, ReaderListenerCallback *cb, void *) { delete cb; }
 
-ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CReaderWrapper> readerWrapper,
-                           pulsar_reader_listener readerListener)
+ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_listener readerListener)
     : topic(""), cStartMessageId(NULL), listener(nullptr) {
-  this->cReaderConfig = pulsar_reader_configuration_create();
+  this->cReaderConfig = std::shared_ptr<pulsar_reader_configuration_t>(pulsar_reader_configuration_create(),
+                                                                       pulsar_reader_configuration_free);
 
   if (readerConfig.Has(CFG_TOPIC) && readerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = readerConfig.Get(CFG_TOPIC).ToString().Utf8Value();
@@ -48,14 +48,14 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CRe
   if (readerConfig.Has(CFG_RECV_QUEUE) && readerConfig.Get(CFG_RECV_QUEUE).IsNumber()) {
     int32_t receiverQueueSize = readerConfig.Get(CFG_RECV_QUEUE).ToNumber().Int32Value();
     if (receiverQueueSize >= 0) {
-      pulsar_reader_configuration_set_receiver_queue_size(this->cReaderConfig, receiverQueueSize);
+      pulsar_reader_configuration_set_receiver_queue_size(this->cReaderConfig.get(), receiverQueueSize);
     }
   }
 
   if (readerConfig.Has(CFG_READER_NAME) && readerConfig.Get(CFG_READER_NAME).IsString()) {
     std::string readerName = readerConfig.Get(CFG_READER_NAME).ToString().Utf8Value();
     if (!readerName.empty())
-      pulsar_reader_configuration_set_reader_name(this->cReaderConfig, readerName.c_str());
+      pulsar_reader_configuration_set_reader_name(this->cReaderConfig.get(), readerName.c_str());
   }
 
   if (readerConfig.Has(CFG_SUBSCRIPTION_ROLE_PREFIX) &&
@@ -63,13 +63,13 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CRe
     std::string subscriptionRolePrefix =
         readerConfig.Get(CFG_SUBSCRIPTION_ROLE_PREFIX).ToString().Utf8Value();
     if (!subscriptionRolePrefix.empty())
-      pulsar_reader_configuration_set_reader_name(this->cReaderConfig, subscriptionRolePrefix.c_str());
+      pulsar_reader_configuration_set_reader_name(this->cReaderConfig.get(), subscriptionRolePrefix.c_str());
   }
 
   if (readerConfig.Has(CFG_READ_COMPACTED) && readerConfig.Get(CFG_READ_COMPACTED).IsBoolean()) {
     bool readCompacted = readerConfig.Get(CFG_READ_COMPACTED).ToBoolean();
     if (readCompacted) {
-      pulsar_reader_configuration_set_read_compacted(this->cReaderConfig, 1);
+      pulsar_reader_configuration_set_read_compacted(this->cReaderConfig.get(), 1);
     }
   }
 
@@ -79,33 +79,27 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, std::shared_ptr<CRe
         readerConfig.Env(), readerConfig.Get(CFG_LISTENER).As<Napi::Function>(), "Reader Listener Callback",
         1, 1, (void *)NULL, FinalizeListenerCallback, listener);
     this->listener->callback = std::move(callback);
-    pulsar_reader_configuration_set_reader_listener(this->cReaderConfig, readerListener, this->listener);
+    pulsar_reader_configuration_set_reader_listener(this->cReaderConfig.get(), readerListener,
+                                                    this->listener);
   }
 }
 
 ReaderConfig::~ReaderConfig() {
-  pulsar_reader_configuration_free(this->cReaderConfig);
-  if (this->listener) {
+  if (this->listener != nullptr) {
     this->listener->callback.Release();
   }
 }
 
-pulsar_reader_configuration_t *ReaderConfig::GetCReaderConfig() { return this->cReaderConfig; }
+std::shared_ptr<pulsar_reader_configuration_t> ReaderConfig::GetCReaderConfig() {
+  return this->cReaderConfig;
+}
 
 std::string ReaderConfig::GetTopic() { return this->topic; }
 
-pulsar_message_id_t *ReaderConfig::GetCStartMessageId() { return this->cStartMessageId; }
+std::shared_ptr<pulsar_message_id_t> ReaderConfig::GetCStartMessageId() { return this->cStartMessageId; }
 
 ReaderListenerCallback *ReaderConfig::GetListenerCallback() {
   ReaderListenerCallback *cb = this->listener;
   this->listener = nullptr;
   return cb;
-}
-
-CReaderWrapper::CReaderWrapper() : cReader(nullptr) {}
-
-CReaderWrapper::~CReaderWrapper() {
-  if (this->cReader) {
-    pulsar_reader_free(this->cReader);
-  }
 }

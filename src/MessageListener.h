@@ -21,19 +21,14 @@
 #define MESSAGELISTENER_H
 
 #include <napi.h>
-#include <pulsar/c/client.h>
 
-struct CConsumerWrapper {
-  pulsar_consumer_t *cConsumer;
-  CConsumerWrapper();
-  ~CConsumerWrapper();
-};
-
-struct ListenerCallback {
+struct MessageListenerCallback {
   Napi::ThreadSafeFunction callback;
 
   // Using consumer as void* since the ListenerCallback is shared between Config and Consumer.
   void *consumer;
+
+  MessageListenerCallback() : consumer(nullptr) {}
 };
 
 #endif

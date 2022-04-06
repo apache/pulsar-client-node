@@ -37,20 +37,22 @@ struct LogCallback {
   Napi::ThreadSafeFunction callback;
 };
 
-void LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message, void *ctx);
-
 class Client : public Napi::ObjectWrap<Client> {
  public:
   static Napi::Object Init(Napi::Env env, Napi::Object exports);
+  static void SetLogHandler(const Napi::CallbackInfo &info);
 
   Client(const Napi::CallbackInfo &info);
   ~Client();
 
  private:
+  static LogCallback *logCallback;
   static Napi::FunctionReference constructor;
-  pulsar_client_t *cClient;
-  LogCallback *logCallback;
+  std::shared_ptr<pulsar_client_t> cClient;
+  std::shared_ptr<pulsar_client_configuration_t> cClientConfig;
 
+  static void LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message,
+                         void *ctx);
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);
   Napi::Value Subscribe(const Napi::CallbackInfo &info);
   Napi::Value CreateReader(const Napi::CallbackInfo &info);

@@ -106,7 +106,7 @@ const Pulsar = require('../index.js');
       consumer.acknowledge(msg2);
 
       await expect(consumer.receive(1000)).rejects.toThrow(
-        'Failed to received message TimeOut',
+        'Failed to receive message: TimeOut',
       );
 
       expect(results).toEqual([message, message]);
@@ -302,7 +302,7 @@ const Pulsar = require('../index.js');
       }
 
       await expect(consumer.receive(1000)).rejects.toThrow(
-        'Failed to received message TimeOut',
+        'Failed to receive message: TimeOut',
       );
 
       await producer.close();

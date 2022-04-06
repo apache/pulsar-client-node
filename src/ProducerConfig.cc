@@ -62,7 +62,8 @@ static std::map<std::string, pulsar_producer_crypto_failure_action> PRODUCER_CRY
 };
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
-  this->cProducerConfig = pulsar_producer_configuration_create();
+  this->cProducerConfig = std::shared_ptr<pulsar_producer_configuration_t>(
+      pulsar_producer_configuration_create(), pulsar_producer_configuration_free);
 
   if (producerConfig.Has(CFG_TOPIC) && producerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = producerConfig.Get(CFG_TOPIC).ToString().Utf8Value();
@@ -71,25 +72,25 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_PRODUCER_NAME) && producerConfig.Get(CFG_PRODUCER_NAME).IsString()) {
     std::string producerName = producerConfig.Get(CFG_PRODUCER_NAME).ToString().Utf8Value();
     if (!producerName.empty())
-      pulsar_producer_configuration_set_producer_name(this->cProducerConfig, producerName.c_str());
+      pulsar_producer_configuration_set_producer_name(this->cProducerConfig.get(), producerName.c_str());
   }
 
   if (producerConfig.Has(CFG_SEND_TIMEOUT) && producerConfig.Get(CFG_SEND_TIMEOUT).IsNumber()) {
     int32_t sendTimeoutMs = producerConfig.Get(CFG_SEND_TIMEOUT).ToNumber().Int32Value();
     if (sendTimeoutMs > 0) {
-      pulsar_producer_configuration_set_send_timeout(this->cProducerConfig, sendTimeoutMs);
+      pulsar_producer_configuration_set_send_timeout(this->cProducerConfig.get(), sendTimeoutMs);
     }
   }
 
   if (producerConfig.Has(CFG_INIT_SEQUENCE_ID) && producerConfig.Get(CFG_INIT_SEQUENCE_ID).IsNumber()) {
     int64_t initialSequenceId = producerConfig.Get(CFG_INIT_SEQUENCE_ID).ToNumber().Int64Value();
-    pulsar_producer_configuration_set_initial_sequence_id(this->cProducerConfig, initialSequenceId);
+    pulsar_producer_configuration_set_initial_sequence_id(this->cProducerConfig.get(), initialSequenceId);
   }
 
   if (producerConfig.Has(CFG_MAX_PENDING) && producerConfig.Get(CFG_MAX_PENDING).IsNumber()) {
     int32_t maxPendingMessages = producerConfig.Get(CFG_MAX_PENDING).ToNumber().Int32Value();
     if (maxPendingMessages > 0) {
-      pulsar_producer_configuration_set_max_pending_messages(this->cProducerConfig, maxPendingMessages);
+      pulsar_producer_configuration_set_max_pending_messages(this->cProducerConfig.get(), maxPendingMessages);
     }
   }
 
@@ -98,7 +99,7 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     int32_t maxPendingMessagesAcrossPartitions =
         producerConfig.Get(CFG_MAX_PENDING_ACROSS_PARTITIONS).ToNumber().Int32Value();
     if (maxPendingMessagesAcrossPartitions > 0) {
-      pulsar_producer_configuration_set_max_pending_messages(this->cProducerConfig,
+      pulsar_producer_configuration_set_max_pending_messages(this->cProducerConfig.get(),
                                                              maxPendingMessagesAcrossPartitions);
     }
   }
@@ -106,39 +107,39 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_BLOCK_IF_QUEUE_FULL) &&
       producerConfig.Get(CFG_BLOCK_IF_QUEUE_FULL).IsBoolean()) {
     bool blockIfQueueFull = producerConfig.Get(CFG_BLOCK_IF_QUEUE_FULL).ToBoolean().Value();
-    pulsar_producer_configuration_set_block_if_queue_full(this->cProducerConfig, blockIfQueueFull);
+    pulsar_producer_configuration_set_block_if_queue_full(this->cProducerConfig.get(), blockIfQueueFull);
   }
 
   if (producerConfig.Has(CFG_ROUTING_MODE) && producerConfig.Get(CFG_ROUTING_MODE).IsString()) {
     std::string messageRoutingMode = producerConfig.Get(CFG_ROUTING_MODE).ToString().Utf8Value();
     if (MESSAGE_ROUTING_MODE.count(messageRoutingMode))
-      pulsar_producer_configuration_set_partitions_routing_mode(this->cProducerConfig,
+      pulsar_producer_configuration_set_partitions_routing_mode(this->cProducerConfig.get(),
                                                                 MESSAGE_ROUTING_MODE.at(messageRoutingMode));
   }
 
   if (producerConfig.Has(CFG_HASH_SCHEME) && producerConfig.Get(CFG_HASH_SCHEME).IsString()) {
     std::string hashingScheme = producerConfig.Get(CFG_HASH_SCHEME).ToString().Utf8Value();
     if (HASHING_SCHEME.count(hashingScheme))
-      pulsar_producer_configuration_set_hashing_scheme(this->cProducerConfig,
+      pulsar_producer_configuration_set_hashing_scheme(this->cProducerConfig.get(),
                                                        HASHING_SCHEME.at(hashingScheme));
   }
 
   if (producerConfig.Has(CFG_COMPRESS_TYPE) && producerConfig.Get(CFG_COMPRESS_TYPE).IsString()) {
     std::string compressionType = producerConfig.Get(CFG_COMPRESS_TYPE).ToString().Utf8Value();
     if (COMPRESSION_TYPE.count(compressionType))
-      pulsar_producer_configuration_set_compression_type(this->cProducerConfig,
+      pulsar_producer_configuration_set_compression_type(this->cProducerConfig.get(),
                                                          COMPRESSION_TYPE.at(compressionType));
   }
 
   if (producerConfig.Has(CFG_BATCH_ENABLED) && producerConfig.Get(CFG_BATCH_ENABLED).IsBoolean()) {
     bool batchingEnabled = producerConfig.Get(CFG_BATCH_ENABLED).ToBoolean().Value();
-    pulsar_producer_configuration_set_batching_enabled(this->cProducerConfig, batchingEnabled);
+    pulsar_producer_configuration_set_batching_enabled(this->cProducerConfig.get(), batchingEnabled);
   }
 
   if (producerConfig.Has(CFG_BATCH_MAX_DELAY) && producerConfig.Get(CFG_BATCH_MAX_DELAY).IsNumber()) {
     int64_t batchingMaxPublishDelayMs = producerConfig.Get(CFG_BATCH_MAX_DELAY).ToNumber().Int64Value();
     if (batchingMaxPublishDelayMs > 0) {
-      pulsar_producer_configuration_set_batching_max_publish_delay_ms(this->cProducerConfig,
+      pulsar_producer_configuration_set_batching_max_publish_delay_ms(this->cProducerConfig.get(),
                                                                       (long)batchingMaxPublishDelayMs);
     }
   }
@@ -146,7 +147,8 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_BATCH_MAX_MSG) && producerConfig.Get(CFG_BATCH_MAX_MSG).IsNumber()) {
     uint32_t batchingMaxMessages = producerConfig.Get(CFG_BATCH_MAX_MSG).ToNumber().Uint32Value();
     if (batchingMaxMessages > 0) {
-      pulsar_producer_configuration_set_batching_max_messages(this->cProducerConfig, batchingMaxMessages);
+      pulsar_producer_configuration_set_batching_max_messages(this->cProducerConfig.get(),
+                                                              batchingMaxMessages);
     }
   }
 
@@ -157,7 +159,7 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     for (int i = 0; i < size; i++) {
       Napi::String key = arr.Get(i).ToString();
       Napi::String value = propObj.Get(key).ToString();
-      pulsar_producer_configuration_set_property(this->cProducerConfig, key.Utf8Value().c_str(),
+      pulsar_producer_configuration_set_property(this->cProducerConfig.get(), key.Utf8Value().c_str(),
                                                  value.Utf8Value().c_str());
     }
   }
@@ -165,24 +167,26 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_PUBLIC_KEY_PATH) && producerConfig.Get(CFG_PUBLIC_KEY_PATH).IsString()) {
     std::string publicKeyPath = producerConfig.Get(CFG_PUBLIC_KEY_PATH).ToString().Utf8Value();
     std::string privateKeyPath = "";
-    pulsar_producer_configuration_set_default_crypto_key_reader(this->cProducerConfig, publicKeyPath.c_str(),
-                                                                privateKeyPath.c_str());
+    pulsar_producer_configuration_set_default_crypto_key_reader(
+        this->cProducerConfig.get(), publicKeyPath.c_str(), privateKeyPath.c_str());
     if (producerConfig.Has(CFG_ENCRYPTION_KEY) && producerConfig.Get(CFG_ENCRYPTION_KEY).IsString()) {
       std::string encryptionKey = producerConfig.Get(CFG_ENCRYPTION_KEY).ToString().Utf8Value();
-      pulsar_producer_configuration_set_encryption_key(this->cProducerConfig, encryptionKey.c_str());
+      pulsar_producer_configuration_set_encryption_key(this->cProducerConfig.get(), encryptionKey.c_str());
     }
     if (producerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
         producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
       std::string cryptoFailureAction = producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
       if (PRODUCER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction))
         pulsar_producer_configuration_set_crypto_failure_action(
-            this->cProducerConfig, PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
+            this->cProducerConfig.get(), PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
     }
   }
 }
 
-ProducerConfig::~ProducerConfig() { pulsar_producer_configuration_free(this->cProducerConfig); }
+ProducerConfig::~ProducerConfig() {}
 
-pulsar_producer_configuration_t* ProducerConfig::GetCProducerConfig() { return this->cProducerConfig; }
+std::shared_ptr<pulsar_producer_configuration_t> ProducerConfig::GetCProducerConfig() {
+  return this->cProducerConfig;
+}
 
 std::string ProducerConfig::GetTopic() { return this->topic; }
