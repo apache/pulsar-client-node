@@ -132,3 +132,6 @@ $ npm install
 ```shell
 $ npm run build
 ```
+
+## Documentation
+* Please see https://pulsar.apache.org/docs/en/client-libraries-node for more details about the Pulsar Node.js client.  
