@@ -25,6 +25,7 @@
     "type": "git",
     "url": "https://github.com/apache/pulsar-client-node.git"
   },
+  "homepage": "https://pulsar.apache.org/docs/en/client-libraries-node",
   "author": "Apache Software Foundation",
   "license": "Apache-2.0",
   "gypfile": true,
