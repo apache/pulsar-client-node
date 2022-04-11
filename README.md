@@ -102,6 +102,40 @@ brew info libpulsar
 export PULSAR_CPP_DIR=/usr/local/Cellar/libpulsar/2.9.1_1
 ```
 
+### Install on Linux
+
+1. Require g++ and make commands to install pulsar-client
+```
+# rpm
+$ yum install gcc-c++ make
+
+# debian
+$ apt-get install g++ make
+```
+
+2. Download rpm or debian packages.
+```
+# Set the version of Pulsar C++ client to install
+$ PULSAR_CPP_CLIENT_VERSION=2.9.1
+
+# rpm
+$ wget https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_CPP_CLIENT_VERSION}/RPMS/apache-pulsar-client-${PULSAR_CPP_CLIENT_VERSION}-1.x86_64.rpm
+$ wget https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_CPP_CLIENT_VERSION}/RPMS/apache-pulsar-client-devel-${PULSAR_CPP_CLIENT_VERSION}-1.x86_64.rpm
+
+# debian
+$ wget https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_CPP_CLIENT_VERSION}/DEB/apache-pulsar-client.deb
+$ wget https://archive.apache.org/dist/pulsar/pulsar-${PULSAR_CPP_CLIENT_VERSION}/DEB/apache-pulsar-client-dev.deb
+```
+
+3. Install the Pulsar C++ client.
+```shell
+# rpm
+$ rpm -ivh apache-pulsar-client*.rpm
+
+# debian
+$ apt install ./apache-pulsar-client*.deb
+```
+
 
 ### Install pulsar-client to your project
 
