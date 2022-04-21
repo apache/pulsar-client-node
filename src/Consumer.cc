@@ -148,7 +148,7 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
       pulsar_client_subscribe_multi_topics_async(this->cClient, cTopics, topics.size(), subscription.c_str(),
                                                  this->consumerConfig->GetCConsumerConfig(),
                                                  &ConsumerNewInstanceWorker::subscribeCallback, (void *)this);
-      delete cTopics;
+      delete[] cTopics;
     } else {
       pulsar_client_subscribe_async(this->cClient, topic.c_str(), subscription.c_str(),
                                     this->consumerConfig->GetCConsumerConfig(),
@@ -177,7 +177,6 @@ class ConsumerNewInstanceWorker : public Napi::AsyncWorker {
  private:
   Napi::Promise::Deferred deferred;
   pulsar_client_t *cClient;
-  pulsar_consumer_t *cConsumer;
   ConsumerConfig *consumerConfig;
   ListenerCallback *listener;
   std::shared_ptr<CConsumerWrapper> consumerWrapper;

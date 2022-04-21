@@ -129,7 +129,6 @@ class ReaderNewInstanceWorker : public Napi::AsyncWorker {
  private:
   Napi::Promise::Deferred deferred;
   pulsar_client_t *cClient;
-  pulsar_reader_t *cReader;
   ReaderConfig *readerConfig;
   ReaderListenerCallback *listener;
   std::shared_ptr<CReaderWrapper> readerWrapper;
