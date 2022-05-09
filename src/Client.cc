@@ -17,6 +17,7 @@
  * under the License.
  */
 
+#include <iostream>
 #include "Authentication.h"
 #include "Client.h"
 #include "Consumer.h"
@@ -231,24 +232,31 @@ void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line,
   logCallback->callback.Release();
 }
 
+// Close does not currently return the result as there is a potential race condition in the callback
+// execution resulting in double-free. There probably needs to be a min version check for this
+// to prevent segfault in older client
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
   auto deferred = ThreadSafeDeferred::New(Env());
-  auto ctx = new ExtDeferredContext(deferred);
+  // auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_client_close_async(
       this->cClient.get(),
       [](pulsar_result result, void *ctx) {
-        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
-        auto deferred = deferredContext->deferred;
-        delete deferredContext;
-
         if (result != pulsar_result_Ok) {
-          deferred->Reject(std::string("Failed to close client: ") + pulsar_result_str(result));
-        } else {
-          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+          std::cerr << "[pulsar] close error: " << pulsar_result_str(result) << std::endl;
         }
-      },
-      ctx);
+        // auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        // auto deferred = deferredContext->deferred;
+        // delete deferredContext;
 
+        // if (result != pulsar_result_Ok) {
+        //   deferred->Reject(std::string("Failed to close client: ") + pulsar_result_str(result));
+        // } else {
+        //   deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        // }
+      },
+      nullptr);
+
+  deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
   return deferred->Promise();
 }
