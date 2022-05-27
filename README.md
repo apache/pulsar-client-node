@@ -23,6 +23,8 @@
 
 The Pulsar Node.js client can be used to create Pulsar producers and consumers in Node.js.
 
+If you are looking for Pulsar Admin API client, please try [pulsar-admin-client](https://github.com/tealtools/node-pulsar-admin-client).
+
 ## Requirements
 
 Pulsar Node.js client library is based on the C++ client library. Follow the instructions for
@@ -168,4 +170,4 @@ $ npm run build
 ```
 
 ## Documentation
-* Please see https://pulsar.apache.org/docs/en/client-libraries-node for more details about the Pulsar Node.js client.  
+* Please see https://pulsar.apache.org/docs/en/client-libraries-node for more details about the Pulsar Node.js client.
