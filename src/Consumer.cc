@@ -63,7 +63,9 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
   Consumer *consumer = data->consumer;
   delete data;
 
-  jsCallback.Call({msg, consumer->Value()});
+  if (consumer) {
+    jsCallback.Call({msg, consumer->Value()});
+  }
 }
 
 void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessage, void *ctx) {
