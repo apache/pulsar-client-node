@@ -99,7 +99,12 @@ brew info libpulsar
 
 ```shell
 # for example
+## Intel x86_64
 export PULSAR_CPP_DIR=/usr/local/Cellar/libpulsar/2.9.1_1
+
+## Apple Silicon and Homebrew since 3.0.0
+## cf. https://brew.sh/2021/02/05/homebrew-3.0.0/
+export PULSAR_CPP_DIR=/opt/homebrew/Cellar/libpulsar/2.9.1_1
 ```
 
 ### Install on Linux

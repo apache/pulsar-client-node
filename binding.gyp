@@ -67,6 +67,9 @@
           "libraries": [
             "<(pulsar_cpp_dir)/lib/libpulsar.dylib"
           ],
+          "dependencies": [
+            "<!@(node -p \"require('node-addon-api').gyp\")"
+          ],
         }],
         ['OS=="win"', {
           "defines": [
@@ -102,7 +105,8 @@
               ]
             }
           ]
-        }, {  # 'OS!="win"'
+        }],
+        ['OS!="mac" and OS!="win"', {
           "libraries": [
             "-lpulsar",
           ],
