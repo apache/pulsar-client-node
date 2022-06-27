@@ -20,40 +20,34 @@
 #ifndef CONSUMER_CONFIG_H
 #define CONSUMER_CONFIG_H
 
-#include <napi.h>
 #include <pulsar/c/consumer_configuration.h>
+#include "MessageListener.h"
 
 #define MIN_ACK_TIMEOUT_MILLIS 10000
 
-struct CConsumerWrapper {
-  pulsar_consumer_t *cConsumer;
-  CConsumerWrapper();
-  ~CConsumerWrapper();
-};
-
-struct ListenerCallback {
-  Napi::ThreadSafeFunction callback;
-  std::shared_ptr<CConsumerWrapper> consumerWrapper;
-};
-
 class ConsumerConfig {
  public:
-  ConsumerConfig(const Napi::Object &consumerConfig, std::shared_ptr<CConsumerWrapper> consumerWrapper);
+  ConsumerConfig(const Napi::Object &consumerConfig, pulsar_message_listener messageListener);
   ~ConsumerConfig();
-  pulsar_consumer_configuration_t *GetCConsumerConfig();
+  std::shared_ptr<pulsar_consumer_configuration_t> GetCConsumerConfig();
   std::string GetTopic();
+  std::vector<std::string> GetTopics();
+  std::string GetTopicsPattern();
   std::string GetSubscription();
   int64_t GetAckTimeoutMs();
   int64_t GetNAckRedeliverTimeoutMs();
-  ListenerCallback *GetListenerCallback();
+
+  MessageListenerCallback *GetListenerCallback();
 
  private:
-  pulsar_consumer_configuration_t *cConsumerConfig;
+  std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfig;
   std::string topic;
+  std::vector<std::string> topics;
+  std::string topicsPattern;
   std::string subscription;
   int64_t ackTimeoutMs;
   int64_t nAckRedeliverTimeoutMs;
-  ListenerCallback *listener;
+  MessageListenerCallback *listener;
 };
 
 #endif

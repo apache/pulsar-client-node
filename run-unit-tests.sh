@@ -30,10 +30,14 @@ rm -rf $PULSAR_PKG_DIR
 for pkg in apache-pulsar-client-dev.deb apache-pulsar-client.deb;do
   curl -L --create-dir "https://archive.apache.org/dist/pulsar/pulsar-${VERSION}/DEB/${pkg}" -o $PULSAR_PKG_DIR/$pkg
 done;
+apt-get -y update
+apt-get install -y software-properties-common
+add-apt-repository ppa:ubuntu-toolchain-r/test && apt-get -y update
+apt-get -y install gcc-4.9 && apt-get upgrade -y libstdc++6
 apt install $PULSAR_PKG_DIR/apache-pulsar-client*.deb
 
 ./pulsar-test-service-start.sh
-npm install && npm run lint && npm run build && npm run test
+npm install && npm run lint && npm run dtslint && npm run build && npm run test
 RES=$?
 ./pulsar-test-service-stop.sh
 

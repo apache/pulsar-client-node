@@ -21,10 +21,19 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('Producer', () => {
-    const client = new Pulsar.Client({
-      serviceUrl: 'pulsar://localhost:6650',
-      operationTimeoutSeconds: 30,
+    let client;
+
+    beforeAll(() => {
+      client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
     });
+
+    afterAll(async () => {
+      await client.close();
+    });
+
     describe('Create', () => {
       test('No Topic', async () => {
         await expect(client.createProducer({
@@ -55,6 +64,34 @@ const Pulsar = require('../index.js');
           sendTimeoutMs: 30000,
           batchingEnabled: true,
         })).rejects.toThrow('Failed to create producer: ConnectError');
+      });
+
+      test('Automatic Producer Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+        });
+
+        expect(typeof producer.getProducerName()).toBe('string');
+        await producer.close();
+      });
+
+      test('Explicit Producer Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+          producerName: 'test-producer',
+        });
+
+        expect(producer.getProducerName()).toBe('test-producer');
+        await producer.close();
+      });
+
+      test('Topic Name', async () => {
+        const producer = await client.createProducer({
+          topic: 'persistent://public/default/topic',
+        });
+
+        expect(producer.getTopic()).toBe('persistent://public/default/topic');
+        await producer.close();
       });
     });
   });

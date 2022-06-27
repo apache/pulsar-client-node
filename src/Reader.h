@@ -22,22 +22,28 @@
 
 #include <napi.h>
 #include <pulsar/c/client.h>
+#include "ReaderConfig.h"
 
 class Reader : public Napi::ObjectWrap<Reader> {
  public:
   static void Init(Napi::Env env, Napi::Object exports);
-  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient);
   static Napi::FunctionReference constructor;
   Reader(const Napi::CallbackInfo &info);
   ~Reader();
-  void SetCReader(pulsar_reader_t *cReader);
+  void SetCReader(std::shared_ptr<pulsar_reader_t> cReader);
+  void SetListenerCallback(ReaderListenerCallback *listener);
+  void Cleanup();
 
  private:
-  pulsar_reader_t *cReader;
+  std::shared_ptr<pulsar_reader_t> cReader;
+  ReaderListenerCallback *listener;
 
   Napi::Value ReadNext(const Napi::CallbackInfo &info);
   Napi::Value HasNext(const Napi::CallbackInfo &info);
+  Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
+  void CleanupListener();
 };
 
 #endif

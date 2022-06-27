@@ -17,29 +17,18 @@
  * under the License.
  */
 
-#ifndef READER_CONFIG_H
-#define READER_CONFIG_H
+#ifndef READER_LISTENER_H
+#define READER_LISTENER_H
 
 #include <napi.h>
-#include <pulsar/c/reader.h>
-#include <pulsar/c/reader_configuration.h>
-#include <pulsar/c/message_id.h>
-#include "ReaderListener.h"
 
-class ReaderConfig {
- public:
-  ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_listener readerListener);
-  ~ReaderConfig();
-  std::shared_ptr<pulsar_reader_configuration_t> GetCReaderConfig();
-  std::shared_ptr<pulsar_message_id_t> GetCStartMessageId();
-  std::string GetTopic();
-  ReaderListenerCallback *GetListenerCallback();
+struct ReaderListenerCallback {
+  Napi::ThreadSafeFunction callback;
 
- private:
-  std::string topic;
-  std::shared_ptr<pulsar_message_id_t> cStartMessageId;
-  std::shared_ptr<pulsar_reader_configuration_t> cReaderConfig;
-  ReaderListenerCallback *listener;
+  // Using reader as void* since the ReaderListenerCallback is shared between Config and Reader.
+  void *reader;
+
+  ReaderListenerCallback() : reader(nullptr) {}
 };
 
 #endif

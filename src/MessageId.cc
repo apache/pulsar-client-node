@@ -17,6 +17,8 @@
  * under the License.
  */
 
+#include <stdlib.h>
+
 #include "MessageId.h"
 #include <pulsar/c/message.h>
 #include <pulsar/c/message_id.h>
@@ -29,7 +31,6 @@ Napi::Object MessageId::Init(Napi::Env env, Napi::Object exports) {
   Napi::Function func = DefineClass(env, "MessageId",
                                     {StaticMethod("earliest", &MessageId::Earliest, napi_static),
                                      StaticMethod("latest", &MessageId::Latest, napi_static),
-                                     StaticMethod("finalize", &MessageId::Free, napi_static),
                                      InstanceMethod("serialize", &MessageId::Serialize),
                                      StaticMethod("deserialize", &MessageId::Deserialize, napi_static),
                                      InstanceMethod("toString", &MessageId::ToString)});
@@ -46,10 +47,13 @@ MessageId::MessageId(const Napi::CallbackInfo &info) : Napi::ObjectWrap<MessageI
   Napi::HandleScope scope(env);
 }
 
-Napi::Object MessageId::NewInstanceFromMessage(const Napi::CallbackInfo &info, pulsar_message_t *cMessage) {
+Napi::Object MessageId::NewInstanceFromMessage(const Napi::CallbackInfo &info,
+                                               std::shared_ptr<pulsar_message_t> cMessage) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
-  msgId->cMessageId = pulsar_message_get_message_id(cMessage);
+  std::shared_ptr<pulsar_message_id_t> cMessageId(pulsar_message_get_message_id(cMessage.get()),
+                                                  pulsar_message_id_free);
+  msgId->cMessageId = cMessageId;
   return obj;
 }
 
@@ -58,35 +62,41 @@ Napi::Object MessageId::NewInstance(Napi::Value arg) {
   return obj;
 }
 
-void MessageId::Free(const Napi::CallbackInfo &info) {
-  Napi::Object obj = info[0].As<Napi::Object>();
+Napi::Object MessageId::NewInstance(std::shared_ptr<pulsar_message_id_t> cMessageId) {
+  Napi::Object obj = constructor.New({});
   MessageId *msgId = Unwrap(obj);
-  pulsar_message_id_free(msgId->cMessageId);
+  msgId->cMessageId = cMessageId;
+  return obj;
 }
+
+void nofree(void *__ptr) {}
 
 Napi::Value MessageId::Earliest(const Napi::CallbackInfo &info) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
-  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_earliest();
-  msgId->skipCMessageIdFree = true;
+  std::shared_ptr<pulsar_message_id_t> cMessageId((pulsar_message_id_t *)pulsar_message_id_earliest(),
+                                                  nofree);
+  msgId->cMessageId = cMessageId;
   return obj;
 }
 
 Napi::Value MessageId::Latest(const Napi::CallbackInfo &info) {
   Napi::Object obj = NewInstance(info[0]);
   MessageId *msgId = Unwrap(obj);
-  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_latest();
-  msgId->skipCMessageIdFree = true;
+  std::shared_ptr<pulsar_message_id_t> cMessageId((pulsar_message_id_t *)pulsar_message_id_latest(), nofree);
+  msgId->cMessageId = cMessageId;
   return obj;
 }
+
+void serializeFinalizeCallback(Napi::Env env, char *ptr) { free(ptr); }
 
 Napi::Value MessageId::Serialize(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
 
   int len;
-  void *ptr = pulsar_message_id_serialize(GetCMessageId(), &len);
+  void *ptr = pulsar_message_id_serialize(GetCMessageId().get(), &len);
 
-  return Napi::Buffer<char>::New(env, (char *)ptr, len);
+  return Napi::Buffer<char>::New(env, (char *)ptr, len, serializeFinalizeCallback);
 }
 
 Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
@@ -102,19 +112,20 @@ Napi::Value MessageId::Deserialize(const Napi::CallbackInfo &info) {
 
   Napi::Buffer<char> buf = info[0].As<Napi::Buffer<char>>();
   char *data = buf.Data();
-  msgId->cMessageId = (pulsar_message_id_t *)pulsar_message_id_deserialize(data, buf.Length());
+  std::shared_ptr<pulsar_message_id_t> cMessageId(pulsar_message_id_deserialize(data, buf.Length()),
+                                                  pulsar_message_id_free);
+  msgId->cMessageId = cMessageId;
 
   return obj;
 }
 
-pulsar_message_id_t *MessageId::GetCMessageId() { return this->cMessageId; }
+std::shared_ptr<pulsar_message_id_t> MessageId::GetCMessageId() { return this->cMessageId; }
 
 Napi::Value MessageId::ToString(const Napi::CallbackInfo &info) {
-  return Napi::String::New(info.Env(), pulsar_message_id_str(this->cMessageId));
+  char *cStr = pulsar_message_id_str(this->cMessageId.get());
+  std::string s(cStr);
+  free(cStr);
+  return Napi::String::New(info.Env(), s);
 }
 
-MessageId::~MessageId() {
-  if (!this->skipCMessageIdFree) {
-    pulsar_message_id_free(this->cMessageId);
-  }
-}
+MessageId::~MessageId() {}

@@ -27,11 +27,11 @@ class ProducerConfig {
  public:
   ProducerConfig(const Napi::Object &producerConfig);
   ~ProducerConfig();
-  pulsar_producer_configuration_t *GetCProducerConfig();
+  std::shared_ptr<pulsar_producer_configuration_t> GetCProducerConfig();
   std::string GetTopic();
 
  private:
-  pulsar_producer_configuration_t *cProducerConfig;
+  std::shared_ptr<pulsar_producer_configuration_t> cProducerConfig;
   std::string topic;
 };
 

@@ -21,17 +21,26 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('Consumer', () => {
-    const client = new Pulsar.Client({
-      serviceUrl: 'pulsar://localhost:6650',
-      operationTimeoutSeconds: 30,
+    let client;
+
+    beforeAll(() => {
+      client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
     });
+
+    afterAll(async () => {
+      await client.close();
+    });
+
     describe('Create', () => {
       test('No Topic', async () => {
         await expect(client.subscribe({
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('Not String Topic', async () => {
@@ -40,7 +49,34 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Topic is required and must be specified as a string when creating consumer');
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not String TopicsPattern', async () => {
+        await expect(client.subscribe({
+          topicsPattern: 0,
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not Array Topics', async () => {
+        await expect(client.subscribe({
+          topics: 0,
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
+      });
+
+      test('Not String in Array Topics', async () => {
+        await expect(client.subscribe({
+          topics: [0, true],
+          subscription: 'sub1',
+          ackTimeoutMs: 10000,
+          nAckRedeliverTimeoutMs: 60000,
+        })).rejects.toThrow('Topic, topics or topicsPattern is required and must be specified as a string when creating consumer');
       });
 
       test('No Subscription', async () => {
@@ -85,6 +121,23 @@ const Pulsar = require('../index.js');
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: -12,
         })).rejects.toThrow('NAck timeout should be greater than or equal to zero');
+      });
+    });
+
+    describe('Close', () => {
+      test('throws error on subsequent calls to close', async () => {
+        const consumer = await client.subscribe({
+          topic: 'persistent://public/default/my-topic',
+          subscription: 'sub1',
+          subscriptionType: 'Shared',
+          // Test with listener since it changes the flow of close
+          // and reproduces an issue
+          listener() {},
+        });
+
+        await expect(consumer.close()).resolves.toEqual(null);
+
+        await expect(consumer.close()).rejects.toThrow('Failed to close consumer: AlreadyClosed');
       });
     });
   });

@@ -16,30 +16,13 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+const PulsarBinding = require('bindings')('Pulsar');
 
-#ifndef READER_CONFIG_H
-#define READER_CONFIG_H
+class AuthenticationOauth2 {
+  constructor(params) {
+    const paramsStr = (typeof params === 'object') ? JSON.stringify(params) : params;
+    this.binding = new PulsarBinding.Authentication('oauth2', paramsStr);
+  }
+}
 
-#include <napi.h>
-#include <pulsar/c/reader.h>
-#include <pulsar/c/reader_configuration.h>
-#include <pulsar/c/message_id.h>
-#include "ReaderListener.h"
-
-class ReaderConfig {
- public:
-  ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_listener readerListener);
-  ~ReaderConfig();
-  std::shared_ptr<pulsar_reader_configuration_t> GetCReaderConfig();
-  std::shared_ptr<pulsar_message_id_t> GetCStartMessageId();
-  std::string GetTopic();
-  ReaderListenerCallback *GetListenerCallback();
-
- private:
-  std::string topic;
-  std::shared_ptr<pulsar_message_id_t> cStartMessageId;
-  std::shared_ptr<pulsar_reader_configuration_t> cReaderConfig;
-  ReaderListenerCallback *listener;
-};
-
-#endif
+module.exports = AuthenticationOauth2;
