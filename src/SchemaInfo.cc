@@ -65,14 +65,14 @@ SchemaInfo::SchemaInfo(const Napi::Object &schemaInfo) : cSchemaType(pulsar_Byte
   }
 }
 
-void SchemaInfo::SetProducerSchema(pulsar_producer_configuration_t *cProducerConfiguration) {
-  pulsar_producer_configuration_set_schema_info(cProducerConfiguration, this->cSchemaType, this->name.c_str(),
-                                                this->schema.c_str(), this->cProperties);
+void SchemaInfo::SetProducerSchema(std::shared_ptr<pulsar_producer_configuration_t> cProducerConfiguration) {
+  pulsar_producer_configuration_set_schema_info(cProducerConfiguration.get(), this->cSchemaType,
+                                                this->name.c_str(), this->schema.c_str(), this->cProperties);
 }
 
-void SchemaInfo::SetConsumerSchema(pulsar_consumer_configuration_t *cConsumerConfiguration) {
-  pulsar_consumer_configuration_set_schema_info(cConsumerConfiguration, this->cSchemaType, this->name.c_str(),
-                                                this->schema.c_str(), this->cProperties);
+void SchemaInfo::SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfiguration) {
+  pulsar_consumer_configuration_set_schema_info(cConsumerConfiguration.get(), this->cSchemaType,
+                                                this->name.c_str(), this->schema.c_str(), this->cProperties);
 }
 
 SchemaInfo::~SchemaInfo() { pulsar_string_map_free(this->cProperties); }

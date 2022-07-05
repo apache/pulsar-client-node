@@ -28,8 +28,8 @@ class SchemaInfo {
  public:
   SchemaInfo(const Napi::Object &schemaInfo);
   ~SchemaInfo();
-  void SetProducerSchema(pulsar_producer_configuration_t *cProducerConfiguration);
-  void SetConsumerSchema(pulsar_consumer_configuration_t *cConsumerConfiguration);
+  void SetProducerSchema(std::shared_ptr<pulsar_producer_configuration_t> cProducerConfiguration);
+  void SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfiguration);
 
  private:
   pulsar_schema_type cSchemaType;
