@@ -19,6 +19,7 @@
 
 #include "ConsumerConfig.h"
 #include "Consumer.h"
+#include "SchemaInfo.h"
 #include "Message.h"
 #include <pulsar/c/consumer_configuration.h>
 #include <pulsar/c/consumer.h>
@@ -38,6 +39,7 @@ static const std::string CFG_CONSUMER_NAME = "consumerName";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_LISTENER = "listener";
 static const std::string CFG_READ_COMPACTED = "readCompacted";
+static const std::string CFG_SCHEMA = "schema";
 static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 
@@ -142,6 +144,12 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
       pulsar_consumer_set_max_total_receiver_queue_size_across_partitions(this->cConsumerConfig.get(),
                                                                           receiverQueueSizeAcrossPartitions);
     }
+  }
+
+  if (consumerConfig.Has(CFG_SCHEMA) && consumerConfig.Get(CFG_SCHEMA).IsObject()) {
+    SchemaInfo *schemaInfo = new SchemaInfo(consumerConfig.Get(CFG_SCHEMA).ToObject());
+    schemaInfo->SetConsumerSchema(this->cConsumerConfig);
+    delete schemaInfo;
   }
 
   if (consumerConfig.Has(CFG_PROPS) && consumerConfig.Get(CFG_PROPS).IsObject()) {

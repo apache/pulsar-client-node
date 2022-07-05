@@ -47,6 +47,7 @@
         "src/MessageId.cc",
         "src/Authentication.cc",
         "src/Client.cc",
+        "src/SchemaInfo.cc",
         "src/Producer.cc",
         "src/ProducerConfig.cc",
         "src/Consumer.cc",
