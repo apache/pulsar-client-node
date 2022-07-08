@@ -63,6 +63,8 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
   Consumer *consumer = data->consumer;
   delete data;
 
+  // `consumer` might be null in certain cases, segmentation fault might happend without this null check. We
+  // need to handle this rare case in future.
   if (consumer) {
     jsCallback.Call({msg, consumer->Value()});
   }
