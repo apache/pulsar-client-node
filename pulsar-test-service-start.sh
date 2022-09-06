@@ -20,7 +20,7 @@
 
 set -e
 
-ROOT_DIR=$(git rev-parse --show-toplevel)
+ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
 cd $ROOT_DIR
 
 VERSION="${VERSION:-`cat ./pulsar-version.txt`}"

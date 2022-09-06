@@ -18,11 +18,11 @@
 # under the License.
 #
 
-ROOT_DIR=$(git rev-parse --show-toplevel)
+ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
 cd $ROOT_DIR
 
 BUILD_IMAGE_NAME="${BUILD_IMAGE_NAME:-apachepulsar/pulsar-build}"
-BUILD_IMAGE_VERSION="${BUILD_IMAGE_VERSION:-ubuntu-16.04}"
+BUILD_IMAGE_VERSION="${BUILD_IMAGE_VERSION:-ubuntu-20.04}"
 
 IMAGE="$BUILD_IMAGE_NAME:$BUILD_IMAGE_VERSION"
 
@@ -30,7 +30,8 @@ echo "---- Testing Pulsar node client using image $IMAGE"
 
 docker pull $IMAGE
 
-DOCKER_CMD="docker run -i -v $ROOT_DIR:/pulsar-client-node $IMAGE"
+TARGET_DIR=/pulsar-client-node
+DOCKER_CMD="docker run -i -e ROOT_DIR=$TARGET_DIR -v $ROOT_DIR:$TARGET_DIR $IMAGE"
 
 # Start Pulsar standalone instance
 # and execute the tests

@@ -55,7 +55,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://no-tenant/namespace/topic',
           sendTimeoutMs: 30000,
           batchingEnabled: true,
-        })).rejects.toThrow('Failed to create producer: ConnectError');
+        })).rejects.toThrow('Failed to create producer: BrokerMetadataError');
       });
 
       test('Not Exist Namespace', async () => {
@@ -63,7 +63,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://public/no-namespace/topic',
           sendTimeoutMs: 30000,
           batchingEnabled: true,
-        })).rejects.toThrow('Failed to create producer: ConnectError');
+        })).rejects.toThrow('Failed to create producer: BrokerMetadataError');
       });
 
       test('Automatic Producer Name', async () => {
