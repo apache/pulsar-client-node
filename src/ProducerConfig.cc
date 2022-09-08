@@ -100,7 +100,7 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     int32_t maxPendingMessagesAcrossPartitions =
         producerConfig.Get(CFG_MAX_PENDING_ACROSS_PARTITIONS).ToNumber().Int32Value();
     if (maxPendingMessagesAcrossPartitions > 0) {
-      pulsar_producer_configuration_set_max_pending_messages(this->cProducerConfig.get(),
+      pulsar_producer_configuration_set_max_pending_messages_across_partitions(this->cProducerConfig.get(),
                                                              maxPendingMessagesAcrossPartitions);
     }
   }
