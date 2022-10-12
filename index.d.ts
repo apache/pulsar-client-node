@@ -60,6 +60,7 @@ export interface ProducerConfig {
   publicKeyPath?: string;
   encryptionKey?: string;
   cryptoFailureAction?: ProducerCryptoFailureAction;
+  chunkingEnabled?: boolean;
 }
 
 export class Producer {
@@ -88,6 +89,8 @@ export interface ConsumerConfig {
   readCompacted?: boolean;
   privateKeyPath?: string;
   cryptoFailureAction?: ConsumerCryptoFailureAction;
+  maxPendingChunkedMessage?: number;
+  autoAckOldestChunkedMessageOnQueueFull?: number;
 }
 
 export class Consumer {
