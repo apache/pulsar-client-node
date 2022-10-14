@@ -22,7 +22,7 @@ const Pulsar = require('./index.js');
 (async () => {
   // Create a client
   const clientConfig = {
-    serviceUrl: "pulsar://localhost:6650",
+    serviceUrl: 'pulsar://localhost:6650',
   };
 
   const client = new Pulsar.Client(clientConfig);

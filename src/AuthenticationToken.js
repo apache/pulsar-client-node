@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const PulsarBinding = require('bindings')('Pulsar');
+const PulsarBinding = require('./pulsar-binding');
 
 class AuthenticationToken {
   constructor(params) {

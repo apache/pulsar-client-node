@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const PulsarBinding = require('bindings')('Pulsar');
+const PulsarBinding = require('./src/pulsar-binding');
 const AuthenticationTls = require('./src/AuthenticationTls.js');
 const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
 const AuthenticationToken = require('./src/AuthenticationToken.js');

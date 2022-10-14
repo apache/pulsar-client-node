@@ -20,7 +20,7 @@
 
 source $(dirname $0)/common.sh
 
-ZLIB_VERSION=1.2.12
+ZLIB_VERSION=1.2.13
 OPENSSL_VERSION=1_1_1q
 BOOST_VERSION=1.79.0
 PROTOBUF_VERSION=3.20.0
@@ -46,24 +46,19 @@ fi
 ###############################################################################
 if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION}.done ]; then
     echo "Building OpenSSL"
-    curl -O -L https://github.com/openssl/openssl/archive/OpenSSL_${OPENSSL_VERSION}.tar.gz
-    tar xfz OpenSSL_${OPENSSL_VERSION}.tar.gz
-    pushd openssl-OpenSSL_${OPENSSL_VERSION}
+    curl -O -L https://github.com/openssl/openssl/archive/refs/heads/OpenSSL_1_1_1-stable.zip
+    unzip OpenSSL_1_1_1-stable.zip
+    pushd openssl-OpenSSL_1_1_1-stable
       if [ $IS_MACOS = '1' ]; then
-        ./Configure --prefix=$PREFIX no-shared darwin64-arm64-cc
+        if [ $IS_ARM = '1' ]; then
+          PLATFORM=darwin64-arm64-cc
+        else
+          PLATFORM=darwin64-x86_64-cc
+        fi
+
+        ./Configure --prefix=$PREFIX no-shared $PLATFORM
         make -j8
-
-        cp libssl.a libssl-arm64.a
-        cp libcrypto.a libcrypto-arm64.a
-
-        make clean
-        ./Configure --prefix=$PREFIX no-shared darwin64-x86_64-cc
-        make -j8 && make install_sw
-
-        # Create universal binaries
-        lipo -create libssl-arm64.a libssl.a -output $PREFIX/lib/libssl.a
-        lipo -create libcrypto-arm64.a libcrypto.a -output $PREFIX/lib/libcrypto.a
-
+        make install_sw
       else
         ## Linux
         if [ $IS_ARM = '1' ]; then
@@ -105,7 +100,7 @@ if [ ! -f $DIR.done ]; then
                 install
 
     popd
-    
+
     touch $DIR.done
 
     rm -rf $DIR boost_${BOOST_VERSION_}.tar.gz
@@ -139,7 +134,7 @@ if [ ! -f zstd-${ZSTD_VERSION}.done ]; then
       PREFIX=$PREFIX \
             make -j16 -C lib install
     popd
-    
+
     touch zstd-${ZSTD_VERSION}.done
     rm -rf zstd-${ZSTD_VERSION} zstd-${ZSTD_VERSION}.tar.gz
 else
@@ -152,7 +147,7 @@ if [ ! -f snappy-${SNAPPY_VERSION}.done ]; then
     curl -O -L https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}/snappy-${SNAPPY_VERSION}.tar.gz
     tar xfz snappy-${SNAPPY_VERSION}.tar.gz
     pushd snappy-${SNAPPY_VERSION}
-      ./configure --prefix=$PREFIX
+      ./configure --prefix=$PREFIX $CONFIGURE_ARGS2
       make -j16
       make install
     popd
@@ -173,7 +168,8 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
       ./configure --with-ssl=$PREFIX \
               --without-nghttp2 --without-libidn2 --disable-ldap \
               --without-librtmp --without-brotli \
-              --prefix=$PREFIX
+              --prefix=$PREFIX \
+              $CONFIGURE_ARGS2
       make -j16 install
     popd
 

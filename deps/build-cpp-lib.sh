@@ -26,14 +26,14 @@ mkdir -p $PULSAR_PREFIX
 cd $PULSAR_DIR
 
 # Pulsar
-curl -O -L "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-$PULSAR_VERSION/apache-pulsar-$PULSAR_VERSION-src.tar.gz"
-tar xfz apache-pulsar-$PULSAR_VERSION-src.tar.gz
-pushd apache-pulsar-$PULSAR_VERSION-src/pulsar-client-cpp
+curl -O -L https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-cpp-${PULSAR_CPP_VERSION}-candidate-2/apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
+tar xfz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
+pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
   chmod +x ./build-support/merge_archives.sh
   rm -f CMakeCache.txt
   cmake . \
       -DBUILD_PYTHON_WRAPPER=OFF \
-      -DBUILD_DYNAMIC_LIB=ON \
+      -DBUILD_DYNAMIC_LIB=OFF \
       -DLINK_STATIC=ON \
       -DBUILD_TESTS=OFF \
       -DCMAKE_INSTALL_PREFIX=$PULSAR_PREFIX \
@@ -45,5 +45,5 @@ pushd apache-pulsar-$PULSAR_VERSION-src/pulsar-client-cpp
   cp lib/libpulsarwithdeps.a $PULSAR_PREFIX/lib
 popd
 
-rm -rf apache-pulsar-$PULSAR_VERSION-src.tar.gz apache-pulsar-$PULSAR_VERSION-src
+rm -rf apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
 

@@ -1,0 +1,75 @@
+name: Build release napi
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+env:
+  FORCE_COLOR: 1
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+        arch:
+          - x86_64
+        nodejs:
+          - 16
+          - 18
+    name: ${{ matrix.os }} (nodejs=${{ matrix.nodejs }}, arch=${{ matrix.arch }})
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.nodejs }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodejs }}
+          cache: 'npm'
+
+      - name: Cache Dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: deps/build
+          key: ${{ runner.os }}-${{ matrix.arch }}-deps-${{ hashFiles('deps/build-cpp-deps-lib.sh') }}
+
+      - name: Build CPP dependencies lib
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: |
+          export ARCH=${{ matrix.arch }}
+          deps/build-cpp-deps-lib.sh
+
+      - name: Build CPP lib
+        if: steps.cache-pulsar.outputs.cache-hit != 'true'
+        run: |
+          export ARCH=${{ matrix.arch }}
+          deps/build-cpp-lib.sh
+
+      - name: Build Node binaries lib
+        run: npm install
+
+      - name: Test loading Node binaries lib
+        run: |
+          node load_test.js
+
+      - name: Package Node binaries lib
+        run: |
+          npm install -g node-pre-gyp
+          node-pre-gyp package
+
+      - name: Upload Node binaries lib to GitHub Release
+        env:
+          NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+        if: matrix.nodejs == 18 && startsWith(github.ref, 'refs/tags/')
+        run: |
+          npm install -g node-pre-gyp-github
+          echo $NODE_PRE_GYP_GITHUB_TOKEN
+          node-pre-gyp-github publish

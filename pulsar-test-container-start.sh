@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,16 +17,15 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: Node.js
-on: [pull_request]
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code into the Node.js module directory
-        uses: actions/checkout@v2
 
-      - name: Test
-        run: |
-          ./docker-tests.sh
+set -e -x
+
+export PULSAR_STANDALONE_CONF=test-conf/standalone.conf
+bin/pulsar-daemon start standalone \
+        --no-functions-worker --no-stream-storage \
+        --bookkeeper-dir data/bookkeeper
+
+echo "-- Wait for Pulsar service to be ready"
+until curl http://localhost:8080/metrics > /dev/null 2>&1 ; do sleep 1; done
+
+echo "-- Ready to start tests"

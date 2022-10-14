@@ -1,4 +1,6 @@
-#!/bin/bash
+
+
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -20,7 +22,13 @@
 
 set -e
 
-PULSAR_DIR="${PULSAR_DIR:-/tmp/pulsar-test-dist}"
-cd $PULSAR_DIR
+SRC_DIR=$(git rev-parse --show-toplevel)
+cd $SRC_DIR
 
-bin/pulsar-daemon stop standalone
+CONTAINER_ID_PATH=".tests-container-id.txt"
+
+if [ -f ${CONTAINER_ID_PATH} ]; then
+  CONTAINER_ID=$(cat $CONTAINER_ID_PATH)
+  docker kill $CONTAINER_ID || true
+  rm .tests-container-id.txt
+fi
