@@ -31,7 +31,7 @@ CURL_VERSION=7.61.0
 ###############################################################################
 if [ ! -f zlib-${ZLIB_VERSION}/.done ]; then
     echo "Building ZLib"
-    curl -O -L https://zlib.net/zlib-${ZLIB_VERSION}.tar.gz
+    curl -O -L https://zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
     tar xfz zlib-$ZLIB_VERSION.tar.gz
     pushd zlib-$ZLIB_VERSION
       CFLAGS="$CFLAGS $ARCH_FLAGS" ./configure --prefix=$PREFIX
