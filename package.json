@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/shibd/pulsar-client-node.git"
+    "url": "https://github.com/apache/pulsar-client-node.git"
   },
   "homepage": "https://pulsar.apache.org/docs/en/client-libraries-node",
   "author": "Apache Software Foundation",
@@ -61,7 +61,7 @@
   "binary": {
     "module_name": "Pulsar",
     "module_path": "./lib/binding/",
-    "host": "https://github.com/shibd/pulsar-client-node/releases/download/",
+    "host": "https://github.com/apache/pulsar-client-node/releases/download/",
     "remote_path": "v{version}",
     "package_name": "napi-{platform}-{libc}-{arch}.tar.gz"
   },

@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - newr_2
     tags:
       - '*'
 env:
@@ -25,6 +24,7 @@ jobs:
           - x86_64
         nodejs:
           - 16
+          - 18
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -69,7 +69,7 @@ jobs:
       - name: Upload Node binaries lib to GitHub Release
         env:
           NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-#        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
+        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
         run: |
           echo $NODE_PRE_GYP_GITHUB_TOKEN
           npx node-pre-gyp-github publish
@@ -87,6 +87,7 @@ jobs:
           - 'linux_musl'
         nodejs:
           - 16
+          - 18
         cpu:
           - {arch: 'x86_64', platform: 'x86_64'}
           - {arch: 'aarch64', platform: 'arm64'}
@@ -123,7 +124,7 @@ jobs:
       - name: Upload Node binaries lib to GitHub Release
         env:
           NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-#        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
+        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
         run: |
           echo $NODE_PRE_GYP_GITHUB_TOKEN
           npx node-pre-gyp-github publish
