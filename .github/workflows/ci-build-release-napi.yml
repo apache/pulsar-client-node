@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - newr_2
     tags:
       - '*'
 env:
@@ -12,20 +13,18 @@ concurrency:
   group: ${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  macos-napi:
+    name: Build NAPI macos - Node ${{matrix.nodejs}} - ${{matrix.arch}}
+    runs-on: macos-latest
+    timeout-minutes: 3000
+
     strategy:
       fail-fast: false
       matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
         arch:
           - x86_64
         nodejs:
           - 16
-          - 18
-    name: ${{ matrix.os }} (nodejs=${{ matrix.nodejs }}, arch=${{ matrix.arch }})
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -38,38 +37,93 @@ jobs:
         id: cache-dependencies
         uses: actions/cache@v3
         with:
-          path: deps/build
-          key: ${{ runner.os }}-${{ matrix.arch }}-deps-${{ hashFiles('deps/build-cpp-deps-lib.sh') }}
+          path: pkg/mac/build
+          key: ${{ runner.os }}-${{ matrix.arch }}-mac-${{ hashFiles('pkg/mac/build-cpp-deps-lib.sh') }}
 
       - name: Build CPP dependencies lib
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
         run: |
           export ARCH=${{ matrix.arch }}
-          deps/build-cpp-deps-lib.sh
+          pkg/mac/build-cpp-deps-lib.sh
 
       - name: Build CPP lib
         if: steps.cache-pulsar.outputs.cache-hit != 'true'
         run: |
           export ARCH=${{ matrix.arch }}
-          deps/build-cpp-lib.sh
+          pkg/mac/build-cpp-lib.sh
 
       - name: Build Node binaries lib
-        run: npm install
+        run: |
+          npm install --ignore-scripts
+          npx node-pre-gyp configure
+          npx node-pre-gyp build
 
       - name: Test loading Node binaries lib
         run: |
-          node load_test.js
+          node pkg/load_test.js
 
       - name: Package Node binaries lib
         run: |
-          npm install -g node-pre-gyp
-          node-pre-gyp package
+          npx node-pre-gyp package
 
       - name: Upload Node binaries lib to GitHub Release
         env:
           NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-        if: matrix.nodejs == 18 && startsWith(github.ref, 'refs/tags/')
+#        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
         run: |
-          npm install -g node-pre-gyp-github
           echo $NODE_PRE_GYP_GITHUB_TOKEN
-          node-pre-gyp-github publish
+          npx node-pre-gyp-github publish
+
+  linux-napi:
+    name: Build NAPI ${{matrix.image}} - Node ${{matrix.nodejs}} - ${{matrix.cpu.platform}}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - 'linux_glibc'
+          - 'linux_musl'
+        nodejs:
+          - 16
+        cpu:
+          - {arch: 'x86_64', platform: 'x86_64'}
+          - {arch: 'aarch64', platform: 'arm64'}
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Linux Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./pkg/${{matrix.image}}
+          load: true
+          tags: build:latest
+          platforms: linux/${{matrix.cpu.arch}}
+          build-args: |
+            PLATFORM=${{matrix.cpu.platform}}
+            ARCH=${{matrix.cpu.arch}}
+            NODE_VERSION=${{matrix.nodejs}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Test NAPI file
+        run: |
+          docker run -i -v $PWD:/pulsar-client-node build:latest \
+              /pulsar-client-node/pkg/build-napi-inside-docker.sh
+
+      - name: Upload Node binaries lib to GitHub Release
+        env:
+          NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
+#        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
+        run: |
+          echo $NODE_PRE_GYP_GITHUB_TOKEN
+          npx node-pre-gyp-github publish

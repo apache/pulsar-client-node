@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,18 +17,18 @@
 # under the License.
 #
 
-set -e
+FROM centos:7
 
-ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
-cd $ROOT_DIR
+ARG NODE_VERSION
 
-# install pulsar cpp client pkg
-./pkg/install-cpp-client.sh
+RUN curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash -
 
-cd $ROOT_DIR
-./pulsar-test-service-start.sh
-npm install && npm run lint && npm run dtslint && npm run build && npm run test
-RES=$?
-./pulsar-test-service-stop.sh
+RUN yum update -y && \
+    yum install -y \
+        gcc-c++ \
+        make \
+        sudo \
+        python3 \
+        nodejs
 
-exit $RES
+CMD ["sh"]

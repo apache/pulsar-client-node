@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,18 +17,16 @@
 # under the License.
 #
 
-set -e
+ARG NODE_VERSION
 
-ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
-cd $ROOT_DIR
+FROM node:${NODE_VERSION}-alpine
 
-# install pulsar cpp client pkg
-./pkg/install-cpp-client.sh
+RUN apk add \
+      bash \
+      curl \
+      python3 \
+      make \
+      g++ \
+      sudo
 
-cd $ROOT_DIR
-./pulsar-test-service-start.sh
-npm install && npm run lint && npm run dtslint && npm run build && npm run test
-RES=$?
-./pulsar-test-service-stop.sh
-
-exit $RES
+CMD ["sh"]

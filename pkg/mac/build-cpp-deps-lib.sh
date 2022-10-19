@@ -34,7 +34,7 @@ if [ ! -f zlib-${ZLIB_VERSION}/.done ]; then
     curl -O -L https://zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
     tar xfz zlib-$ZLIB_VERSION.tar.gz
     pushd zlib-$ZLIB_VERSION
-      CFLAGS="$CFLAGS $ARCH_FLAGS" ./configure --prefix=$PREFIX
+      CFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure --prefix=$PREFIX
       make -j16
       make install
       touch .done
@@ -49,28 +49,14 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION}.done ]; then
     curl -O -L https://github.com/openssl/openssl/archive/refs/heads/OpenSSL_1_1_1-stable.zip
     unzip OpenSSL_1_1_1-stable.zip
     pushd openssl-OpenSSL_1_1_1-stable
-      if [ $IS_MACOS = '1' ]; then
-        if [ $IS_ARM = '1' ]; then
+        if [ $ARCH = 'arm64' ]; then
           PLATFORM=darwin64-arm64-cc
         else
           PLATFORM=darwin64-x86_64-cc
         fi
-
-        ./Configure --prefix=$PREFIX no-shared $PLATFORM
+        ./Configure --prefix=$PREFIX no-shared no-unit-test $PLATFORM
         make -j8
         make install_sw
-      else
-        ## Linux
-        if [ $IS_ARM = '1' ]; then
-          PLATFORM=linux-aarch64
-        else
-          PLATFORM=linux-x86_64
-        fi
-
-        ./Configure --prefix=$PREFIX no-shared $PLATFORM
-        make -j8
-        make install_sw
-      fi
     popd
 
     rm -rf OpenSSL_${OPENSSL_VERSION}.tar.gz openssl-OpenSSL_${OPENSSL_VERSION}
@@ -78,9 +64,6 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION}.done ]; then
 else
     echo "Using cached OpenSSL"
 fi
-
-export CFLAGS="$CFLAGS $ARCH_FLAGS"
-export CXXFLAGS=$CFLAGS
 
 ###############################################################################
 BOOST_VERSION_=${BOOST_VERSION//./_}
@@ -94,15 +77,12 @@ if [ ! -f $DIR.done ]; then
 
     pushd $DIR
       ./bootstrap.sh --prefix=$PREFIX --with-libraries=system
-      ./b2 address-model=64 cxxflags="$CXXFLAGS" \
+      ./b2 address-model=64 cxxflags="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
                 link=static threading=multi \
                 variant=release \
                 install
-
     popd
-
     touch $DIR.done
-
     rm -rf $DIR boost_${BOOST_VERSION_}.tar.gz
 else
     echo "Using cached Boost"
@@ -114,6 +94,7 @@ if [ ! -f protobuf-${PROTOBUF_VERSION}.done ]; then
     curl -O -L  https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     tar xfz protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     pushd protobuf-${PROTOBUF_VERSION}
+      CXXFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
       ./configure --prefix=$PREFIX $CONFIGURE_ARGS
       make -j16 V=1
       make install
@@ -131,8 +112,9 @@ if [ ! -f zstd-${ZSTD_VERSION}.done ]; then
     curl -O -L https://github.com/facebook/zstd/releases/download/v${ZSTD_VERSION}/zstd-${ZSTD_VERSION}.tar.gz
     tar xfz zstd-${ZSTD_VERSION}.tar.gz
     pushd zstd-${ZSTD_VERSION}
-      PREFIX=$PREFIX \
-            make -j16 -C lib install
+      CFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+      PREFIX=$PREFIX  \
+      make -j16 -C lib install
     popd
 
     touch zstd-${ZSTD_VERSION}.done
@@ -147,7 +129,8 @@ if [ ! -f snappy-${SNAPPY_VERSION}.done ]; then
     curl -O -L https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}/snappy-${SNAPPY_VERSION}.tar.gz
     tar xfz snappy-${SNAPPY_VERSION}.tar.gz
     pushd snappy-${SNAPPY_VERSION}
-      ./configure --prefix=$PREFIX $CONFIGURE_ARGS2
+      CXXFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+      ./configure --prefix=$PREFIX
       make -j16
       make install
     popd
@@ -165,9 +148,13 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
     curl -O -L  https://github.com/curl/curl/releases/download/curl-${CURL_VERSION_}/curl-${CURL_VERSION}.tar.gz
     tar xfz curl-${CURL_VERSION}.tar.gz
     pushd curl-${CURL_VERSION}
+      CFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
       ./configure --with-ssl=$PREFIX \
-              --without-nghttp2 --without-libidn2 --disable-ldap \
-              --without-librtmp --without-brotli \
+              --without-nghttp2 \
+              --without-libidn2 \
+              --disable-ldap \
+              --without-librtmp \
+              --without-brotli \
               --prefix=$PREFIX \
               $CONFIGURE_ARGS2
       make -j16 install

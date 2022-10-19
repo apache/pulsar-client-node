@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,44 +18,14 @@
 # under the License.
 #
 
-export MACOSX_DEPLOYMENT_TARGET=11.0
-MACOSX_DEPLOYMENT_TARGET_MAJOR=${MACOSX_DEPLOYMENT_TARGET%%.*}
-
 set -e -x
 
-DEPS_DIR=`cd $(dirname $0); pwd`
-TOP_DIR=$DEPS_DIR/..
-PULSAR_CPP_VERSION=`cat $TOP_DIR/pulsar-client-cpp-version.txt`
+cd /pulsar-client-node
 
-cd $DEPS_DIR
+pkg/install-cpp-client.sh
 
-
-echo "system versin+++++++:"
-uname -m
-
-mkdir -p build
-cd build
-
-mkdir -p install
-PREFIX=`pwd`/install
-
-export CFLAGS="-fPIC -O3"
-
-if [ $(uname) = "Darwin" ]; then
-  sw_vers
-  IS_MACOS=1
-  export CFLAGS="$CFLAGS -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-else
-  IS_MACOS=0
-fi
-
-if [ "$ARCH" = "arm64" ] || [ $(uname -p) = "arm" ] || [ $(uname -p) = "aarch64" ]; then
-  IS_ARM=1
-  export ARCH_FLAGS="-arch arm64"
-  export CONFIGURE_ARGS="--host=arm64"
-  export CONFIGURE_ARGS2="--host=aarch64"
-else
-  IS_ARM=0
-fi
-
-export CXXFLAGS="$CFLAGS"
+npm install --ignore-scripts
+npx node-pre-gyp configure
+npx node-pre-gyp build
+npx node-pre-gyp package
+node pkg/load_test.js

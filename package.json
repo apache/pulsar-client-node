@@ -1,6 +1,6 @@
 {
   "name": "pulsar-client",
-  "version": "1.8.0-rc.0",
+  "version": "1.8.1-rc.3",
   "description": "Pulsar Node.js client",
   "main": "index.js",
   "types": "index.d.ts",
@@ -11,7 +11,7 @@
   "scripts": {
     "install": "node-pre-gyp install --fallback-to-build",
     "configure": "node-pre-gyp configure",
-    "build": "npm run format && node-pre-gyp rebuild",
+    "build": "npm run format && node-pre-gyp build",
     "build:debug": "npm run format && node-pre-gyp rebuild --debug",
     "clean": "node-pre-gyp clean",
     "lint": "clang-format-lint src/*.cc src/*.h && eslint --ext .js .",
@@ -23,7 +23,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/apache/pulsar-client-node.git"
+    "url": "https://github.com/shibd/pulsar-client-node.git"
   },
   "homepage": "https://pulsar.apache.org/docs/en/client-libraries-node",
   "author": "Apache Software Foundation",
@@ -61,9 +61,9 @@
   "binary": {
     "module_name": "Pulsar",
     "module_path": "./lib/binding/",
-    "host": "https://github.com/apache/pulsar-client-node/releases/download/",
+    "host": "https://github.com/shibd/pulsar-client-node/releases/download/",
     "remote_path": "v{version}",
-    "package_name": "napi-{platform}-{arch}.tar.gz"
+    "package_name": "napi-{platform}-{libc}-{arch}.tar.gz"
   },
   "license-check-and-add-config": {
     "folder": ".",

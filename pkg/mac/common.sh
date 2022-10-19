@@ -1,4 +1,3 @@
-#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,18 +17,17 @@
 # under the License.
 #
 
-set -e
+set -e -x
 
-ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
-cd $ROOT_DIR
+export MACOSX_DEPLOYMENT_TARGET=11.0
 
-# install pulsar cpp client pkg
-./pkg/install-cpp-client.sh
+MAC_BUILD_DIR=`cd $(dirname $0); pwd`
+TOP_DIR=$MAC_BUILD_DIR/../..
+export PULSAR_CPP_VERSION=`cat $TOP_DIR/pulsar-client-cpp-version.txt`
 
-cd $ROOT_DIR
-./pulsar-test-service-start.sh
-npm install && npm run lint && npm run dtslint && npm run build && npm run test
-RES=$?
-./pulsar-test-service-stop.sh
+cd $MAC_BUILD_DIR
+mkdir -p build
+cd build
+mkdir -p install
+export PREFIX=`pwd`/install
 
-exit $RES

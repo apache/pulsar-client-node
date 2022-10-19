@@ -33,7 +33,6 @@
       "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17"],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
-        "build-pulsar/install/include",
       ],
       "defines": ["NAPI_VERSION=4"],
       "sources": [
@@ -65,6 +64,9 @@
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
+          "include_dirs": [
+            "pkg/mac/build-pulsar/install/include"
+          ],
         }],
         ['OS=="win"', {
           "defines": [
@@ -76,10 +78,10 @@
             },
           },
           "include_dirs": [
-            "deps\\build\\install\\include",
+            "<(pulsar_cpp_dir)\include",
           ],
           "libraries": [
-            "-ldeps\\build\\install\\lib\\Release\\pulsar.lib"
+            "-l<(pulsar_cpp_dir)\\lib\Release\pulsar.lib"
           ],
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
@@ -104,11 +106,8 @@
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
-          "include_dirs": [
-            "deps/build-pulsar/install/include",
-          ],
           "libraries": [
-             "../deps/build-pulsar/install/lib/libpulsarwithdeps.a"
+             "../pkg/lib/libpulsarwithdeps.a"
           ],
         }]
       ]

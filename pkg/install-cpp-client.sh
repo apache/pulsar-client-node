@@ -63,8 +63,8 @@ else
   exit 1
 fi
 
-mkdir -p $ROOT_DIR/deps/build-pulsar/install/lib/
-cp /usr/lib/libpulsarwithdeps.a $ROOT_DIR/deps/build-pulsar/install/lib/
+mkdir -p $ROOT_DIR/pkg/lib/
+cp /usr/lib/libpulsarwithdeps.a $ROOT_DIR/pkg/lib/
 
 
 

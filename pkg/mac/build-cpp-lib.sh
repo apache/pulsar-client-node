@@ -20,7 +20,7 @@
 
 source $(dirname $0)/common.sh
 
-PULSAR_DIR=${DEPS_DIR}/build-pulsar
+PULSAR_DIR=${MAC_BUILD_DIR}/build-pulsar
 PULSAR_PREFIX=${PULSAR_DIR}/install
 mkdir -p $PULSAR_PREFIX
 cd $PULSAR_DIR
@@ -32,17 +32,19 @@ pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
   chmod +x ./build-support/merge_archives.sh
   rm -f CMakeCache.txt
   cmake . \
-      -DBUILD_PYTHON_WRAPPER=OFF \
-      -DBUILD_DYNAMIC_LIB=OFF \
+      -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
+      -DCMAKE_INSTALL_PREFIX=$PULSAR_PREFIX \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_PREFIX_PATH=$PREFIX \
+      -DCMAKE_INSTALL_LIBDIR=$PULSAR_PREFIX/lib \
       -DLINK_STATIC=ON \
       -DBUILD_TESTS=OFF \
-      -DCMAKE_INSTALL_PREFIX=$PULSAR_PREFIX \
-      -DCMAKE_INSTALL_LIBDIR=$PULSAR_PREFIX/lib \
-      -DCMAKE_PREFIX_PATH=$PREFIX \
+      -DBUILD_PYTHON_WRAPPER=OFF \
+      -DBUILD_DYNAMIC_LIB=OFF \
       -DPROTOC_PATH=$PREFIX/bin/protoc
-  make -j8 VERBOSE=1
-  make install
-  cp lib/libpulsarwithdeps.a $PULSAR_PREFIX/lib
+  make -j16 install
+  mkdir $TOP_DIR/pkg/lib/
+  cp -r lib/libpulsarwithdeps.a $TOP_DIR/pkg/lib/
 popd
 
 rm -rf apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
