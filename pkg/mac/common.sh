@@ -19,6 +19,7 @@
 
 set -e -x
 
+export ARCH=${ARCH:-arm64}
 export MACOSX_DEPLOYMENT_TARGET=11.0
 
 MAC_BUILD_DIR=`cd $(dirname $0); pwd`

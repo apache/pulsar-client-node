@@ -43,7 +43,7 @@ else
   PLATFORM=x86_64
 fi
 
-if [ $ID == 'ubuntu' ]; then
+if [ $ID == 'ubuntu' -o $ID == 'debian' ]; then
   curl -L -O ${BASE_URL}/deb-${PLATFORM}/apache-pulsar-client.deb
   curl -L -O ${BASE_URL}/deb-${PLATFORM}/apache-pulsar-client-dev.deb
   $SUDO apt install -y /tmp/*.deb

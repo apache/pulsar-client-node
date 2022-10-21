@@ -94,10 +94,16 @@ if [ ! -f protobuf-${PROTOBUF_VERSION}.done ]; then
     curl -O -L  https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     tar xfz protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     pushd protobuf-${PROTOBUF_VERSION}
-      CXXFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
-      ./configure --prefix=$PREFIX $CONFIGURE_ARGS
+      CXXFLAGS="-fPIC -arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+            ./configure --prefix=$PREFIX
       make -j16 V=1
       make install
+    popd
+
+    pushd install/lib
+      echo "Propose target arch static lib" ${ARCH}
+      mv libprotobuf.a libprotobuf_universal.a
+      lipo libprotobuf_universal.a -thin ${ARCH} -output libprotobuf.a
     popd
 
     rm -rf protobuf-${PROTOBUF_VERSION} protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
@@ -113,8 +119,8 @@ if [ ! -f zstd-${ZSTD_VERSION}.done ]; then
     tar xfz zstd-${ZSTD_VERSION}.tar.gz
     pushd zstd-${ZSTD_VERSION}
       CFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-      PREFIX=$PREFIX  \
-      make -j16 -C lib install
+          PREFIX=$PREFIX  \
+          make -j16 -C lib install
     popd
 
     touch zstd-${ZSTD_VERSION}.done
@@ -148,15 +154,20 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
     curl -O -L  https://github.com/curl/curl/releases/download/curl-${CURL_VERSION_}/curl-${CURL_VERSION}.tar.gz
     tar xfz curl-${CURL_VERSION}.tar.gz
     pushd curl-${CURL_VERSION}
-      CFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-      ./configure --with-ssl=$PREFIX \
-              --without-nghttp2 \
-              --without-libidn2 \
-              --disable-ldap \
-              --without-librtmp \
-              --without-brotli \
-              --prefix=$PREFIX \
-              $CONFIGURE_ARGS2
+      if [ $ARCH = 'arm64' ]; then
+        HOST=aarch64
+      else
+        HOST=x86_64
+      fi
+      CFLAGS="-fPIC -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+        ./configure --with-ssl=$PREFIX \
+                --without-nghttp2 \
+                --without-libidn2 \
+                --disable-ldap \
+                --without-librtmp \
+                --without-brotli \
+                --prefix=$PREFIX \
+                --host=$HOST
       make -j16 install
     popd
 

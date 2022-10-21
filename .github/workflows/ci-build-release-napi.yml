@@ -22,6 +22,7 @@ jobs:
       matrix:
         arch:
           - x86_64
+#          - arm64
         nodejs:
           - 16
           - 18
@@ -40,6 +41,15 @@ jobs:
           path: pkg/mac/build
           key: ${{ runner.os }}-${{ matrix.arch }}-mac-${{ hashFiles('pkg/mac/build-cpp-deps-lib.sh') }}
 
+      - name: Add env vars
+        shell: bash
+        run: |
+          if [ "${{ matrix.target }}" = "x86_64" ]; then
+            echo "TARGET=x64" >> $GITHUB_ENV
+          else
+            echo "TARGET=${{ matrix.target }}" >> $GITHUB_ENV
+          fi
+
       - name: Build CPP dependencies lib
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
         run: |
@@ -55,8 +65,8 @@ jobs:
       - name: Build Node binaries lib
         run: |
           npm install --ignore-scripts
-          npx node-pre-gyp configure
-          npx node-pre-gyp build
+          npx node-pre-gyp configure --target_arch=${{ env.TARGET }}
+          npx node-pre-gyp build --target_arch=${{ env.TARGET }}
 
       - name: Test loading Node binaries lib
         run: |
@@ -64,7 +74,7 @@ jobs:
 
       - name: Package Node binaries lib
         run: |
-          npx node-pre-gyp package
+          npx node-pre-gyp package --target_arch=${{ env.TARGET }}
 
       - name: Upload Node binaries lib to GitHub Release
         env:

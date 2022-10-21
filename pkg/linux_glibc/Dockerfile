@@ -17,18 +17,17 @@
 # under the License.
 #
 
-FROM centos:7
+ARG NODE_VERSION
+
+FROM node:${NODE_VERSION}-bullseye
 
 ARG NODE_VERSION
 
-RUN curl -fsSL https://rpm.nodesource.com/setup_${NODE_VERSION}.x | bash -
-
-RUN yum update -y && \
-    yum install -y \
-        gcc-c++ \
+RUN apt-get update -y && \
+     apt-get install -y \
+        curl \
+        g++ \
         make \
-        sudo \
-        python3 \
-        nodejs
+        python3
 
 CMD ["sh"]
