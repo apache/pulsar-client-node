@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,20 +18,7 @@
 # under the License.
 #
 
-set -e
+import yaml, sys
 
-SRC_DIR=$(git rev-parse --show-toplevel)
-cd $SRC_DIR
-
-./pulsar-test-service-stop.sh
-
-CONTAINER_ID=$(docker run -i -p 8080:8080 -p 6650:6650 -p 8443:8443 -p 6651:6651 --rm --detach apachepulsar/pulsar:latest sleep 3600)
-
-echo $CONTAINER_ID >.tests-container-id.txt
-
-docker cp tests/conf $CONTAINER_ID:/pulsar/test-conf
-docker cp pulsar-test-container-start.sh $CONTAINER_ID:pulsar-test-container-start.sh
-
-docker exec -i $CONTAINER_ID /pulsar-test-container-start.sh
-
-echo "-- Ready to start tests"
+deps = yaml.safe_load(open("dependencies.yaml"))
+print(deps[sys.argv[1]])

@@ -20,12 +20,25 @@
 
 set -e -x
 
-cd /pulsar-client-node
+if [ $# -neq 2 ]; then
+    echo "Usage: $0 \$DEST_PATH \$WORKFLOW_ID"
+    exit 1
+fi
 
-build-support/install-cpp-client.sh
+DEST_PATH=$(readlink -f $1)
+WORKFLOW_ID=$2
 
-npm install --ignore-scripts
-npx node-pre-gyp configure
-npx node-pre-gyp build
-npx node-pre-gyp package
-node pkg/load_test.js
+pushd $(dirname "$0")
+PULSAR_NODE_PATH=$(git rev-parse --show-toplevel)
+popd
+
+mkdir -p $DEST_PATH
+
+cd $PULSAR_NODE_PATH
+
+build-support/download-release-artifacts.py $WORKFLOW_ID $DEST_PATH
+build-support/generate-source-archive.sh $DEST_PATH
+
+# Sign all files
+#cd $DEST_PATH
+#find . -type f | xargs $PULSAR_NODE_PATH/build-support/sign-files.sh

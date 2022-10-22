@@ -2,8 +2,6 @@ name: Build release napi
 on:
   workflow_dispatch:
   push:
-    branches:
-      - master
     tags:
       - '*'
 env:
@@ -76,13 +74,12 @@ jobs:
         run: |
           npx node-pre-gyp package --target_arch=${{ env.TARGET }}
 
-      - name: Upload Node binaries lib to GitHub Release
-        env:
-          NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
-        run: |
-          echo $NODE_PRE_GYP_GITHUB_TOKEN
-          npx node-pre-gyp-github publish
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.nodejs == 16
+        with:
+          name: macos-${{matrix.nodejs}}-${{matrix.arch}}
+          path: build/stage/*/*.tar.gz
 
   linux-napi:
     name: Build NAPI ${{matrix.image}} - Node ${{matrix.nodejs}} - ${{matrix.cpu.platform}}
@@ -131,10 +128,9 @@ jobs:
           docker run -i -v $PWD:/pulsar-client-node build:latest \
               /pulsar-client-node/pkg/build-napi-inside-docker.sh
 
-      - name: Upload Node binaries lib to GitHub Release
-        env:
-          NODE_PRE_GYP_GITHUB_TOKEN: ${{ secrets.GITHUBTOKEN }}
-        if: matrix.nodejs == 16 && startsWith(github.ref, 'refs/tags/')
-        run: |
-          echo $NODE_PRE_GYP_GITHUB_TOKEN
-          npx node-pre-gyp-github publish
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.nodejs == 16
+        with:
+          name: ${{matrix.image}}-${{matrix.nodejs}}-${{matrix.cpu.platform}}
+          path: build/stage/*/*.tar.gz

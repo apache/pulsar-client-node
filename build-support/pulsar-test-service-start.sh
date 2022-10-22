@@ -18,14 +18,20 @@
 # under the License.
 #
 
-set -e -x
+set -e
 
-cd /pulsar-client-node
+SRC_DIR=$(git rev-parse --show-toplevel)
+cd $SRC_DIR
 
-build-support/install-cpp-client.sh
+build-support/pulsar-test-service-stop.sh
 
-npm install --ignore-scripts
-npx node-pre-gyp configure
-npx node-pre-gyp build
-npx node-pre-gyp package
-node pkg/load_test.js
+CONTAINER_ID=$(docker run -i -p 8080:8080 -p 6650:6650 -p 8443:8443 -p 6651:6651 --rm --detach apachepulsar/pulsar:latest sleep 3600)
+
+echo $CONTAINER_ID >.tests-container-id.txt
+
+docker cp $SRC_DIR/tests/conf $CONTAINER_ID:/pulsar/test-conf
+docker cp $SRC_DIR/build-support/pulsar-test-container-start.sh $CONTAINER_ID:pulsar-test-container-start.sh
+
+docker exec -i $CONTAINER_ID /pulsar-test-container-start.sh
+
+echo "-- Ready to start tests"

@@ -25,7 +25,7 @@ PULSAR_PREFIX=${PULSAR_DIR}/install
 mkdir -p $PULSAR_PREFIX
 cd $PULSAR_DIR
 
-# Pulsar
+## TODO: Fetch from official release
 curl -O -L https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-cpp-${PULSAR_CPP_VERSION}-candidate-2/apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
 tar xfz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
 pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
@@ -43,8 +43,8 @@ pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
       -DBUILD_DYNAMIC_LIB=OFF \
       -DPROTOC_PATH=$PREFIX/bin/protoc
   make -j16 install
-  mkdir $TOP_DIR/pkg/lib/
-  cp -r lib/libpulsarwithdeps.a $TOP_DIR/pkg/lib/
+  mkdir $ROOT_DIR/pkg/lib/
+  cp -r lib/libpulsarwithdeps.a $ROOT_DIR/pkg/lib/
 popd
 
 rm -rf apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}

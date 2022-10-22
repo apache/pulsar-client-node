@@ -17,15 +17,12 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+ROOT_DIR=$(git rev-parse --show-toplevel)
 
-set -e -x
+VERSION=$(npm version | grep pulsar-client | awk -F ':' '{print $2}' | sed "s?'??g" | sed "s?,??g" | sed "s? ??g")
 
-cd /pulsar-client-node
+NAME=apache-pulsar-client-node-$VERSION
 
-build-support/install-cpp-client.sh
+OUT_DIR=${1:-.}
 
-npm install --ignore-scripts
-npx node-pre-gyp configure
-npx node-pre-gyp build
-npx node-pre-gyp package
-node pkg/load_test.js
+git archive --format=tar.gz --prefix ${NAME}/ -o ${OUT_DIR}/${NAME}.tar.gz HEAD

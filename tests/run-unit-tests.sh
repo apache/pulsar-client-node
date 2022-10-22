@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,14 +18,18 @@
 # under the License.
 #
 
-set -e -x
+set -e
 
-cd /pulsar-client-node
+ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
+cd $ROOT_DIR
 
+# install pulsar cpp client pkg
 build-support/install-cpp-client.sh
 
-npm install --ignore-scripts
-npx node-pre-gyp configure
-npx node-pre-gyp build
-npx node-pre-gyp package
-node pkg/load_test.js
+cd $ROOT_DIR
+build-support/pulsar-test-service-start.sh
+npm install && npm run lint && npm run dtslint && npm run build && npm run test
+RES=$?
+build-support/pulsar-test-service-stop.sh
+
+exit $RES

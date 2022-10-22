@@ -23,8 +23,8 @@ export ARCH=${ARCH:-arm64}
 export MACOSX_DEPLOYMENT_TARGET=11.0
 
 MAC_BUILD_DIR=`cd $(dirname $0); pwd`
-TOP_DIR=$MAC_BUILD_DIR/../..
-export PULSAR_CPP_VERSION=`cat $TOP_DIR/pulsar-client-cpp-version.txt`
+ROOT_DIR=$(git rev-parse --show-toplevel)
+export PULSAR_CPP_VERSION=`cat $ROOT_DIR/pulsar-client-cpp-version.txt`
 
 cd $MAC_BUILD_DIR
 mkdir -p build

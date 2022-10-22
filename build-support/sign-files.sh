@@ -18,14 +18,15 @@
 # under the License.
 #
 
-set -e -x
+set -e
 
-cd /pulsar-client-node
+FILES=$*
 
-build-support/install-cpp-client.sh
+for FILE in $FILES
+do
+   echo "Signing $FILE"
+   gpg --armor --output $FILE.asc --detach-sig $FILE
 
-npm install --ignore-scripts
-npx node-pre-gyp configure
-npx node-pre-gyp build
-npx node-pre-gyp package
-node pkg/load_test.js
+   # SHA-512 signature
+   shasum -a 512 $FILE > $FILE.sha512
+done

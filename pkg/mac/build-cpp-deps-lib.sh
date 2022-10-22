@@ -20,16 +20,23 @@
 
 source $(dirname $0)/common.sh
 
-ZLIB_VERSION=1.2.13
-OPENSSL_VERSION=1_1_1q
-BOOST_VERSION=1.79.0
-PROTOBUF_VERSION=3.20.0
-ZSTD_VERSION=1.5.2
-SNAPPY_VERSION=1.1.3
-CURL_VERSION=7.61.0
+cd $ROOT_DIR
 
-###############################################################################
-if [ ! -f zlib-${ZLIB_VERSION}/.done ]; then
+pip3 install pyyaml
+
+dep=$ROOT_DIR/build-support/dep-version.py
+ZLIB_VERSION=$($dep zlib)
+OPENSSL_VERSION=$($dep openssl)
+BOOST_VERSION=$($dep boost)
+PROTOBUF_VERSION=$($dep protobuf)
+ZSTD_VERSION=$($dep zstd)
+SNAPPY_VERSION=$($dep snappy)
+CURL_VERSION=$($dep curl)
+
+cd $MAC_BUILD_DIR/build
+
+##############################################################################
+if [ ! -f zlib-${ZLIB_VERSION}.done ]; then
     echo "Building ZLib"
     curl -O -L https://zlib.net/fossils/zlib-${ZLIB_VERSION}.tar.gz
     tar xfz zlib-$ZLIB_VERSION.tar.gz
@@ -37,18 +44,22 @@ if [ ! -f zlib-${ZLIB_VERSION}/.done ]; then
       CFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" ./configure --prefix=$PREFIX
       make -j16
       make install
-      touch .done
     popd
+
+    rm -rf zlib-$ZLIB_VERSION.tar.gz zlib-$ZLIB_VERSION
+    touch zlib-${ZLIB_VERSION}.done
 else
     echo "Using cached ZLib"
 fi
 
 ###############################################################################
-if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION}.done ]; then
+OPENSSL_VERSION_UNDERSCORE=$(echo $OPENSSL_VERSION | sed 's/\./_/g')
+if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
     echo "Building OpenSSL"
-    curl -O -L https://github.com/openssl/openssl/archive/refs/heads/OpenSSL_1_1_1-stable.zip
-    unzip OpenSSL_1_1_1-stable.zip
-    pushd openssl-OpenSSL_1_1_1-stable
+    curl -O -L https://github.com/openssl/openssl/archive/OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
+    tar xfz OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
+    pushd openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}
+        echo -e "#include <string.h>\n$(cat test/v3ext.c)" > test/v3ext.c
         if [ $ARCH = 'arm64' ]; then
           PLATFORM=darwin64-arm64-cc
         else
@@ -59,8 +70,8 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION}.done ]; then
         make install_sw
     popd
 
-    rm -rf OpenSSL_${OPENSSL_VERSION}.tar.gz openssl-OpenSSL_${OPENSSL_VERSION}
-    touch openssl-OpenSSL_${OPENSSL_VERSION}.done
+    rm -rf OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}
+    touch openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done
 else
     echo "Using cached OpenSSL"
 fi
@@ -82,8 +93,9 @@ if [ ! -f $DIR.done ]; then
                 variant=release \
                 install
     popd
-    touch $DIR.done
+
     rm -rf $DIR boost_${BOOST_VERSION_}.tar.gz
+    touch $DIR.done
 else
     echo "Using cached Boost"
 fi
@@ -123,8 +135,8 @@ if [ ! -f zstd-${ZSTD_VERSION}.done ]; then
           make -j16 -C lib install
     popd
 
-    touch zstd-${ZSTD_VERSION}.done
     rm -rf zstd-${ZSTD_VERSION} zstd-${ZSTD_VERSION}.tar.gz
+    touch zstd-${ZSTD_VERSION}.done
 else
     echo "Using cached ZStd"
 fi
@@ -132,16 +144,17 @@ fi
 ###############################################################################
 if [ ! -f snappy-${SNAPPY_VERSION}.done ]; then
     echo "Building Snappy"
-    curl -O -L https://github.com/google/snappy/releases/download/${SNAPPY_VERSION}/snappy-${SNAPPY_VERSION}.tar.gz
-    tar xfz snappy-${SNAPPY_VERSION}.tar.gz
+    curl -O -L https://github.com/google/snappy/archive/refs/tags/${SNAPPY_VERSION}.tar.gz
+    tar xfz ${SNAPPY_VERSION}.tar.gz
     pushd snappy-${SNAPPY_VERSION}
       CXXFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-      ./configure --prefix=$PREFIX
+          cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF
       make -j16
       make install
+      touch .done
     popd
 
-    rm -rf snappy-${SNAPPY_VERSION} snappy-${SNAPPY_VERSION}.tar.gz
+    rm -rf snappy-${SNAPPY_VERSION} ${SNAPPY_VERSION}.tar.gz
     touch snappy-${SNAPPY_VERSION}.done
 else
     echo "Using cached Snappy"
@@ -154,20 +167,15 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
     curl -O -L  https://github.com/curl/curl/releases/download/curl-${CURL_VERSION_}/curl-${CURL_VERSION}.tar.gz
     tar xfz curl-${CURL_VERSION}.tar.gz
     pushd curl-${CURL_VERSION}
-      if [ $ARCH = 'arm64' ]; then
-        HOST=aarch64
-      else
-        HOST=x86_64
-      fi
-      CFLAGS="-fPIC -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-        ./configure --with-ssl=$PREFIX \
-                --without-nghttp2 \
-                --without-libidn2 \
-                --disable-ldap \
-                --without-librtmp \
-                --without-brotli \
-                --prefix=$PREFIX \
-                --host=$HOST
+      CFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+            ./configure --with-ssl=$PREFIX \
+              --without-nghttp2 \
+              --without-libidn2 \
+              --disable-ldap \
+              --without-brotli \
+              --without-secure-transport \
+              --disable-ipv6 \
+              --prefix=$PREFIX
       make -j16 install
     popd
 

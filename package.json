@@ -1,6 +1,6 @@
 {
   "name": "pulsar-client",
-  "version": "1.8.1-rc.3",
+  "version": "1.8.0-rc.0",
   "description": "Pulsar Node.js client",
   "main": "index.js",
   "types": "index.d.ts",
@@ -61,8 +61,8 @@
   "binary": {
     "module_name": "Pulsar",
     "module_path": "./lib/binding/",
-    "host": "https://github.com/apache/pulsar-client-node/releases/download/",
-    "remote_path": "v{version}",
+    "host": "https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/",
+    "remote_path": "pulsar-client-node-{version}",
     "package_name": "napi-{platform}-{libc}-{arch}.tar.gz"
   },
   "license-check-and-add-config": {
