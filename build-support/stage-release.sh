@@ -40,5 +40,5 @@ build-support/download-release-artifacts.py $WORKFLOW_ID $DEST_PATH
 build-support/generate-source-archive.sh $DEST_PATH
 
 # Sign all files
-#cd $DEST_PATH
-#find . -type f | xargs $PULSAR_NODE_PATH/build-support/sign-files.sh
+cd $DEST_PATH
+find . -type f | xargs $PULSAR_NODE_PATH/build-support/sign-files.sh
