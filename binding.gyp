@@ -21,15 +21,9 @@
   'conditions': [
     ['OS=="win"', {
       'variables': {
-        'pulsar_cpp_dir%': '<!(echo %PULSAR_CPP_DIR%)',
         'os_arch%': '<!(echo %OS_ARCH%)',
       }
     }],
-    ['OS=="mac"', {
-      'variables': {
-        'pulsar_cpp_dir': '<!(echo $PULSAR_CPP_DIR)'
-      }
-    }]
   ],
   "targets": [
     {
@@ -60,16 +54,18 @@
         ['OS=="mac"', {
           'xcode_settings': {
             'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-            'CLANG_CXX_LIBRARY': 'libc++'
+            'GCC_ENABLE_CPP_RTTI': 'YES',
+            'MACOSX_DEPLOYMENT_TARGET': '11.0',
+            'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
+            'OTHER_CFLAGS': [
+                "-fPIC",
+            ]
           },
-          "include_dirs": [
-            "<(pulsar_cpp_dir)/include",
-          ],
-          "libraries": [
-            "<(pulsar_cpp_dir)/lib/libpulsar.dylib"
-          ],
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
+          ],
+          "include_dirs": [
+            "pkg/mac/build-pulsar/install/include"
           ],
         }],
         ['OS=="win"', {
@@ -106,15 +102,25 @@
               ]
             }
           ]
-        }],
-        ['OS!="mac" and OS!="win"', {
-          "libraries": [
-            "-lpulsar",
-          ],
+        }, {  # 'OS!="win"'
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
+          "libraries": [
+             "../pkg/lib/libpulsarwithdeps.a"
+          ],
         }]
+      ]
+    },
+    {
+      "target_name": "action_after_build",
+      "type": "none",
+      "dependencies": [ "<(module_name)" ],
+      "copies": [
+        {
+          "files": [ "<(PRODUCT_DIR)/<(module_name).node" ],
+          "destination": "<(module_path)"
+        }
       ]
     }
   ]

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,21 +18,14 @@
 # under the License.
 #
 
-ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
-cd $ROOT_DIR
+set -e -x
 
-BUILD_IMAGE_NAME="${BUILD_IMAGE_NAME:-apachepulsar/pulsar-build}"
-BUILD_IMAGE_VERSION="${BUILD_IMAGE_VERSION:-ubuntu-20.04}"
+cd /pulsar-client-node
 
-IMAGE="$BUILD_IMAGE_NAME:$BUILD_IMAGE_VERSION"
+build-support/install-cpp-client.sh
 
-echo "---- Testing Pulsar node client using image $IMAGE"
-
-docker pull $IMAGE
-
-TARGET_DIR=/pulsar-client-node
-DOCKER_CMD="docker run -i -e ROOT_DIR=$TARGET_DIR -v $ROOT_DIR:$TARGET_DIR $IMAGE"
-
-# Start Pulsar standalone instance
-# and execute the tests
-$DOCKER_CMD bash -c "cd /pulsar-client-node && ./run-unit-tests.sh"
+npm install --ignore-scripts
+npx node-pre-gyp configure
+npx node-pre-gyp build
+npx node-pre-gyp package
+node pkg/load_test.js

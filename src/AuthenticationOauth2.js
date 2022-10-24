@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-const PulsarBinding = require('bindings')('Pulsar');
+const PulsarBinding = require('./pulsar-binding');
 
 class AuthenticationOauth2 {
   constructor(params) {
