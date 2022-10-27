@@ -125,3 +125,68 @@ jobs:
         with:
           name: ${{matrix.image}}-${{matrix.nodejs}}-${{matrix.cpu.platform}}
           path: build/stage/*/*.tar.gz
+
+  windows-napi:
+    name: Build NAPI windows - Node ${{matrix.nodejs}} - ${{matrix.arch}}
+    runs-on: windows-2022
+    timeout-minutes: 3000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - x86
+        nodejs:
+          - 16
+          - 18
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.nodejs }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodejs }}
+          architecture: ${{ matrix.arch }}
+          cache: 'npm'
+
+      - name: Cache CPP Client
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: pkg/windows/
+          key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('tmp-pulsar-client-cpp-version.txt') }}
+
+      - name: Add env vars
+        shell: bash
+        run: |
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            echo "TARGET=ia32" >> $GITHUB_ENV
+          else
+            echo "TARGET=${{ matrix.arch }}" >> $GITHUB_ENV
+          fi
+
+      - name: Download CPP Client
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: |
+          pkg/windows/download-cpp-client.bat ${{ matrix.arch }}
+
+      - name: Build Node binaries lib
+        run: |
+          npm install --ignore-scripts
+          npx node-pre-gyp configure --target_arch=${{ env.TARGET }}
+          npx node-pre-gyp build --target_arch=${{ env.TARGET }}
+
+      - name: Test loading Node binaries lib
+        run: |
+          node pkg/load_test.js
+
+      - name: Package Node binaries lib
+        run: |
+          npx node-pre-gyp package --target_arch=${{ env.TARGET }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        if: matrix.nodejs == 16
+        with:
+          name: windows-${{matrix.nodejs}}-${{matrix.arch}}
+          path: build/stage/*/*.tar.gz
