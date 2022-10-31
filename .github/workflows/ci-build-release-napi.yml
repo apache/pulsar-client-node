@@ -22,7 +22,6 @@ jobs:
           - x86_64
 #          - arm64
         nodejs:
-          - 16
           - 18
     steps:
       - uses: actions/checkout@v3
@@ -67,7 +66,6 @@ jobs:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
-        if: matrix.nodejs == 16
         with:
           name: macos-${{matrix.nodejs}}-${{matrix.arch}}
           path: build/stage/*/*.tar.gz
@@ -84,7 +82,6 @@ jobs:
           - 'linux_glibc'
           - 'linux_musl'
         nodejs:
-          - 16
           - 18
         cpu:
           - {arch: 'x86_64', platform: 'x86_64'}
@@ -121,7 +118,6 @@ jobs:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
-        if: matrix.nodejs == 16
         with:
           name: ${{matrix.image}}-${{matrix.nodejs}}-${{matrix.cpu.platform}}
           path: build/stage/*/*.tar.gz
@@ -138,7 +134,6 @@ jobs:
           - x64
           - x86
         nodejs:
-          - 16
           - 18
     steps:
       - uses: actions/checkout@v3
@@ -186,7 +181,6 @@ jobs:
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
-        if: matrix.nodejs == 16
         with:
           name: windows-${{matrix.nodejs}}-${{matrix.arch}}
           path: build/stage/*/*.tar.gz

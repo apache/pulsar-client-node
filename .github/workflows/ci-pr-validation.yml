@@ -50,7 +50,7 @@ jobs:
         arch:
           - x86_64
         nodejs:
-          - 16
+          - 18
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -113,9 +113,10 @@ jobs:
           - 'linux_glibc'
           - 'linux_musl'
         nodejs:
-          - 16
+          - 18
         cpu:
           - {arch: 'x86_64', platform: 'x86_64'}
+          - {arch: 'aarch64', platform: 'arm64'}
 
     steps:
       - name: checkout
@@ -155,9 +156,10 @@ jobs:
       fail-fast: false
       matrix:
         arch:
+          - x64
           - x86
         nodejs:
-          - 16
+          - 18
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
