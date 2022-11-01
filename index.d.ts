@@ -98,6 +98,7 @@ export class Consumer {
   negativeAcknowledgeId(messageId: MessageId): void;
   acknowledgeCumulative(message: Message): Promise<null>;
   acknowledgeCumulativeId(messageId: MessageId): Promise<null>;
+  seek(messageId: MessageId): Promise<null>;
   isConnected(): boolean;
   close(): Promise<null>;
   unsubscribe(): Promise<null>;

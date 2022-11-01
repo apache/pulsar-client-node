@@ -847,5 +847,45 @@ const Pulsar = require('../index.js');
 
       await client.close();
     });
+
+    test('Consumer seek by message Id', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/seek-by-msgid';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      const msgIds = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        console.log(msg);
+        const msgId = await producer.send({
+          data: Buffer.from(msg),
+        });
+        msgIds.push(msgId);
+      }
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub',
+      });
+      expect(consumer).not.toBeNull();
+
+      await consumer.seek(msgIds[5]);
+      const msg = consumer.receive(1000);
+      console.log((await msg).getMessageId().toString());
+      expect((await msg).getData().toString()).toBe('my-message-6');
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
   });
 })();
