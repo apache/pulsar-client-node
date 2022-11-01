@@ -18,13 +18,6 @@
 #
 
 {
-  'conditions': [
-    ['OS=="win"', {
-      'variables': {
-        'os_arch%': '<!(echo %OS_ARCH%)',
-      }
-    }],
-  ],
   "targets": [
     {
       "target_name": "Pulsar",
@@ -70,7 +63,8 @@
         }],
         ['OS=="win"', {
           "defines": [
-            "_HAS_EXCEPTIONS=1"
+            "_HAS_EXCEPTIONS=1",
+            "PULSAR_STATIC"
           ],
           "msvs_settings": {
             "VCCLCompilerTool": {
@@ -78,29 +72,13 @@
             },
           },
           "include_dirs": [
-            "<(pulsar_cpp_dir)\include",
+            "pkg\\windows\\pulsar-cpp\\include",
           ],
           "libraries": [
-            "-l<(pulsar_cpp_dir)\\lib\Release\pulsar.lib"
+            "..\\pkg\\windows\\pulsar-cpp\\lib\\pulsarWithDeps.lib"
           ],
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
-          ],
-          "copies": [
-            {
-              "destination": "<(PRODUCT_DIR)",
-              "files": [
-                "<(pulsar_cpp_dir)\\lib\Release\pulsar.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcurl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libprotobuf.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libssl-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcrypto-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\dl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\snappy.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zlib1.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zstd.dll",
-              ]
-            }
           ]
         }, {  # 'OS!="win"'
           "dependencies": [
