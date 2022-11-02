@@ -26,23 +26,6 @@ The Pulsar Node.js client can be used to create Pulsar producers and consumers i
 This library works only in Node.js 10.x or later because it uses the
 [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
 
-
-## Prebuilt binaries
-
-The module uses [node-pre-gyp](https://github.com/mapbox/node-pre-gyp) to download the prebuilt binary for your platform, if it exists.
-These binaries are hosted on ASF dist subversion. The following targets are currently provided:
-
-Format: `napi-{platform}-{libc}-{arch}`
-- napi-darwin-unknown-x64.tar.gz
-- napi-linux-glibc-arm64.tar.gz
-- napi-linux-glibc-x64.tar.gz
-- napi-linux-musl-arm64.tar.gz
-- napi-linux-musl-x64.tar.gz
-- napi-win32-unknown-ia32.tar.gz
-- napi-win32-unknown-x64.tar.gz
-
-`darwin-arm64` systems are not currently supported, you can refer `How to build` to build from source.
-
 ## How to install
 
 > **Note**
@@ -62,6 +45,23 @@ yarn add pulsar-client
 ```
 
 After install, you can run the [examples](https://github.com/apache/pulsar-client-node/tree/master/examples).
+
+### Prebuilt binaries
+
+The module uses [node-pre-gyp](https://github.com/mapbox/node-pre-gyp) to download the prebuilt binary for your platform, if it exists.
+These binaries are hosted on ASF dist subversion. The following targets are currently provided:
+
+Format: `napi-{platform}-{libc}-{arch}`
+- napi-darwin-unknown-x64.tar.gz
+- napi-linux-glibc-arm64.tar.gz
+- napi-linux-glibc-x64.tar.gz
+- napi-linux-musl-arm64.tar.gz
+- napi-linux-musl-x64.tar.gz
+- napi-win32-unknown-ia32.tar.gz
+- napi-win32-unknown-x64.tar.gz
+
+`darwin-arm64` systems are not currently supported, you can refer `How to build` to build from source.
+
 
 ## How to build
 
