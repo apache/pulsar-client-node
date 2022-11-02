@@ -19,7 +19,7 @@
 
 set -e -x
 
-if [ ! -n "$ARCH" ]; then
+if [ -z "$ARCH" ]; then
    export ARCH=$(uname -m)
 fi
 
