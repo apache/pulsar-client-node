@@ -75,18 +75,18 @@ cd pulsar-client-node
 
 Select the appropriate installation method from below depending on your operating system:
 
-Install C++ client on macOS:
+#### Install C++ client on macOS:
 ```shell
 pkg/mac/build-cpp-deps-lib.sh
 pkg/mac/build-cpp-lib.sh
 ```
 
-Install C++ client on Linux:
+#### Install C++ client on Linux:
 ```shell
 build-support/install-cpp-client.sh
 ```
 
-Install C++ client on Windows (required preinstall `curl` and `7z`):
+#### Install C++ client on Windows (required preinstall `curl` and `7z`):
 ```shell
 pkg\windows\download-cpp-client.bat
 ```
