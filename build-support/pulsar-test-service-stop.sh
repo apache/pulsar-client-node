@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,37 +18,15 @@
 # under the License.
 #
 
-github:
-  description: "Apache Pulsar NodeJS Client"
-  homepage: https://pulsar.apache.org/
-  labels:
-    - pulsar
-    - pubsub
-    - messaging
-    - streaming
-    - queuing
-    - event-streaming
-    - node
-    - javascript
-    - nodejs
-  features:
-    # Enable wiki for documentation
-    wiki: true
-    # Enable issues management
-    issues: true
-    # Enable projects for project management boards
-    projects: true
-  enabled_merge_buttons:
-    # enable squash button:
-    squash:  true
-    # disable merge button:
-    merge:   false
-    # disable rebase button:
-    rebase:  false
+set -e
 
-notifications:
-  commits:      commits@pulsar.apache.org
-  issues:       commits@pulsar.apache.org
-  pullrequests: commits@pulsar.apache.org
-  discussions:  dev@pulsar.apache.org
-  jira_options: link label
+SRC_DIR=$(git rev-parse --show-toplevel)
+cd $SRC_DIR
+
+CONTAINER_ID_PATH=".tests-container-id.txt"
+
+if [ -f ${CONTAINER_ID_PATH} ]; then
+  CONTAINER_ID=$(cat $CONTAINER_ID_PATH)
+  docker kill $CONTAINER_ID || true
+  rm .tests-container-id.txt
+fi

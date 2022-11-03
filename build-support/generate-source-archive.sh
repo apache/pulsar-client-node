@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,38 +17,12 @@
 # specific language governing permissions and limitations
 # under the License.
 #
+ROOT_DIR=$(git rev-parse --show-toplevel)
 
-github:
-  description: "Apache Pulsar NodeJS Client"
-  homepage: https://pulsar.apache.org/
-  labels:
-    - pulsar
-    - pubsub
-    - messaging
-    - streaming
-    - queuing
-    - event-streaming
-    - node
-    - javascript
-    - nodejs
-  features:
-    # Enable wiki for documentation
-    wiki: true
-    # Enable issues management
-    issues: true
-    # Enable projects for project management boards
-    projects: true
-  enabled_merge_buttons:
-    # enable squash button:
-    squash:  true
-    # disable merge button:
-    merge:   false
-    # disable rebase button:
-    rebase:  false
+VERSION=$(npm version | grep pulsar-client | awk -F ':' '{print $2}' | sed "s?'??g" | sed "s?,??g" | sed "s? ??g")
 
-notifications:
-  commits:      commits@pulsar.apache.org
-  issues:       commits@pulsar.apache.org
-  pullrequests: commits@pulsar.apache.org
-  discussions:  dev@pulsar.apache.org
-  jira_options: link label
+NAME=apache-pulsar-client-node-$VERSION
+
+OUT_DIR=${1:-.}
+
+git archive --format=tar.gz --prefix ${NAME}/ -o ${OUT_DIR}/${NAME}.tar.gz HEAD

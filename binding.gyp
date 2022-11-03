@@ -18,19 +18,6 @@
 #
 
 {
-  'conditions': [
-    ['OS=="win"', {
-      'variables': {
-        'pulsar_cpp_dir%': '<!(echo %PULSAR_CPP_DIR%)',
-        'os_arch%': '<!(echo %OS_ARCH%)',
-      }
-    }],
-    ['OS=="mac"', {
-      'variables': {
-        'pulsar_cpp_dir': '<!(echo $PULSAR_CPP_DIR)'
-      }
-    }]
-  ],
   "targets": [
     {
       "target_name": "Pulsar",
@@ -60,21 +47,24 @@
         ['OS=="mac"', {
           'xcode_settings': {
             'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
-            'CLANG_CXX_LIBRARY': 'libc++'
+            'GCC_ENABLE_CPP_RTTI': 'YES',
+            'MACOSX_DEPLOYMENT_TARGET': '11.0',
+            'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++11',
+            'OTHER_CFLAGS': [
+                "-fPIC",
+            ]
           },
-          "include_dirs": [
-            "<(pulsar_cpp_dir)/include",
-          ],
-          "libraries": [
-            "<(pulsar_cpp_dir)/lib/libpulsar.dylib"
-          ],
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
+          ],
+          "include_dirs": [
+            "pkg/mac/build-pulsar/install/include"
           ],
         }],
         ['OS=="win"', {
           "defines": [
-            "_HAS_EXCEPTIONS=1"
+            "_HAS_EXCEPTIONS=1",
+            "PULSAR_STATIC"
           ],
           "msvs_settings": {
             "VCCLCompilerTool": {
@@ -82,39 +72,33 @@
             },
           },
           "include_dirs": [
-            "<(pulsar_cpp_dir)\include",
+            "pkg\\windows\\pulsar-cpp\\include",
           ],
           "libraries": [
-            "-l<(pulsar_cpp_dir)\\lib\Release\pulsar.lib"
+            "..\\pkg\\windows\\pulsar-cpp\\lib\\pulsarWithDeps.lib"
           ],
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
-          ],
-          "copies": [
-            {
-              "destination": "<(PRODUCT_DIR)",
-              "files": [
-                "<(pulsar_cpp_dir)\\lib\Release\pulsar.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcurl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libprotobuf.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libssl-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\libcrypto-1_1-x64.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\dl.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\snappy.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zlib1.dll",
-                "<(pulsar_cpp_dir)\\vcpkg_installed\\<(os_arch)\\bin\zstd.dll",
-              ]
-            }
           ]
-        }],
-        ['OS!="mac" and OS!="win"', {
-          "libraries": [
-            "-lpulsar",
-          ],
+        }, {  # 'OS!="win"'
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
+          "libraries": [
+             "../pkg/lib/libpulsarwithdeps.a"
+          ],
         }]
+      ]
+    },
+    {
+      "target_name": "action_after_build",
+      "type": "none",
+      "dependencies": [ "<(module_name)" ],
+      "copies": [
+        {
+          "files": [ "<(PRODUCT_DIR)/<(module_name).node" ],
+          "destination": "<(module_path)"
+        }
       ]
     }
   ]

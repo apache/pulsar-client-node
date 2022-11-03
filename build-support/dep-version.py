@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -16,16 +17,8 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-name: Node.js
-on: [pull_request]
-jobs:
-  build:
-    name: Build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code into the Node.js module directory
-        uses: actions/checkout@v2
 
-      - name: Test
-        run: |
-          ./docker-tests.sh
+import yaml, sys
+
+deps = yaml.safe_load(open("dependencies.yaml"))
+print(deps[sys.argv[1]])

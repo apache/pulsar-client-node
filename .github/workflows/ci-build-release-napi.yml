@@ -1,0 +1,186 @@
+name: Build release napi
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - '*'
+env:
+  FORCE_COLOR: 1
+concurrency:
+  group: ${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+jobs:
+  macos-napi:
+    name: Build NAPI macos - Node ${{matrix.nodejs}} - ${{matrix.arch}}
+    runs-on: macos-latest
+    timeout-minutes: 3000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x86_64
+#          - arm64
+        nodejs:
+          - 18
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.nodejs }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodejs }}
+          cache: 'npm'
+
+      - name: Cache Dependencies
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: pkg/mac/build
+          key: ${{ runner.os }}-${{ matrix.arch }}-mac-${{ hashFiles('pkg/mac/build-cpp-deps-lib.sh') }}
+
+      - name: Build CPP dependencies lib
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: |
+          export ARCH=${{ matrix.arch }}
+          pkg/mac/build-cpp-deps-lib.sh
+
+      - name: Build CPP lib
+        if: steps.cache-pulsar.outputs.cache-hit != 'true'
+        run: |
+          export ARCH=${{ matrix.arch }}
+          pkg/mac/build-cpp-lib.sh
+
+      - name: Build Node binaries lib
+        run: |
+          npm install --ignore-scripts
+          npx node-pre-gyp configure --target_arch=${{ matrix.arch }}
+          npx node-pre-gyp build --target_arch=${{ matrix.arch }}
+
+      - name: Test loading Node binaries lib
+        run: |
+          node pkg/load_test.js
+
+      - name: Package Node binaries lib
+        run: |
+          npx node-pre-gyp package --target_arch=${{ matrix.arch }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: macos-${{matrix.nodejs}}-${{matrix.arch}}
+          path: build/stage/*/*.tar.gz
+
+  linux-napi:
+    name: Build NAPI ${{matrix.image}} - Node ${{matrix.nodejs}} - ${{matrix.cpu.platform}}
+    runs-on: ubuntu-22.04
+    timeout-minutes: 3000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - 'linux_glibc'
+          - 'linux_musl'
+        nodejs:
+          - 18
+        cpu:
+          - {arch: 'x86_64', platform: 'x86_64'}
+          - {arch: 'aarch64', platform: 'arm64'}
+
+    steps:
+      - name: checkout
+        uses: actions/checkout@v3
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v2
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Linux Docker image
+        uses: docker/build-push-action@v3
+        with:
+          context: ./pkg/${{matrix.image}}
+          load: true
+          tags: build:latest
+          platforms: linux/${{matrix.cpu.arch}}
+          build-args: |
+            PLATFORM=${{matrix.cpu.platform}}
+            ARCH=${{matrix.cpu.arch}}
+            NODE_VERSION=${{matrix.nodejs}}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and Test NAPI file
+        run: |
+          docker run -i -v $PWD:/pulsar-client-node build:latest \
+              /pulsar-client-node/pkg/build-napi-inside-docker.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{matrix.image}}-${{matrix.nodejs}}-${{matrix.cpu.platform}}
+          path: build/stage/*/*.tar.gz
+
+  windows-napi:
+    name: Build NAPI windows - Node ${{matrix.nodejs}} - ${{matrix.arch}}
+    runs-on: windows-2022
+    timeout-minutes: 3000
+
+    strategy:
+      fail-fast: false
+      matrix:
+        arch:
+          - x64
+          - x86
+        nodejs:
+          - 18
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js ${{ matrix.nodejs }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.nodejs }}
+          architecture: ${{ matrix.arch }}
+          cache: 'npm'
+
+      - name: Cache CPP Client
+        id: cache-dependencies
+        uses: actions/cache@v3
+        with:
+          path: pkg/windows/
+          key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('tmp-pulsar-client-cpp-version.txt') }}
+
+      - name: Add env vars
+        shell: bash
+        run: |
+          if [ "${{ matrix.arch }}" = "x86" ]; then
+            echo "TARGET=ia32" >> $GITHUB_ENV
+          else
+            echo "TARGET=${{ matrix.arch }}" >> $GITHUB_ENV
+          fi
+
+      - name: Download CPP Client
+        if: steps.cache-dependencies.outputs.cache-hit != 'true'
+        run: |
+          pkg/windows/download-cpp-client.bat ${{ matrix.arch }}
+
+      - name: Build Node binaries lib
+        run: |
+          npm install --ignore-scripts
+          npx node-pre-gyp configure --target_arch=${{ env.TARGET }}
+          npx node-pre-gyp build --target_arch=${{ env.TARGET }}
+
+      - name: Test loading Node binaries lib
+        run: |
+          node pkg/load_test.js
+
+      - name: Package Node binaries lib
+        run: |
+          npx node-pre-gyp package --target_arch=${{ env.TARGET }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: windows-${{matrix.nodejs}}-${{matrix.arch}}
+          path: build/stage/*/*.tar.gz

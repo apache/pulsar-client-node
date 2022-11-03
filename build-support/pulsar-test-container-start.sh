@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,37 +18,14 @@
 # under the License.
 #
 
-github:
-  description: "Apache Pulsar NodeJS Client"
-  homepage: https://pulsar.apache.org/
-  labels:
-    - pulsar
-    - pubsub
-    - messaging
-    - streaming
-    - queuing
-    - event-streaming
-    - node
-    - javascript
-    - nodejs
-  features:
-    # Enable wiki for documentation
-    wiki: true
-    # Enable issues management
-    issues: true
-    # Enable projects for project management boards
-    projects: true
-  enabled_merge_buttons:
-    # enable squash button:
-    squash:  true
-    # disable merge button:
-    merge:   false
-    # disable rebase button:
-    rebase:  false
+set -e -x
 
-notifications:
-  commits:      commits@pulsar.apache.org
-  issues:       commits@pulsar.apache.org
-  pullrequests: commits@pulsar.apache.org
-  discussions:  dev@pulsar.apache.org
-  jira_options: link label
+export PULSAR_STANDALONE_CONF=test-conf/standalone.conf
+bin/pulsar-daemon start standalone \
+        --no-functions-worker --no-stream-storage \
+        --bookkeeper-dir data/bookkeeper
+
+echo "-- Wait for Pulsar service to be ready"
+until curl http://localhost:8080/metrics > /dev/null 2>&1 ; do sleep 1; done
+
+echo "-- Ready to start tests"

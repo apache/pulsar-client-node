@@ -17,12 +17,14 @@
  * under the License.
  */
 
-const PulsarBinding = require('./pulsar-binding');
+const Pulsar = require('../index.js');
 
-class AuthenticationToken {
-  constructor(params) {
-    this.binding = new PulsarBinding.Authentication('token', params);
-  }
-}
+(async () => {
+  // Create a client
+  const clientConfig = {
+    serviceUrl: 'pulsar://localhost:6650',
+  };
 
-module.exports = AuthenticationToken;
+  const client = new Pulsar.Client(clientConfig);
+  await client.close();
+})();

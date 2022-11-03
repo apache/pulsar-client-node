@@ -23,23 +23,13 @@ set -e
 ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
 cd $ROOT_DIR
 
-VERSION="${VERSION:-`cat ./pulsar-version.txt`}"
-PULSAR_DIR="${PULSAR_DIR:-/tmp/pulsar-test-dist}"
-PKG=apache-pulsar-${VERSION}-bin.tar.gz
+# install pulsar cpp client pkg
+build-support/install-cpp-client.sh
 
-rm -rf $PULSAR_DIR
-curl -L --create-dir "https://archive.apache.org/dist/pulsar/pulsar-${VERSION}/${PKG}" -o $PULSAR_DIR/$PKG
-tar xfz $PULSAR_DIR/$PKG -C $PULSAR_DIR --strip-components 1
+cd $ROOT_DIR
+build-support/pulsar-test-service-start.sh
+npm install && npm run lint && npm run dtslint && npm run build && npm run test
+RES=$?
+build-support/pulsar-test-service-stop.sh
 
-DATA_DIR=/tmp/pulsar-test-data
-rm -rf $DATA_DIR
-mkdir -p $DATA_DIR
-
-export PULSAR_STANDALONE_CONF=$ROOT_DIR/tests/conf/standalone.conf
-$PULSAR_DIR/bin/pulsar-daemon start standalone \
-        --no-functions-worker --no-stream-storage \
-        --zookeeper-dir $DATA_DIR/zookeeper \
-        --bookkeeper-dir $DATA_DIR/bookkeeper
-
-echo "-- Wait for Pulsar service to be ready"
-until curl http://localhost:8080/metrics > /dev/null 2>&1 ; do sleep 1; done
+exit $RES
