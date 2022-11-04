@@ -6,14 +6,16 @@ The steps for releasing are as follows:
 1. Check and Add TypeScript Types
 2. Create the release branch
 3. Update package version and tag
-4. Build and inspect the artifacts
+4. Sign and stage the artifacts
 5. Move master branch to next version
-6. Sign and stage the artifacts
-7. Write release notes
-8. Run the vote
-9. Promote the release
-10. Update release notes
-11. Announce the release
+6. Write release notes
+7. Run the vote
+8. Promote the release
+9. Update release notes
+10. Announce the release
+ 
+## Requirements
+If you haven't already done it, [create and publish the GPG key](https://pulsar.apache.org/contribute/releasing/create-gpg-keys) to sign the release artifacts.
 
 ## Steps in detail
 
@@ -63,100 +65,41 @@ $ git tag -u $USER@apache.org v1.X.0-rc.1 -m 'Release v1.X.0-rc.1'
 # Push both the branch and the tag to GitHub repo
 $ git push origin branch-1.X
 $ git push origin v1.X.0-rc.1
-
-# Archive the source files
-$ git archive HEAD --prefix=pulsar-client-node-1.X.0/ --output pulsar-client-node-1.X.0.tar.gz
 ```
 
-#### 4. Build and inspect the artifacts
+#### 4. Sign and stage the artifacts
+The src artifact need to be signed and uploaded to the dist SVN repository for staging. See [here](https://github.com/apache/pulsar/wiki/Create-GPG-keys-to-sign-release-artifacts) for how to setup gpg.
 
-If you haven't done it, install the Pulsar C++ client according to the following document:
-https://pulsar.apache.org/docs/en/client-libraries-cpp/
+When the build is pushed to the Apache repo, a Github action job will run and build all the binary artifacts.
 
-Install dependent npm modules and build Pulsar Node.js client:
+The build will be available at `https://github.com/apache/pulsar-client-node/actions`
+
+Once the workflow is completed (ETA ~20 min), the artifacts will be available for download.
+
+Record the id of the workflow as `WORKFLOW_ID`.
+
+All the artifacts need to be signed and uploaded to the dist SVN repository for staging.
+
+Before running the script, make sure that the `user@apache.org` code signing key is the default gpg signing key. One way to ensure this is to create/edit file `~/.gnupg/gpg.conf` and add a line
+
 ```sh
-$ npm ci
+default-key <key fingerprint>
 ```
 
-After the build, inspect the artifacts:
+where` <key fingerprint>` should be replaced with the private key fingerprint for the `user@apache.org` key. The key fingerprint can be found in `gpg -K` output.
 
-* Run the following command to verify the license headers in the source files:
 ```sh
-$ npm run license:addheader
+$ svn co https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node pulsar-dist-dev
+$ cd pulsar-dist-dev
 
-# If there is a file that does not contain the license header,
-# the header is inserted by the above command
-$ git diff
-```
-* Run the standalone Pulsar service and check that the Node.js client can connect to it correctly:
-```sh
-# Download the Pulsar binary distribution to any directory
-$ cd /path/to/anydir
-$ PULSAR_BIN_VER='x.y.z'
-$ curl -L -o apache-pulsar-${PULSAR_BIN_VER}-bin.tar.gz "https://www.apache.org/dyn/mirrors/mirrors.cgi?action=download&filename=pulsar/pulsar-${PULSAR_BIN_VER}/apache-pulsar-${PULSAR_BIN_VER}-bin.tar.gz"
+# '-candidate-1' needs to be incremented in case of multiple iterations in getting
+#    to the final release)
+$ svn mkdir pulsar-client-node-1.X.0-candidate-1
 
-# Run the standalone service
-$ tar xvzf apache-pulsar-${PULSAR_BIN_VER}-bin.tar.gz
-$ cd apache-pulsar-${PULSAR_BIN_VER}
-$ bin/pulsar standalone
+$ $PULSAR_PATH/build-support/stage-release.sh . $WORKFLOW_ID
 
-# Open a new terminal and subscribe my-topic
-$ cd /path/to/pulsar-client-node
-$ node consumer.js
-
-###### consumer.js example ######
-const Pulsar = require('./index.js');
-
-(async () => {
-  const client = new Pulsar.Client({
-    serviceUrl: 'pulsar://localhost:6650',
-  });
-
-  const consumer = await client.subscribe({
-    topic: 'persistent://public/default/my-topic',
-    subscription: 'sub1',
-  });
-
-  for (let i = 0; i < 10; i += 1) {
-    const msg = await consumer.receive();
-    console.log(msg.getData().toString());
-    consumer.acknowledge(msg);
-  }
-
-  await consumer.close();
-  await client.close();
-})();
-#################################
-
-# Open another new terminal to produce messages into my-topic
-$ cd /path/to/pulsar-client-node
-$ node producer.js
-
-###### producer.js example ######
-const Pulsar = require('./index.js');
-
-(async () => {
-  const client = new Pulsar.Client({
-    serviceUrl: 'pulsar://localhost:6650',
-  });
-
-  const producer = await client.createProducer({
-    topic: 'persistent://public/default/my-topic',
-  });
-
-  for (let i = 0; i < 10; i += 1) {
-    const msg = `my-message-${i}`;
-    producer.send({
-      data: Buffer.from(msg),
-    });
-    console.log(`Sent message: ${msg}`);
-  }
-  await producer.flush();
-
-  await producer.close();
-  await client.close();
-})();
-#################################
+$ svn add *
+$ svn ci -m 'Staging artifacts and signature for Pulsar Node.js client release 1.X.0-candidate-1'
 ```
 
 #### 5. Move master branch to next version
@@ -171,31 +114,7 @@ $ npm version preminor --preid=rc
 Since this needs to be merged in `master`, we need to follow the regular process
 and create a Pull Request on GitHub.
 
-#### 6. Sign and stage the artifacts
-
-The src artifact need to be signed and uploaded to the dist SVN repository for staging. See [here](https://github.com/apache/pulsar/wiki/Create-GPG-keys-to-sign-release-artifacts) for how to setup gpg.
-
-```sh
-$ cd /path/to/anydir
-
-$ svn co https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node pulsar-dist-dev
-$ cd pulsar-dist-dev
-
-$ svn mkdir pulsar-client-node-1.X.0-candidate-1
-$ cd pulsar-client-node-1.X.0-candidate-1
-
-$ mv /path/to/pulsar-client-node/pulsar-client-node-1.X.0.tar.gz .
-
-# Sign. (USER-ID is ID of the key to sign)
-$ FILE=pulsar-client-node-1.X.0.tar.gz
-$ gpg --armor --detach-sign --local-user USER-ID --output $FILE.asc $FILE
-$ shasum -a 512 $FILE > $FILE.sha512
-
-$ svn add *
-$ svn ci -m 'Staging artifacts and signature for Pulsar Node.js client release 1.X.0-candidate-1'
-```
-
-#### 7. Write release notes
+#### 6. Write release notes
 
 Check the milestone in GitHub associated with the release.
 https://github.com/apache/pulsar-client-node/milestones?closed=1
@@ -204,7 +123,7 @@ In the release item, add the list of most important changes that happened in the
 and a link to the associated milestone, with the complete list of all the changes.
 https://github.com/apache/pulsar-client-node/releases
 
-#### 8. Run the vote
+#### 7. Run the vote
 
 Send an email on the Pulsar Dev mailing list:
 
@@ -248,7 +167,7 @@ vote as well.
 
 If the release is approved here, we can then proceed to next step.
 
-#### 9. Promote the release
+#### 8. Promote the release
 
 Create the final git tag:
 ```sh
@@ -286,12 +205,12 @@ $ svn rm -m 'Remove the old release' \
   https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/pulsar-client-node-1.Y.0
 ```
 
-#### 10. Update release notes
+#### 9. Update release notes
 
 Add the release notes there:
 https://github.com/apache/pulsar-client-node/releases
 
-#### 11. Announce the release
+#### 10. Announce the release
 
 Once the release artifact is available in the npm registry, we need to announce the release.
 
