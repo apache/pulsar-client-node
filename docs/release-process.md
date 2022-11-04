@@ -96,6 +96,8 @@ $ cd pulsar-dist-dev
 #    to the final release)
 $ svn mkdir pulsar-client-node-1.X.0-candidate-1
 
+# Generate token from here: https://github.com/settings/tokens
+$ export GITHUB_TOKEN=${Your github token} 
 $ $PULSAR_PATH/build-support/stage-release.sh . $WORKFLOW_ID
 
 $ svn add *
