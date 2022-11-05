@@ -33,8 +33,7 @@ export $(cat /etc/*-release | grep "^ID=")
 cd /tmp
 
 # Fetch the client binaries
-## TODO: Fetch from official release once it's available
-BASE_URL=https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-cpp-${CPP_CLIENT_VERSION}-candidate-2
+BASE_URL=https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-cpp-${CPP_CLIENT_VERSION}
 
 UNAME_ARCH=$(uname -m)
 if [ $UNAME_ARCH == 'aarch64' ]; then
@@ -49,8 +48,8 @@ if [ $ID == 'ubuntu' -o $ID == 'debian' ]; then
   $SUDO apt install -y /tmp/*.deb
 
 elif [ $ID == 'alpine' ]; then
-  curl -L -O ${BASE_URL}/apk-${PLATFORM}/apache-pulsar-client-${CPP_CLIENT_VERSION}-r0.apk
-  curl -L -O ${BASE_URL}/apk-${PLATFORM}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
+  curl -L -O ${BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-r0.apk
+  curl -L -O ${BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
   $SUDO apk add --allow-untrusted /tmp/*.apk
 
 elif [ $ID == '"centos"' ]; then

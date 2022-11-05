@@ -61,7 +61,7 @@
   "binary": {
     "module_name": "Pulsar",
     "module_path": "./lib/binding/",
-    "host": "https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/",
+    "host": "https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/",
     "remote_path": "pulsar-client-node-{version}",
     "package_name": "napi-{platform}-{libc}-{arch}.tar.gz"
   },
