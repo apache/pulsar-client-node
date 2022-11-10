@@ -41,6 +41,7 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
                       InstanceMethod("negativeAcknowledgeId", &Consumer::NegativeAcknowledgeId),
                       InstanceMethod("acknowledgeCumulative", &Consumer::AcknowledgeCumulative),
                       InstanceMethod("acknowledgeCumulativeId", &Consumer::AcknowledgeCumulativeId),
+                      InstanceMethod("seek", &Consumer::Seek),
                       InstanceMethod("isConnected", &Consumer::IsConnected),
                       InstanceMethod("close", &Consumer::Close),
                       InstanceMethod("unsubscribe", &Consumer::Unsubscribe),
@@ -359,6 +360,30 @@ Napi::Value Consumer::AcknowledgeCumulativeId(const Napi::CallbackInfo &info) {
         if (result != pulsar_result_Ok) {
           deferred->Reject(std::string("Failed to acknowledge cumulatively by id: ") +
                            pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+      },
+      ctx);
+
+  return deferred->Promise();
+}
+
+Napi::Value Consumer::Seek(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto *msgId = MessageId::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext(deferred);
+
+  pulsar_consumer_seek_async(
+      this->cConsumer.get(), msgId->GetCMessageId().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        auto deferred = deferredContext->deferred;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to seek message by id: ") + pulsar_result_str(result));
         } else {
           deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
         }
