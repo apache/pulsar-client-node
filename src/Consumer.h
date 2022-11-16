@@ -21,6 +21,7 @@
 #define CONSUMER_H
 
 #include <napi.h>
+#include <functional>
 #include <pulsar/c/client.h>
 #include "ConsumerConfig.h"
 #include "MessageListener.h"
@@ -48,10 +49,13 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   void NegativeAcknowledgeId(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulative(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
+  Napi::Value PauseMessageListener(const Napi::CallbackInfo &info);
+  Napi::Value ResumeMessageListener(const Napi::CallbackInfo &info);
   Napi::Value Seek(const Napi::CallbackInfo &info);
   Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value Unsubscribe(const Napi::CallbackInfo &info);
+  Napi::Value pauseResumeMessageListener(std::function<pulsar_result()>);
 };
 
 #endif

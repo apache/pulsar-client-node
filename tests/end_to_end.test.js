@@ -189,6 +189,8 @@ const Pulsar = require('../index.js');
           const data = message.getData().toString();
           results.push(data);
           messageConsumer.acknowledge(message);
+          messageConsumer.pauseMessageListener();
+          messageConsumer.resumeMessageListener();
           if (results.length === 10) finish();
         },
       });
