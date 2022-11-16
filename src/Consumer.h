@@ -48,10 +48,13 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   void NegativeAcknowledgeId(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulative(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
+  Napi::Value PauseMessageListener(const Napi::CallbackInfo &info);
+  Napi::Value ResumeMessageListener(const Napi::CallbackInfo &info);
   Napi::Value Seek(const Napi::CallbackInfo &info);
   Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value Unsubscribe(const Napi::CallbackInfo &info);
+  Napi::Value pauseResumeMessageListener(pulsar_result fn(pulsar_consumer_t *consumer));
 };
 
 #endif
