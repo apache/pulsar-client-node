@@ -456,18 +456,19 @@ Napi::Value Consumer::Unsubscribe(const Napi::CallbackInfo &info) {
 }
 
 Napi::Value Consumer::PauseMessageListener(const Napi::CallbackInfo &info) {
-  return pauseResumeMessageListener(pulsar_consumer_pause_message_listener);
+  return pauseResumeMessageListener(
+      [&]() { return pulsar_consumer_pause_message_listener(cConsumer.get()); });
 }
 
 Napi::Value Consumer::ResumeMessageListener(const Napi::CallbackInfo &info) {
-  return pauseResumeMessageListener(resume_message_listener);
+  return pauseResumeMessageListener([&]() { return resume_message_listener(cConsumer.get()); });
 }
 
-Napi::Value Consumer::pauseResumeMessageListener(pulsar_result fn(pulsar_consumer_t *consumer)) {
+Napi::Value Consumer::pauseResumeMessageListener(std::function<pulsar_result()> fn) {
   auto deferred = ThreadSafeDeferred::New(Env());
 
   if (listener != nullptr) {
-    auto result = fn(cConsumer.get());
+    auto result = fn();
     if (result == pulsar_result_Ok) {
       deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
       return deferred->Promise();
