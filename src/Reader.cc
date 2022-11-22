@@ -20,6 +20,7 @@
 #include "Message.h"
 #include "Reader.h"
 #include "ReaderConfig.h"
+#include "MessageId.h"
 #include "ThreadSafeDeferred.h"
 #include <pulsar/c/result.h>
 #include <pulsar/c/reader.h>
@@ -36,6 +37,8 @@ void Reader::Init(Napi::Env env, Napi::Object exports) {
                                         InstanceMethod("readNext", &Reader::ReadNext),
                                         InstanceMethod("hasNext", &Reader::HasNext),
                                         InstanceMethod("isConnected", &Reader::IsConnected),
+                                        InstanceMethod("seek", &Reader::Seek),
+                                        InstanceMethod("seekTimestamp", &Reader::SeekTimestamp),
                                         InstanceMethod("close", &Reader::Close),
                                     });
 
@@ -165,7 +168,7 @@ class ReaderReadNextWorker : public Napi::AsyncWorker {
       result = pulsar_reader_read_next(this->cReader.get(), &rawMessage);
     }
     if (result != pulsar_result_Ok) {
-      SetError(std::string("Failed to received message ") + pulsar_result_str(result));
+      SetError(std::string("Failed to receive message: ") + pulsar_result_str(result));
     }
     this->cMessage = std::shared_ptr<pulsar_message_t>(rawMessage, pulsar_message_free);
   }
@@ -211,6 +214,53 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
 Napi::Value Reader::IsConnected(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   return Napi::Boolean::New(env, pulsar_reader_is_connected(this->cReader.get()));
+}
+
+Napi::Value Reader::Seek(const Napi::CallbackInfo &info) {
+  auto obj = info[0].As<Napi::Object>();
+  auto *msgId = MessageId::Unwrap(obj);
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext(deferred);
+
+  pulsar_reader_seek_async(
+      this->cReader.get(), msgId->GetCMessageId().get(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        auto deferred = deferredContext->deferred;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to seek message by id: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+      },
+      ctx);
+
+  return deferred->Promise();
+}
+
+Napi::Value Reader::SeekTimestamp(const Napi::CallbackInfo &info) {
+  Napi::Number timestamp = info[0].As<Napi::Object>().ToNumber();
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext(deferred);
+
+  pulsar_reader_seek_by_timestamp_async(
+      this->cReader.get(), timestamp.Int64Value(),
+      [](pulsar_result result, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        auto deferred = deferredContext->deferred;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to seek message by timestamp: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve(THREADSAFE_DEFERRED_RESOLVER(env.Null()));
+        }
+      },
+      ctx);
+
+  return deferred->Promise();
 }
 
 Napi::Value Reader::Close(const Napi::CallbackInfo &info) {
