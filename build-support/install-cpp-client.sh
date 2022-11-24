@@ -33,7 +33,7 @@ export $(cat /etc/*-release | grep "^ID=")
 cd /tmp
 
 # Fetch the client binaries
-source $ROOT_DIR/build-support/set-base-url.sh
+BASE_URL=$(< "$ROOT_DIR"/build-support/cpp-base-url.txt xargs)
 
 UNAME_ARCH=$(uname -m)
 if [ $UNAME_ARCH == 'aarch64' ]; then
