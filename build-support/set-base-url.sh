@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -19,17 +20,9 @@
 
 set -e -x
 
-export ARCH=${ARCH:-arm64}
-export MACOSX_DEPLOYMENT_TARGET=11.0
-
-MAC_BUILD_DIR=`cd $(dirname $0); pwd`
+pushd "$( dirname -- "${BASH_SOURCE[0]}" )"
 ROOT_DIR=$(git rev-parse --show-toplevel)
-export PULSAR_CPP_VERSION=`cat $ROOT_DIR/pulsar-client-cpp-version.txt`
-source "$ROOT_DIR"/build-support/set-base-url.sh
+CPP_CLIENT_VERSION=$(< "$ROOT_DIR"/pulsar-client-cpp-version.txt xargs)
 
-cd $MAC_BUILD_DIR
-mkdir -p build
-cd build
-mkdir -p install
-export PREFIX=`pwd`/install
-
+export BASE_URL=https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-cpp/pulsar-client-cpp-${CPP_CLIENT_VERSION}-candidate-1
+popd
