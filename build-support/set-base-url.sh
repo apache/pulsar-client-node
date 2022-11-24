@@ -20,9 +20,9 @@
 
 set -e -x
 
-pushd "$( dirname -- "${BASH_SOURCE[0]}" )"
-ROOT_DIR=$(git rev-parse --show-toplevel)
+BASH_DIR="$( dirname -- "${BASH_SOURCE[0]}" )"
+pushd "$BASH_DIR"
+ROOT_DIR="$BASH_DIR"/../
 CPP_CLIENT_VERSION=$(< "$ROOT_DIR"/pulsar-client-cpp-version.txt xargs)
-
 export BASE_URL=https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-cpp/pulsar-client-cpp-${CPP_CLIENT_VERSION}-candidate-1
 popd
