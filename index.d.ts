@@ -99,6 +99,7 @@ export class Consumer {
   acknowledgeCumulative(message: Message): Promise<null>;
   acknowledgeCumulativeId(messageId: MessageId): Promise<null>;
   seek(messageId: MessageId): Promise<null>;
+  seekTimestamp(timestamp: number): Promise<null>;
   isConnected(): boolean;
   close(): Promise<null>;
   unsubscribe(): Promise<null>;
@@ -118,6 +119,8 @@ export class Reader {
   readNext(timeout?: number): Promise<Message>;
   hasNext(): boolean;
   isConnected(): boolean;
+  seek(messageId: MessageId): Promise<null>;
+  seekTimestamp(timestamp: number): Promise<null>;
   close(): Promise<null>;
 }
 

@@ -1,8 +1,8 @@
 cd %~dp0
 set arch=%1
-:: TODO: Fetch from official release, change to apache release version and path.
-set /P CPP_VERSION=<..\..\tmp-pulsar-client-cpp-version.txt
-curl -O -L https://github.com/BewareMyPower/pulsar-client-cpp/releases/download/%CPP_VERSION%/pulsar-client-cpp-%arch%-windows-static.zip
-7z x pulsar-client-cpp-%arch%-windows-static.zip -opulsar-cpp
+set /P BASE_URL=<..\..\build-support\cpp-base-url.txt
+curl -O -L %BASE_URL%/%arch%-windows-static.tar.gz
+tar -xvzf %arch%-windows-static.tar.gz
+mv %arch%-windows-static pulsar-cpp
 dir
 
