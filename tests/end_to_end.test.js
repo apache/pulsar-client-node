@@ -942,7 +942,7 @@ const Pulsar = require('../index.js');
         operationTimeoutSeconds: 30,
       });
 
-      const topic = 'persistent://public/default/reader-eek-by-msgid';
+      const topic = 'persistent://public/default/reader-seek-by-msgid';
       const producer = await client.createProducer({
         topic,
         sendTimeoutMs: 30000,
@@ -983,7 +983,7 @@ const Pulsar = require('../index.js');
         operationTimeoutSeconds: 30,
       });
 
-      const topic = 'persistent://public/default/seek-by-timestamp1';
+      const topic = 'persistent://public/default/reader-seek-timestamp';
       const producer = await client.createProducer({
         topic,
         sendTimeoutMs: 30000,
@@ -1015,6 +1015,7 @@ const Pulsar = require('../index.js');
       await expect(reader.readNext(1000)).rejects.toThrow('Failed to receive message: TimeOut');
 
       await reader.seekTimestamp(currentTime - 100000);
+      console.log('Seek to previous time');
 
       const msg = reader.readNext(1000);
       console.log((await msg).getMessageId().toString());
