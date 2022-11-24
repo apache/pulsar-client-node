@@ -1012,11 +1012,12 @@ const Pulsar = require('../index.js');
 
       console.log('End seek');
 
-      await expect(reader.readNext(1000)).rejects.toThrow('Failed to receive message: TimeOut');
+      expect(reader.hasNext()).toBe(false);
 
       await reader.seekTimestamp(currentTime - 100000);
       console.log('Seek to previous time');
 
+      expect(reader.hasNext()).toBe(true);
       const msg = reader.readNext(1000);
       console.log((await msg).getMessageId().toString());
       expect((await msg).getData().toString()).toBe('my-message-0');
