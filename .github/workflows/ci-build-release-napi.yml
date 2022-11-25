@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         arch:
-          - x86_64
+          - x64
 #          - arm64
         nodejs:
           - 18
@@ -41,13 +41,16 @@ jobs:
       - name: Build CPP dependencies lib
         if: steps.cache-dependencies.outputs.cache-hit != 'true'
         run: |
-          export ARCH=${{ matrix.arch }}
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            export ARCH=x86_64
+          else
+            export ARCH=${{ matrix.arch }}
+          fi
           pkg/mac/build-cpp-deps-lib.sh
 
       - name: Build CPP lib
         if: steps.cache-pulsar.outputs.cache-hit != 'true'
         run: |
-          export ARCH=${{ matrix.arch }}
           pkg/mac/build-cpp-lib.sh
 
       - name: Build Node binaries lib
