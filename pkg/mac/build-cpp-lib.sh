@@ -29,9 +29,9 @@ cd $PULSAR_DIR
 curl -O -L "$BASE_URL"/apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
 tar xfz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
 pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
-  chmod +x ./build-support/merge_archives.sh
   rm -f CMakeCache.txt
   cmake . \
+      -DCMAKE_OSX_ARCHITECTURES=${ARCH} \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=${MACOSX_DEPLOYMENT_TARGET} \
       -DCMAKE_INSTALL_PREFIX=$PULSAR_PREFIX \
       -DCMAKE_BUILD_TYPE=Release \

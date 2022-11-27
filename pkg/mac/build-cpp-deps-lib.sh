@@ -59,7 +59,6 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
     curl -O -L https://github.com/openssl/openssl/archive/OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
     tar xfz OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
     pushd openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}
-        echo -e "#include <string.h>\n$(cat test/v3ext.c)" > test/v3ext.c
         if [ $ARCH = 'arm64' ]; then
           PLATFORM=darwin64-arm64-cc
         else
@@ -147,8 +146,8 @@ if [ ! -f snappy-${SNAPPY_VERSION}.done ]; then
     curl -O -L https://github.com/google/snappy/archive/refs/tags/${SNAPPY_VERSION}.tar.gz
     tar xfz ${SNAPPY_VERSION}.tar.gz
     pushd snappy-${SNAPPY_VERSION}
-      CXXFLAGS="-fPIC -O3 -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-          cmake . -DCMAKE_INSTALL_PREFIX=$PREFIX -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF
+      CXXFLAGS="-fPIC -O3 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+          cmake . -DCMAKE_OSX_ARCHITECTURES=${ARCH} -DCMAKE_INSTALL_PREFIX=$PREFIX -DSNAPPY_BUILD_TESTS=OFF -DSNAPPY_BUILD_BENCHMARKS=OFF
       make -j16
       make install
       touch .done
@@ -175,7 +174,8 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
               --without-brotli \
               --without-secure-transport \
               --disable-ipv6 \
-              --prefix=$PREFIX
+              --prefix=$PREFIX \
+              --host=$ARCH-apple-darwin
       make -j16 install
     popd
 
