@@ -59,6 +59,7 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
     curl -O -L https://github.com/openssl/openssl/archive/OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
     tar xfz OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz
     pushd openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}
+        echo -e "#include <string.h>\n$(cat test/v3ext.c)" > test/v3ext.c
         if [ $ARCH = 'arm64' ]; then
           PLATFORM=darwin64-arm64-cc
         else
