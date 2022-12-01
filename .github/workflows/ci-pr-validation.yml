@@ -72,7 +72,7 @@ jobs:
           if [ "${{ matrix.arch }}" = "x64" ]; then
             echo "ARCH=x86_64" >> $GITHUB_ENV
           else
-            echo "ARCH=${{ matrix.target }}" >> $GITHUB_ENV
+            echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
           fi
 
       - name: Build CPP dependencies lib
