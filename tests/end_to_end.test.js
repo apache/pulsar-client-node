@@ -847,6 +847,185 @@ const Pulsar = require('../index.js');
 
       await client.close();
     });
+
+    test('Consumer seek by message Id', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/seek-by-msgid';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      const msgIds = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        console.log(msg);
+        const msgId = await producer.send({
+          data: Buffer.from(msg),
+        });
+        msgIds.push(msgId);
+      }
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub',
+      });
+      expect(consumer).not.toBeNull();
+
+      await consumer.seek(msgIds[5]);
+      const msg = consumer.receive(1000);
+      console.log((await msg).getMessageId().toString());
+      expect((await msg).getData().toString()).toBe('my-message-6');
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
+    test('Consumer seek by timestamp', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/seek-by-timestamp';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        console.log(msg);
+        await producer.send({
+          data: Buffer.from(msg),
+        });
+      }
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub',
+      });
+      expect(consumer).not.toBeNull();
+
+      const currentTime = Date.now();
+      console.log(currentTime);
+
+      await consumer.seekTimestamp(currentTime);
+
+      console.log('End seek');
+
+      await expect(consumer.receive(1000)).rejects.toThrow('Failed to receive message: TimeOut');
+
+      await consumer.seekTimestamp(currentTime - 100000);
+
+      const msg = consumer.receive(1000);
+      console.log((await msg).getMessageId().toString());
+      expect((await msg).getData().toString()).toBe('my-message-0');
+
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
+
+    test('Reader seek by message Id', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/reader-seek-by-msgid';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      const msgIds = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        console.log(msg);
+        const msgId = await producer.send({
+          data: Buffer.from(msg),
+        });
+        msgIds.push(msgId);
+      }
+
+      const reader = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.latest(),
+      });
+      expect(reader).not.toBeNull();
+
+      await reader.seek(msgIds[5]);
+      expect(reader.hasNext()).toBe(true);
+      const msg = reader.readNext(1000);
+      console.log((await msg).getMessageId().toString());
+      expect((await msg).getData().toString()).toBe('my-message-6');
+
+      await producer.close();
+      await reader.close();
+      await client.close();
+    });
+
+    test('Reader seek by timestamp', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/reader-seek-timestamp';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: false,
+      });
+      expect(producer).not.toBeNull();
+
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        console.log(msg);
+        await producer.send({
+          data: Buffer.from(msg),
+        });
+      }
+
+      const reader = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.latest(),
+      });
+      expect(reader).not.toBeNull();
+
+      const currentTime = Date.now();
+      console.log(currentTime);
+
+      await reader.seekTimestamp(currentTime);
+
+      console.log('End seek');
+
+      expect(reader.hasNext()).toBe(false);
+
+      await reader.seekTimestamp(currentTime - 100000);
+      console.log('Seek to previous time');
+
+      expect(reader.hasNext()).toBe(true);
+      const msg = reader.readNext(1000);
+      console.log((await msg).getMessageId().toString());
+      expect((await msg).getData().toString()).toBe('my-message-0');
+
+      await producer.close();
+      await reader.close();
+      await client.close();
+    });
     test('Message chunking', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',

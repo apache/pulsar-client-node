@@ -48,6 +48,8 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   void NegativeAcknowledgeId(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulative(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeCumulativeId(const Napi::CallbackInfo &info);
+  Napi::Value Seek(const Napi::CallbackInfo &info);
+  Napi::Value SeekTimestamp(const Napi::CallbackInfo &info);
   Napi::Value IsConnected(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
   Napi::Value Unsubscribe(const Napi::CallbackInfo &info);
