@@ -19,7 +19,7 @@
     "dtslint": "dtslint .",
     "license:report": "mkdir -p report && grunt grunt-license-report",
     "license:addheader": "license-check-and-add",
-    "test": "jest --verbose"
+    "test": "jest --verbose --detectOpenHandles"
   },
   "repository": {
     "type": "git",

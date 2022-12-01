@@ -1028,7 +1028,6 @@ const Pulsar = require('../index.js');
     });
 
     test('Message chunking', async () => {
-      jest.setTimeout(10000);
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
         operationTimeoutSeconds: 30,
