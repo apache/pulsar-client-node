@@ -26,77 +26,75 @@ The Pulsar Node.js client can be used to create Pulsar producers and consumers i
 This library works only in Node.js 10.x or later because it uses the
 [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
 
-## How to install
+## Get Started
 
-> **Note**
->
-> These instructions are only available for versions after 1.8.0. For versions previous to 1.8.0, you need to install the C++ client first. Please switch to the corresponding version branch of this repo to read the specific instructions.
+### Install the official release
 
-### Use `npm`
+For `npm` users:
 
 ```shell
 npm install pulsar-client
 ```
 
-### Use `yarn`
+For `yarn` users:
 
 ```shell
 yarn add pulsar-client
 ```
 
-After install, you can run the [examples](https://github.com/apache/pulsar-client-node/tree/master/examples).
+## Run examples 
 
-### Prebuilt binaries
+The examples might use an API that was not included in the official npm package, so you need to install this module.
 
-The module uses [node-pre-gyp](https://github.com/mapbox/node-pre-gyp) to download the prebuilt binary for your platform, if it exists.
-These binaries are hosted on ASF dist subversion. The following targets are currently provided:
+First, clone the repository.
 
-Format: `napi-{platform}-{libc}-{arch}`
-- napi-darwin-unknown-x64.tar.gz
-- napi-linux-glibc-arm64.tar.gz
-- napi-linux-glibc-x64.tar.gz
-- napi-linux-musl-arm64.tar.gz
-- napi-linux-musl-x64.tar.gz
-- napi-win32-unknown-ia32.tar.gz
-- napi-win32-unknown-x64.tar.gz
-
-`darwin-arm64` systems are not currently supported, you can refer `How to build` to build from source.
-
-
-## How to build
-
-### 1. Clone repository.
 ```shell
 git clone https://github.com/apache/pulsar-client-node.git
 cd pulsar-client-node
 ```
 
-### 2. Install C++ client.
+Since this client is a [C++ addon](https://nodejs.org/api/addons.html#c-addons) that depends on the [Pulsar C++ client](https://github.com/apache/pulsar-client-cpp), you need to install the C++ client first. You need to ensure there is a C++ compiler that supports C++11 installed in your system.
 
-Select the appropriate installation method from below depending on your operating system:
+- Install C++ client on Linux:
 
-#### Install C++ client on macOS:
-```shell
+```bash
+build-support/install-cpp-client.sh
+```
+
+- Install C++ client on Windows:
+
+```
+pkg\windows\download-cpp-client.bat
+```
+
+- Install C++ client on macOS:
+
+```
 pkg/mac/build-cpp-deps-lib.sh
 pkg/mac/build-cpp-lib.sh
 ```
 
-#### Install C++ client on Linux:
-```shell
-build-support/install-cpp-client.sh
-```
-
-#### Install C++ client on Windows (required preinstall `curl` and `7z`):
-```shell
-pkg\windows\download-cpp-client.bat
-```
-
-### 3. Build NAPI from source
+After the C++ client is installed, run the following command.
 
 ```shell
-npm install --build-from-source 
+npm install
 ```
 
+To verify it has been installed successfully, you can run an example like:
+
+```bash
+$ node examples/producer
+Sent message: my-message-0
+Sent message: my-message-1
+Sent message: my-message-2
+Sent message: my-message-3
+Sent message: my-message-4
+Sent message: my-message-5
+Sent message: my-message-6
+Sent message: my-message-7
+Sent message: my-message-8
+Sent message: my-message-9
+```
 
 ## Documentation
-* Please see https://pulsar.apache.org/docs/client-libraries-node/ for more details about the Pulsar Node.js client.  
+* Please see https://pulsar.apache.org/docs/client-libraries-node/ for more details about the Pulsar Node.js client.

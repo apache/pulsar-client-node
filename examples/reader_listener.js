@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const Pulsar = require('pulsar-client');
+const Pulsar = require('../');
 
 (async () => {
   // Create a client
