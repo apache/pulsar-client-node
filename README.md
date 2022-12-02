@@ -80,6 +80,12 @@ const Pulsar = require('pulsar-client');
 })();
 ```
 
+You will see the following output:
+
+```
+hello
+```
+
 ## More examples 
 
 You can see more examples in the [examples](./examples) directory. However, since these examples might use an API that was not released yet, you need to install this module.
