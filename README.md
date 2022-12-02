@@ -26,25 +26,63 @@ The Pulsar Node.js client can be used to create Pulsar producers and consumers i
 This library works only in Node.js 10.x or later because it uses the
 [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
 
-## Get Started
+## Getting Started
 
-### Install the official release
-
-For `npm` users:
+To use the Pulsar Node.js client in your project, run:
 
 ```shell
 npm install pulsar-client
 ```
 
-For `yarn` users:
+for `npm` users or
 
 ```shell
 yarn add pulsar-client
 ```
 
-## Run examples 
+for `yarn` users.
 
-The examples might use an API that was not included in the official npm package, so you need to install this module.
+Then you can run the following simple end-to-end example:
+
+```javascript
+const Pulsar = require('pulsar-client');
+
+(async () => {
+  // Create a client
+  const client = new Pulsar.Client({
+    serviceUrl: 'pulsar://localhost:6650'
+  });
+
+  // Create a producer
+  const producer = await client.createProducer({
+    topic: 'persistent://public/default/my-topic',
+  });
+
+  // Create a consumer
+  const consumer = await client.subscribe({
+    topic: 'persistent://public/default/my-topic',
+    subscription: 'sub1'
+  });
+
+  // Send a message
+  producer.send({
+    data: Buffer.from("hello")
+  });
+
+  // Receive the message 
+  const msg = await consumer.receive();
+  console.log(msg.getData().toString());
+  consumer.acknowledge(msg);
+
+  await producer.close();
+  await consumer.close();
+  await client.close();
+})();
+```
+
+## More examples 
+
+You can see more examples in the [examples](./examples) directory. However, since these examples might use an API that was not released yet, you need to install this module.
 
 First, clone the repository.
 
@@ -74,7 +112,7 @@ pkg/mac/build-cpp-deps-lib.sh
 pkg/mac/build-cpp-lib.sh
 ```
 
-After the C++ client is installed, run the following command.
+After the C++ client is installed, run the following command to build this C++ addon.
 
 ```shell
 npm install
