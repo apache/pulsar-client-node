@@ -40,8 +40,6 @@ or
 yarn add pulsar-client
 ```
 
-for `yarn` users.
-
 Then you can run the following simple end-to-end example:
 
 ```javascript
