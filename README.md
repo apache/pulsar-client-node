@@ -28,6 +28,12 @@ This library works only in Node.js 10.x or later because it uses the
 
 ## Getting Started
 
+> **Note**
+>
+> These instructions are only available for versions after 1.8.0. For versions previous to 1.8.0, you need to install the C++ client first. Please switch to the corresponding version branch of this repo to read the specific instructions.
+>
+> To run the examples, skip this section.
+
 To use the Pulsar Node.js client in your project, run:
 
 ```shell
