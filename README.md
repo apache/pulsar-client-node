@@ -34,7 +34,7 @@ To use the Pulsar Node.js client in your project, run:
 npm install pulsar-client
 ```
 
-for `npm` users or
+or
 
 ```shell
 yarn add pulsar-client
@@ -80,7 +80,7 @@ const Pulsar = require('pulsar-client');
 })();
 ```
 
-You will see the following output:
+You should find the output as:
 
 ```
 hello
@@ -101,19 +101,19 @@ Since this client is a [C++ addon](https://nodejs.org/api/addons.html#c-addons) 
 
 - Install C++ client on Linux:
 
-```bash
+```shell
 build-support/install-cpp-client.sh
 ```
 
 - Install C++ client on Windows:
 
-```
+```shell
 pkg\windows\download-cpp-client.bat
 ```
 
 - Install C++ client on macOS:
 
-```
+```shell
 pkg/mac/build-cpp-deps-lib.sh
 pkg/mac/build-cpp-lib.sh
 ```
@@ -126,8 +126,13 @@ npm install
 
 To verify it has been installed successfully, you can run an example like:
 
-```bash
-$ node examples/producer
+```shell
+node examples/producer
+```
+
+You should find the output as:
+
+```
 Sent message: my-message-0
 Sent message: my-message-1
 Sent message: my-message-2
