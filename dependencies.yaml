@@ -24,5 +24,5 @@ protobuf: 3.20.0
 zlib: 1.2.13
 zstd: 1.5.2
 snappy: 1.1.9
-openssl: 1.1.1q
+openssl: 1.1.1s
 curl: 7.85.0
