@@ -28,6 +28,7 @@ const LogLevel = {
   INFO: 1,
   WARN: 2,
   ERROR: 3,
+  toString: (level) => Object.keys(LogLevel).find((key) => LogLevel[key] === level),
 };
 
 const Pulsar = {
