@@ -1026,5 +1026,38 @@ const Pulsar = require('../index.js');
       await reader.close();
       await client.close();
     });
+
+    test('Message chunking', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/message-chunking';
+      const producer = await client.createProducer({
+        topic,
+        batchingEnabled: false,
+        chunkingEnabled: true,
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub',
+        maxPendingChunkedMessage: 15,
+        autoAckOldestChunkedMessageOnQueueFull: true,
+      });
+
+      const sendMsg = Buffer.alloc(10 * 1024 * 1024);
+
+      await producer.send({
+        data: sendMsg,
+      });
+
+      const receiveMsg = await consumer.receive(3000);
+      expect(receiveMsg.getData().length).toBe(sendMsg.length);
+      await producer.close();
+      await consumer.close();
+      await client.close();
+    });
   });
 })();

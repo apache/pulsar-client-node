@@ -21,6 +21,10 @@
 set -e -x
 
 export PULSAR_STANDALONE_CONF=test-conf/standalone.conf
+# There is an issue when starting the pulsar standalone with other metadata store: https://github.com/apache/pulsar/issues/17984
+# We need to use Zookeeper here. Otherwise the `Message Chunking` test will not pass.
+# We can remove this line after the pulsar release a new version contains this fix: https://github.com/apache/pulsar/pull/18126
+export PULSAR_STANDALONE_USE_ZOOKEEPER=1
 bin/pulsar-daemon start standalone \
         --no-functions-worker --no-stream-storage \
         --bookkeeper-dir data/bookkeeper

@@ -42,6 +42,9 @@ static const std::string CFG_READ_COMPACTED = "readCompacted";
 static const std::string CFG_SCHEMA = "schema";
 static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
+static const std::string CFG_MAX_PENDING_CHUNKED_MESSAGE = "maxPendingChunkedMessage";
+static const std::string CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL =
+    "autoAckOldestChunkedMessageOnQueueFull";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -193,6 +196,24 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
             this->cConsumerConfig.get(), CONSUMER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
       }
     }
+  }
+
+  if (consumerConfig.Has(CFG_MAX_PENDING_CHUNKED_MESSAGE) &&
+      consumerConfig.Get(CFG_MAX_PENDING_CHUNKED_MESSAGE).IsNumber()) {
+    int32_t maxPendingChunkedMessage =
+        consumerConfig.Get(CFG_MAX_PENDING_CHUNKED_MESSAGE).ToNumber().Int32Value();
+    if (maxPendingChunkedMessage >= 0) {
+      pulsar_consumer_configuration_set_max_pending_chunked_message(this->cConsumerConfig.get(),
+                                                                    maxPendingChunkedMessage);
+    }
+  }
+
+  if (consumerConfig.Has(CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL) &&
+      consumerConfig.Get(CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL).IsBoolean()) {
+    bool autoAckOldestChunkedMessageOnQueueFull =
+        consumerConfig.Get(CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL).ToBoolean();
+    pulsar_consumer_configuration_set_auto_ack_oldest_chunked_message_on_queue_full(
+        this->cConsumerConfig.get(), autoAckOldestChunkedMessageOnQueueFull);
   }
 }
 
