@@ -32,12 +32,31 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - name: checkout
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
       - name: Run Test
         run: |
           ./tests/run-unit-tests.sh
+
+  validation-yarn:
+    name: Validation use yarn install
+    runs-on: ubuntu-22.04
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Use Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Use yarn install
+        run: |
+          yarn install --ignore-scripts
 
   macos-napi:
     name: Build NAPI macos - Node ${{matrix.nodejs}} - ${{matrix.arch}}
