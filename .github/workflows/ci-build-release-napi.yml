@@ -158,7 +158,7 @@ jobs:
         uses: actions/cache@v3
         with:
           path: pkg/windows/
-          key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('build-support/cpp-base-url.txt') }}-${{ hashFiles('pulsar-client-cpp-version.txt') }}
+          key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('pulsar-client-cpp.txt') }}
 
       - name: Add env vars
         shell: bash

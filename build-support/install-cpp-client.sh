@@ -21,7 +21,7 @@
 set -e -x
 
 ROOT_DIR=`cd $(dirname $0) && cd .. && pwd`
-CPP_CLIENT_VERSION=$(cat $ROOT_DIR/pulsar-client-cpp-version.txt | xargs)
+source $ROOT_DIR/pulsar-client-cpp.txt
 
 if [ $USER != "root" ]; then
   SUDO="sudo"
@@ -32,9 +32,6 @@ export $(cat /etc/*-release | grep "^ID=")
 
 cd /tmp
 
-# Fetch the client binaries
-BASE_URL=$(< "$ROOT_DIR"/build-support/cpp-base-url.txt xargs)
-
 UNAME_ARCH=$(uname -m)
 if [ $UNAME_ARCH == 'aarch64' ]; then
   PLATFORM=arm64
@@ -43,18 +40,18 @@ else
 fi
 
 if [ $ID == 'ubuntu' -o $ID == 'debian' ]; then
-  curl -L -O ${BASE_URL}/deb-${PLATFORM}/apache-pulsar-client.deb
-  curl -L -O ${BASE_URL}/deb-${PLATFORM}/apache-pulsar-client-dev.deb
+  curl -L -O ${CPP_CLIENT_BASE_URL}/deb-${PLATFORM}/apache-pulsar-client.deb
+  curl -L -O ${CPP_CLIENT_BASE_URL}/deb-${PLATFORM}/apache-pulsar-client-dev.deb
   $SUDO apt install -y /tmp/*.deb
 
 elif [ $ID == 'alpine' ]; then
-  curl -L -O ${BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-r0.apk
-  curl -L -O ${BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
+  curl -L -O ${CPP_CLIENT_BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-r0.apk
+  curl -L -O ${CPP_CLIENT_BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
   $SUDO apk add --allow-untrusted /tmp/*.apk
 
 elif [ $ID == '"centos"' ]; then
-  curl -L -O ${BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
-  curl -L -O ${BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
+  curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
+  curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
   $SUDO rpm -i /tmp/*.rpm
 
 else

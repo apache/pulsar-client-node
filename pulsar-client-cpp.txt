@@ -1,0 +1,2 @@
+CPP_CLIENT_BASE_URL=https://archive.apache.org/dist/pulsar/pulsar-client-cpp-3.1.0/
+CPP_CLIENT_VERSION=3.1.0
