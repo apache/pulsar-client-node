@@ -26,9 +26,9 @@ mkdir -p $PULSAR_PREFIX
 cd $PULSAR_DIR
 
 ## Fetch from official release
-curl -O -L "$BASE_URL"/apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
-tar xfz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz
-pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
+curl -O -L "$CPP_CLIENT_BASE_URL"/apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}.tar.gz
+tar xfz apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}.tar.gz
+pushd apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}
   rm -f CMakeCache.txt
   cmake . \
       -DCMAKE_OSX_ARCHITECTURES=${ARCH} \
@@ -47,5 +47,5 @@ pushd apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
   cp -r lib/libpulsarwithdeps.a $ROOT_DIR/pkg/lib/
 popd
 
-rm -rf apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}.tar.gz apache-pulsar-client-cpp-${PULSAR_CPP_VERSION}
+rm -rf apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}.tar.gz apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}
 
