@@ -79,7 +79,8 @@
       ".json",
       ".pem",
       ".txt",
-      ".gz"
+      ".gz",
+      ".bat"
     ],
     "trailing_whitespace": "TRIM",
     "insert_license": true,
