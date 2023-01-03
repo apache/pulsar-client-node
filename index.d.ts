@@ -61,6 +61,7 @@ export interface ProducerConfig {
   encryptionKey?: string;
   cryptoFailureAction?: ProducerCryptoFailureAction;
   chunkingEnabled?: boolean;
+  schema?: SchemaInfo;
 }
 
 export class Producer {
@@ -91,6 +92,7 @@ export interface ConsumerConfig {
   cryptoFailureAction?: ConsumerCryptoFailureAction;
   maxPendingChunkedMessage?: number;
   autoAckOldestChunkedMessageOnQueueFull?: number;
+  schema?: SchemaInfo;
 }
 
 export class Consumer {
@@ -157,6 +159,13 @@ export class MessageId {
   static deserialize(data: Buffer): MessageId;
   serialize(): Buffer;
   toString(): string;
+}
+
+export interface SchemaInfo {
+  schemaType: SchemaType;
+  name?: string;
+  schema: string;
+  properties?: Record<string, string>;
 }
 
 export class AuthenticationTls {
@@ -236,3 +245,22 @@ export type ConsumerCryptoFailureAction =
   'FAIL' |
   'DISCARD' |
   'CONSUME';
+
+  export type SchemaType =
+  'None' |
+  'String' |
+  'Json' |
+  'Protobuf' |
+  'Avro' |
+  'Boolean' |
+  'Int8' |
+  'Int16' |
+  'Int32' |
+  'Int64' |
+  'Float32' |
+  'Float64' |
+  'KeyValue' |
+  'Bytes' |
+  'AutoConsume' |
+  'AutoPublish';
+
