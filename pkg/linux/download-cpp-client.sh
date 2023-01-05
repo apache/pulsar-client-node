@@ -20,7 +20,7 @@
 
 set -e -x
 
-ROOT_DIR=`cd $(dirname $0) && cd .. && pwd`
+ROOT_DIR=`cd $(dirname $0) && cd ../../ && pwd`
 source $ROOT_DIR/pulsar-client-cpp.txt
 
 if [ $USER != "root" ]; then
@@ -29,9 +29,6 @@ fi
 
 # Get the flavor of Linux
 export $(cat /etc/*-release | grep "^ID=")
-
-cd /tmp
-
 UNAME_ARCH=$(uname -m)
 if [ $UNAME_ARCH == 'aarch64' ]; then
   PLATFORM=arm64
@@ -39,28 +36,28 @@ else
   PLATFORM=x86_64
 fi
 
+mkdir $ROOT_DIR/pkg/linux/pulsar-cpp
+mkdir $ROOT_DIR/pkg/linux/tmp
+cd $ROOT_DIR/pkg/linux/tmp
+
 if [ $ID == 'ubuntu' -o $ID == 'debian' ]; then
-  curl -L -O ${CPP_CLIENT_BASE_URL}/deb-${PLATFORM}/apache-pulsar-client.deb
   curl -L -O ${CPP_CLIENT_BASE_URL}/deb-${PLATFORM}/apache-pulsar-client-dev.deb
-  $SUDO apt install -y /tmp/*.deb
+  $SUDO ar x apache-pulsar-client-dev.deb
+  $SUDO tar -xvf data.tar.xz
+  cp -r usr/* $ROOT_DIR/pkg/linux/pulsar-cpp/
 
 elif [ $ID == 'alpine' ]; then
-  curl -L -O ${CPP_CLIENT_BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-r0.apk
   curl -L -O ${CPP_CLIENT_BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
-  $SUDO apk add --allow-untrusted /tmp/*.apk
+  $SUDO tar -xvf apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
+  cp -r usr/* $ROOT_DIR/pkg/linux/pulsar-cpp/
 
 elif [ $ID == '"centos"' ]; then
-  curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
   curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
-  $SUDO rpm -i /tmp/*.rpm
+  $SUDO rpm -i --prefix=$ROOT_DIR/pkg/linux/pulsar-cpp apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm --nodeps --force
 
 else
   echo "Unknown Linux distribution: '$ID'"
   exit 1
 fi
 
-mkdir -p $ROOT_DIR/pkg/lib/
-cp /usr/lib/libpulsarwithdeps.a $ROOT_DIR/pkg/lib/
-
-
-
+$SUDO rm -rf $ROOT_DIR/pkg/linux/tmp

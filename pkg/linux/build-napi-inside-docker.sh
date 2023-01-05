@@ -22,7 +22,7 @@ set -e -x
 
 cd /pulsar-client-node
 
-build-support/install-cpp-client.sh
+pkg/linux/download-cpp-client.sh
 
 npm install --ignore-scripts
 npx node-pre-gyp configure

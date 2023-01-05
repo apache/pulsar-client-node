@@ -94,6 +94,10 @@ You can see more examples in the [examples](./examples) directory. However, sinc
 
 ## How to build
 
+> **Note**
+>
+> Build from source code requires the Node.js version greater than 16.18
+
 First, clone the repository.
 
 ```shell
@@ -106,7 +110,7 @@ Since this client is a [C++ addon](https://nodejs.org/api/addons.html#c-addons) 
 - Install C++ client on Linux:
 
 ```shell
-build-support/install-cpp-client.sh
+pkg/linux/download-cpp-client.sh
 ```
 
 - Install C++ client on Windows:
