@@ -64,7 +64,8 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
         else
           PLATFORM=darwin64-x86_64-cc
         fi
-        ./Configure --prefix=$PREFIX no-shared no-unit-test $PLATFORM
+        CFLAGS="-fPIC -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+            ./Configure --prefix=$PREFIX no-shared no-unit-test $PLATFORM
         make -j8
         make install_sw
     popd
@@ -166,13 +167,18 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
     curl -O -L  https://github.com/curl/curl/releases/download/curl-${CURL_VERSION_}/curl-${CURL_VERSION}.tar.gz
     tar xfz curl-${CURL_VERSION}.tar.gz
     pushd curl-${CURL_VERSION}
+      if [ $ARCH = 'arm64' ]; then
+        SSL_CONF="--with-secure-transport"
+      else
+        SSL_CONF="--without-secure-transport --with-ssl=$PREFIX"
+      fi
       CFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-            ./configure --with-ssl=$PREFIX \
+            ./configure \
+              ${SSL_CONF} \
               --without-nghttp2 \
               --without-libidn2 \
               --disable-ldap \
               --without-brotli \
-              --without-secure-transport \
               --disable-ipv6 \
               --prefix=$PREFIX \
               --host=$ARCH-apple-darwin
