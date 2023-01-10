@@ -133,6 +133,19 @@ import Pulsar = require('./index');
     compressionType: 'SNAPPY',
   });
 
+  const producer5: Pulsar.Producer = await client.createProducer({
+    topic: 'persistent://public/default/my-topic',
+    schema: {
+      name: 'my-schema',
+      schemaType: "Json",
+      schema: "my-json-schema",
+      properties: {
+        key1: 'value1',
+        key2: 'value2'
+      }
+    }
+  });
+
   const consumer1: Pulsar.Consumer = await client.subscribe({
     topic: 'persistent://public/default/my-topic',
     subscription: 'my-sub1',
@@ -253,6 +266,7 @@ import Pulsar = require('./index');
   await producer2.close();
   await producer3.close();
   await producer4.close();
+  await producer5.close();
   await consumer1.unsubscribe();
   await consumer2.close();
   await consumer3.close();

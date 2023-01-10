@@ -164,7 +164,7 @@ export class MessageId {
 export interface SchemaInfo {
   schemaType: SchemaType;
   name?: string;
-  schema: string;
+  schema?: string;
   properties?: Record<string, string>;
 }
 
@@ -263,4 +263,3 @@ export type ConsumerCryptoFailureAction =
   'Bytes' |
   'AutoConsume' |
   'AutoPublish';
-
