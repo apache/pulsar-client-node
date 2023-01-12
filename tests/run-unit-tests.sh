@@ -23,8 +23,8 @@ set -e
 ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
 cd $ROOT_DIR
 
-# install pulsar cpp client pkg
-build-support/install-cpp-client.sh
+# download pulsar cpp client
+pkg/linux/download-cpp-client.sh
 
 cd $ROOT_DIR
 build-support/pulsar-test-service-start.sh

@@ -43,9 +43,6 @@ pushd apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}
       -DBUILD_DYNAMIC_LIB=OFF \
       -DPROTOC_PATH=$PREFIX/bin/protoc
   make -j16 install
-  mkdir -p $ROOT_DIR/pkg/lib/
-  cp -r lib/libpulsarwithdeps.a $ROOT_DIR/pkg/lib/
 popd
 
 rm -rf apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}.tar.gz apache-pulsar-client-cpp-${CPP_CLIENT_VERSION}
-
