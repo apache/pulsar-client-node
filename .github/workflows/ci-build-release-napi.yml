@@ -127,7 +127,7 @@ jobs:
       - name: Build Linux Docker image
         uses: docker/build-push-action@v3
         with:
-          context: ./pkg/${{matrix.image}}
+          file: ./pkg/linux/Dockerfile_${{matrix.image}}
           load: true
           tags: build:latest
           platforms: linux/${{matrix.cpu.arch}}
@@ -141,7 +141,7 @@ jobs:
       - name: Build and Test NAPI file
         run: |
           docker run -i -v $PWD:/pulsar-client-node build:latest \
-              /pulsar-client-node/pkg/build-napi-inside-docker.sh
+              /pulsar-client-node/pkg/linux/build-napi-inside-docker.sh
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v3

@@ -60,6 +60,9 @@
           "include_dirs": [
             "pkg/mac/build-pulsar/install/include"
           ],
+          "libraries": [
+            "../pkg/mac/build-pulsar/install/lib/libpulsarwithdeps.a"
+          ],
         }],
         ['OS=="win"', {
           "defines": [
@@ -80,12 +83,16 @@
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
           ]
-        }, {  # 'OS!="win"'
+        }],
+        ['OS=="linux"', {
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
+          "include_dirs": [
+             "pkg/linux/pulsar-cpp/include"
+          ],
           "libraries": [
-             "../pkg/lib/libpulsarwithdeps.a"
+             "../pkg/linux/pulsar-cpp/lib/libpulsarwithdeps.a"
           ],
         }]
       ]
