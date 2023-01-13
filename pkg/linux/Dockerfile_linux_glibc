@@ -19,9 +19,7 @@
 
 ARG NODE_VERSION
 
-FROM node:${NODE_VERSION}-bullseye
-
-ARG NODE_VERSION
+FROM node:${NODE_VERSION}-buster
 
 RUN apt-get update -y && \
      apt-get install -y \
