@@ -51,7 +51,7 @@ elif [ $ID == 'alpine' ]; then
   $SUDO tar -xvf apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
   cp -r usr/* $ROOT_DIR/pkg/linux/pulsar-cpp/
 
-elif [ $ID == '"centos"' ]; then
+elif [ $ID == '"centos"' -o $ID == '"rocky"' ]; then
   curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
   $SUDO rpm -i --prefix=$ROOT_DIR/pkg/linux/pulsar-cpp apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm --nodeps --force
 
