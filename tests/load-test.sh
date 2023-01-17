@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,12 +18,26 @@
 # under the License.
 #
 
-build/
-node_modules/
-report/
-.idea
-.vscode
-*.tar.gz
-*.tgz
-pkg/linux/pulsar-cpp/
-lib/
+# Test if the Pulsar.node built from ../pkg/linux/build-napi-inside-docker.sh
+# can be loaded in other Linux distributions.
+
+set -e
+
+if [[ $# -lt 2 ]]; then
+    echo "Usage $0 <node-image-name> <platform>
+
+See https://hub.docker.com/_/node for valid images"
+    exit 1
+fi
+IMAGE=$1
+PLATFORM=$2
+
+ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
+cd $ROOT_DIR
+
+if [[ ! -f $ROOT_DIR/pulsar-client-node.tar.gz ]]; then
+    git archive -o pulsar-client-node.tar.gz HEAD
+fi
+
+docker run --platform $PLATFORM -v $PWD:/pulsar-client-node $IMAGE \
+    /bin/bash /pulsar-client-node/tests/docker-load-test.sh

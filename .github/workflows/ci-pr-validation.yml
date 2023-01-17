@@ -167,6 +167,14 @@ jobs:
           docker run -i -v $PWD:/pulsar-client-node build:latest \
               /pulsar-client-node/pkg/linux/build-napi-inside-docker.sh
 
+      - name: Test NAPI file in other containers
+        if: matrix.image == 'linux_glibc'
+        run: |
+          ./tests/load-test.sh node:16-buster ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:16-bullseye ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:19-buster ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:19-bullseye ${{matrix.cpu.platform}}
+
   windows-napi:
     name: Build NAPI windows - Node ${{matrix.nodejs}} - ${{matrix.arch}}
     runs-on: windows-2022
