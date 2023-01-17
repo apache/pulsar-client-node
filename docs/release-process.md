@@ -34,6 +34,17 @@ The steps for releasing are as follows:
 9. Update release notes
 10. Announce the release
  
+## Versioning
+Bump up the version number as follows.
+
+* Major version (e.g. 1.8.0 => 2.0.0)
+  * Changes that break backward compatibility
+* Minor version (e.g. 1.8.0 => 1.9.0)
+  * Backward compatible new features
+* Patch version (e.g. 1.8.0 => 1.8.1)
+  * Backward compatible bug fixes
+  * C++ Client upgrade (even though there are no new commits in the Nodejs client)
+
 ## Requirements
 If you haven't already done it, [create and publish the GPG key](https://pulsar.apache.org/contribute/releasing/create-gpg-keys) to sign the release artifacts.
 
