@@ -25,11 +25,11 @@ set -ex
 # Create an empty directory to test
 mkdir -p /app && cd /app
 tar zxf /pulsar-client-node/pulsar-client-node.tar.gz
-cp /pulsar-client-node/build/Release/Pulsar.node .
 
-# Import the Pulsar.node instead of the node-gyp binding
-sed -i 's/src\/pulsar-binding/Pulsar/' index.js
-find src/ -name "*.js" | xargs sed -i 's/\.\/pulsar-binding/..\/Pulsar/'
+# Use the existing Pulsar.node built in a specific container
+mkdir -p lib/binding
+cp /pulsar-client-node/build/Release/Pulsar.node lib/binding/
+npm install
 
 # Test if Pulsar.node can be loaded
 node pkg/load_test.js
