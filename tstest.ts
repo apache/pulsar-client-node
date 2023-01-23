@@ -188,6 +188,20 @@ import Pulsar = require('./index');
     subscriptionType: 'Failover',
   });
 
+  const consumer5: Pulsar.Consumer = await client.subscribe({
+    topic: 'persistent://public/default/my-topic',
+    subscription: 'my-sub5',
+    schema: {
+      name: 'my-schema',
+      schemaType: "Json",
+      schema: "my-json-schema",
+      properties: {
+        key1: 'value1',
+        key2: 'value2'
+      }
+    }
+  });
+
   const reader1: Pulsar.Reader = await client.createReader({
     topic: 'persistent://public/default/my-topic',
     startMessageId: Pulsar.MessageId.latest(),
@@ -271,6 +285,7 @@ import Pulsar = require('./index');
   await consumer2.close();
   await consumer3.close();
   await consumer4.close();
+  await consumer5.close();
   await reader1.close();
   await reader2.close();
   await reader3.close();

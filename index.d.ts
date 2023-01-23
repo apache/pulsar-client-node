@@ -246,7 +246,7 @@ export type ConsumerCryptoFailureAction =
   'DISCARD' |
   'CONSUME';
 
-  export type SchemaType =
+export type SchemaType =
   'None' |
   'String' |
   'Json' |
