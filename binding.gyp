@@ -20,7 +20,7 @@
 {
   "targets": [
     {
-      "target_name": "Pulsar",
+      "target_name": "pulsar",
       "cflags_cc": ["-std=gnu++11"],
       "cflags!": ["-fno-exceptions"],
       "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17"],
