@@ -179,7 +179,7 @@ Please download the source files and review this release candidate:
 
 The release candidate package has been published to the npm registry:
 https://www.npmjs.com/package/pulsar-client/v/1.X.0-rc.1
-You can install it by `npm i pulsar-client@1.X.0-rc.1 --pulsar_binary_host_mirror=https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/` and verify the package.
+You can install it by `npm i pulsar-client@1.X.0-rc.1 --pulsar_binary_host_mirror=https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/` and verify the package.
 
 The vote will be open for at least 72 hours. It is adopted by majority approval, with at least 3 PMC affirmative votes.
 
