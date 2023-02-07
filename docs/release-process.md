@@ -28,10 +28,10 @@ The steps for releasing are as follows:
 3. Update package version and tag
 4. Sign and stage the artifacts
 5. Move master branch to next version
-6. Write release notes
+6. Publish the release candidate to the npm
 7. Run the vote
 8. Promote the release
-9. Update release notes
+9. Add release notes
 10. Announce the release
  
 ## Requirements
@@ -114,14 +114,15 @@ $ cd pulsar-dist-dev
 
 # '-candidate-1' needs to be incremented in case of multiple iterations in getting
 #    to the final release)
-$ svn mkdir pulsar-client-node-1.X.0-candidate-1
+$ svn mkdir pulsar-client-node-1.X.0-rc.1
+$ cd pulsar-client-node-1.X.0-rc.1
 
 # Generate token from here: https://github.com/settings/tokens
 $ export GITHUB_TOKEN=${Your github token} 
 $ $PULSAR_PATH/build-support/stage-release.sh . $WORKFLOW_ID
 
 $ svn add *
-$ svn ci -m 'Staging artifacts and signature for Pulsar Node.js client release 1.X.0-candidate-1'
+$ svn ci -m 'Staging artifacts and signature for Pulsar Node.js client release 1.X.0-rc.1'
 ```
 
 #### 5. Move master branch to next version
@@ -136,14 +137,15 @@ $ npm version preminor --preid=rc
 Since this needs to be merged in `master`, we need to follow the regular process
 and create a Pull Request on GitHub.
 
-#### 6. Write release notes
+#### 6. Publish the release candidate to the npm
 
-Check the milestone in GitHub associated with the release.
-https://github.com/apache/pulsar-client-node/milestones?closed=1
+Set the npm version for the release candidate
+```sh
+npm version 1.8.0-rc.1 --no-git-tag-version
+```
 
-In the release item, add the list of most important changes that happened in the release
-and a link to the associated milestone, with the complete list of all the changes.
-https://github.com/apache/pulsar-client-node/releases
+You can use `npm pack` and test the package before publishing. 
+If there are no problems, then use `npm publish` to publish to the npm.
 
 #### 7. Run the vote
 
@@ -154,9 +156,6 @@ To: dev@pulsar.apache.org
 Subject: [VOTE] Pulsar Node.js Client Release 1.X.0 Candidate 1
 
 Hi everyone,
-Please review and vote on the release candidate #1 for the version 1.X.0, as follows:
-[ ] +1, Approve the release
-[ ] -1, Do not approve the release (please provide specific comments)
 
 This is the first release candidate for Apache Pulsar Node.js client, version 1.X.0.
 
@@ -164,13 +163,17 @@ It fixes the following issues:
 https://github.com/apache/pulsar-client-node/milestone/1?closed=1
 
 Please download the source files and review this release candidate:
-- Review release notes
-- Download the source package (verify shasum and asc) and follow the README.md to build and run the Pulsar Node.js client.
+- Download the source package, verify shasum and asc
+- Follow the README.md to build and run the Pulsar Node.js client.
+
+The release candidate package has been published to the npm registry:
+https://www.npmjs.com/package/pulsar-client/v/1.X.0-rc.1
+You can install it by `npm i pulsar-client@1.X.0-rc.1 --pulsar_binary_host_mirror=https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/` and verify the package.
 
 The vote will be open for at least 72 hours. It is adopted by majority approval, with at least 3 PMC affirmative votes.
 
 Source files:
-https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-candidate-1/
+https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-rc.1/
 
 Pulsar's KEYS file containing PGP keys we use to sign the release:
 https://dist.apache.org/repos/dist/dev/pulsar/KEYS
@@ -181,6 +184,10 @@ SHA-512 checksum:
 The tag to be voted upon:
 v1.X.0-rc.1
 https://github.com/apache/pulsar-client-node/releases/tag/v1.X.0-rc.1
+
+Please review and vote on the release candidate #1 for the version 1.X.0, as follows:
+[ ] +1, Approve the release
+[ ] -1, Do not approve the release (please provide specific comments)
 ```
 
 The vote should be open for at least 72 hours (3 days). Votes from Pulsar PMC members
@@ -218,7 +225,7 @@ $ npm publish
 Promote the artifacts on the release location (need PMC permissions):
 ```sh
 $ svn mv -m 'Release Pulsar Node.js client 1.X.0' \
-  https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-candidate-1 \
+  https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-rc.1 \
   https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/pulsar-client-node-1.X.0
 
 # Remove the old releases (if any)
@@ -227,10 +234,12 @@ $ svn rm -m 'Remove the old release' \
   https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/pulsar-client-node-1.Y.0
 ```
 
-#### 9. Update release notes
+#### 9. Add release notes
 
-Add the release notes there:
-https://github.com/apache/pulsar-client-node/releases
+Create a PR to add release notes to the pulsar site. Here is the example: https://github.com/apache/pulsar-site/pull/360
+If there are any new contributors for this release, please add a `New Contributors` section in the release note.
+
+Once the PR has been approved, add release notes to the Github release page (https://github.com/apache/pulsar-client-node/releases)
 
 #### 10. Announce the release
 
