@@ -35,9 +35,9 @@ PLATFORM=$2
 ROOT_DIR=${ROOT_DIR:-$(git rev-parse --show-toplevel)}
 cd $ROOT_DIR
 
-if [[ ! -f $ROOT_DIR/pulsar-client-node.tar.gz ]]; then
-    git archive -o pulsar-client-node.tar.gz HEAD
-fi
+git archive -o pulsar-client-node.tar.gz HEAD
 
 docker run --platform $PLATFORM -v $PWD:/pulsar-client-node $IMAGE \
     /bin/bash /pulsar-client-node/tests/docker-load-test.sh
+
+rm pulsar-client-node.tar.gz
