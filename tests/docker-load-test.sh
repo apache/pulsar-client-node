@@ -28,7 +28,7 @@ tar zxf /pulsar-client-node/pulsar-client-node.tar.gz
 
 # Use the existing Pulsar.node built in a specific container
 mkdir -p lib/binding
-cp /pulsar-client-node/build/Release/Pulsar.node lib/binding/
+cp /pulsar-client-node/build/Release/pulsar.node lib/binding/
 npm install
 
 # Test if Pulsar.node can be loaded
