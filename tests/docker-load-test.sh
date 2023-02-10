@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -17,12 +18,18 @@
 # under the License.
 #
 
-build/
-node_modules/
-report/
-.idea
-.vscode
-*.tar.gz
-*.tgz
-pkg/linux/pulsar-cpp/
-lib/
+# NOTE: This script should only run inside a Node.js docker container.
+# See ./load-test.sh for details.
+set -ex
+
+# Create an empty directory to test
+mkdir -p /app && cd /app
+tar zxf /pulsar-client-node/pulsar-client-node.tar.gz
+
+# Use the existing Pulsar.node built in a specific container
+mkdir -p lib/binding
+cp /pulsar-client-node/build/Release/pulsar.node lib/binding/
+npm install
+
+# Test if Pulsar.node can be loaded
+node pkg/load_test.js
