@@ -36,7 +36,9 @@ else
   PLATFORM=x86_64
 fi
 
+rm -rf $ROOT_DIR/pkg/linux/pulsar-cpp
 mkdir $ROOT_DIR/pkg/linux/pulsar-cpp
+rm -rf $ROOT_DIR/pkg/linux/tmp
 mkdir $ROOT_DIR/pkg/linux/tmp
 cd $ROOT_DIR/pkg/linux/tmp
 
