@@ -64,7 +64,7 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
         else
           PLATFORM=darwin64-x86_64-cc
         fi
-        ./Configure --prefix=$PREFIX no-shared no-unit-test $PLATFORM
+        ./Configure --prefix=$PREFIX $SSL_DIR --openssldir=/etc/ssl no-shared no-unit-test $PLATFORM
         make -j8
         make install_sw
     popd
@@ -169,6 +169,7 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
       CFLAGS="-fPIC -arch ${ARCH} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
             ./configure --with-ssl=$PREFIX \
               --without-nghttp2 \
+              --with-ca-bundle="/etc/ssl/cert.pem" \
               --without-libidn2 \
               --disable-ldap \
               --without-brotli \
