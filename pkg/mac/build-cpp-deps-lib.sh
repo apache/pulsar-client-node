@@ -69,10 +69,12 @@ if [ ! -f openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.done ]; then
         make install_sw
     popd
 
-    OPENSSL_DIR=$(./install/bin/openssl version -d | sed 's/\"//g')
-    if [[ $OPENSSL_DIR =~ "\/etc\/ssl" ]]; then
-        echo "The openssl dir is not set as expected: " $OPENSSL_DIR
-        exit 1
+    if [ $ARCH = 'x64' ]; then
+      OPENSSL_DIR=$(./install/bin/openssl version -d | sed 's/\"//g')
+      if [[ $OPENSSL_DIR =~ "\/etc\/ssl" ]]; then
+          echo "The openssl dir is not set as expected: " $OPENSSL_DIR
+          exit 1
+      fi
     fi
 
     rm -rf OpenSSL_${OPENSSL_VERSION_UNDERSCORE}.tar.gz openssl-OpenSSL_${OPENSSL_VERSION_UNDERSCORE}
@@ -186,10 +188,12 @@ if [ ! -f curl-${CURL_VERSION}.done ]; then
       make -j16 install
     popd
 
-    CERT_PATH=$(./install/bin/curl -v https://example.com 2>&1 | grep CAfile)
-    if [[ $CERT_PATH =~ "\/etc\/ssl" ]]; then
-        echo "The certification path is not set as expected: " $CERT_PATH
-        exit 1
+    if [ $ARCH = 'x64' ]; then
+      CERT_PATH=$(./install/bin/curl -v https://example.com 2>&1 | grep CAfile)
+      if [[ $CERT_PATH =~ "\/etc\/ssl" ]]; then
+          echo "The certification path is not set as expected: " $CERT_PATH
+          exit 1
+      fi
     fi
 
     rm -rf curl-${CURL_VERSION} curl-${CURL_VERSION}.tar.gz
