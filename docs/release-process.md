@@ -112,7 +112,7 @@ where` <key fingerprint>` should be replaced with the private key fingerprint fo
 $ svn co https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node pulsar-dist-dev
 $ cd pulsar-dist-dev
 
-# '-candidate-1' needs to be incremented in case of multiple iterations in getting
+# '-rc.1' needs to be incremented in case of multiple iterations in getting
 #    to the final release)
 $ svn mkdir pulsar-client-node-1.X.0-rc.1
 $ cd pulsar-client-node-1.X.0-rc.1
@@ -139,13 +139,23 @@ and create a Pull Request on GitHub.
 
 #### 6. Publish the release candidate to the npm
 
-Set the npm version for the release candidate
-```sh
-npm version 1.8.0-rc.1 --no-git-tag-version
-```
+If you don't have permission to publish `pulsar-client` to the npm registry, ask other committers to grant that permission.
 
-You can use `npm pack` and test the package before publishing. 
-If there are no problems, then use `npm publish` to publish to the npm.
+```sh
+# Set the npm version for the release candidate
+npm version 1.x.0-rc.1 --no-git-tag-version
+
+# Create or verify a user account in the npm registry
+$ npm adduser
+
+Username: foobar
+Password: ********
+Email: (this IS public) foobar@apache.org
+
+# Publish the rc version package to the npm registry
+# We use the `rc` tag to distinguish the release candidate from the official release.
+$ npm publish --tag rc
+```
 
 #### 7. Run the vote
 
@@ -179,7 +189,7 @@ Pulsar's KEYS file containing PGP keys we use to sign the release:
 https://dist.apache.org/repos/dist/dev/pulsar/KEYS
 
 SHA-512 checksum:
-5f6c7e1a096a3ae66eee71c552af89532ed86bf94da3f3d49836c080426ee5dcaabeda440a989d51772d2e67e2dca953eeee9ea83cfbc7c2a0847a0ec04b310f  pulsar-client-node-1.X.0.tar.gz
+5f6c7e1a096a3ae66eee71c552af89532ed86bf94da3f3d49836c080426ee5dcaabeda440a989d51772d2e67e2dca953eeee9ea83cfbc7c2a0847a0ec04b310f  apache-pulsar-client-node-1.X.0.tar.gz
 
 The tag to be voted upon:
 v1.X.0-rc.1
@@ -208,18 +218,9 @@ $ git push origin v1.X.0
 
 Publish the release package:
 ```sh
-# Create or verify a user account in the npm registry
-$ npm adduser
-
-Username: foobar
-Password: ********
-Email: (this IS public) foobar@apache.org
-
-# Publish the package to the npm registry
+# You can use `npm pack` and test the package before publishing.
+# If there are no problems, then use `npm publish` to publish to the npm.
 $ npm publish
-
-# If you don't have permission to publish `pulsar-client` to the npm registry,
-# ask other committers to grant that permission.
 ```
 
 Promote the artifacts on the release location (need PMC permissions):
