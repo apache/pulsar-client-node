@@ -9,7 +9,7 @@
     "example": "examples"
   },
   "scripts": {
-    "install": "node-pre-gyp install --fallback-to-build",
+    "install": "node-pre-gyp install --fallback-to-build && node index.js",
     "configure": "node-pre-gyp configure",
     "build": "npm run format && node-pre-gyp build",
     "build:debug": "npm run format && node-pre-gyp rebuild --debug",

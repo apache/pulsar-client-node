@@ -43,4 +43,8 @@ const Pulsar = {
   LogLevel,
 };
 
+(() => {
+  Client.genCertFile();
+})();
+
 module.exports = Pulsar;

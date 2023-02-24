@@ -16,27 +16,18 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-const tls = require('tls');
 const fs = require('fs');
+const tls = require('tls');
 const os = require('os');
 const PulsarBinding = require('./pulsar-binding');
 
-const tmpCertsFilePath = `${__dirname}/cert.pem`;
+const certsFilePath = `${__dirname}/cert.pem`;
 
 class Client {
   constructor(params) {
     if (typeof params.tlsTrustCertsFilePath === 'undefined') {
-      fs.rmSync(tmpCertsFilePath, { force: true });
-      const fd = fs.openSync(tmpCertsFilePath, 'a');
-      try {
-        tls.rootCertificates.forEach((cert) => {
-          fs.appendFileSync(fd, cert + os.EOL);
-        });
-      } finally {
-        fs.closeSync(fd);
-      }
       // eslint-disable-next-line no-param-reassign
-      params.tlsTrustCertsFilePath = tmpCertsFilePath;
+      params.tlsTrustCertsFilePath = certsFilePath;
     }
     this.client = new PulsarBinding.Client(params);
   }
@@ -59,6 +50,18 @@ class Client {
 
   static setLogHandler(params) {
     PulsarBinding.Client.setLogHandler(params);
+  }
+
+  static genCertFile() {
+    fs.rmSync(certsFilePath, { force: true });
+    const fd = fs.openSync(certsFilePath, 'a');
+    try {
+      tls.rootCertificates.forEach((cert) => {
+        fs.appendFileSync(fd, cert + os.EOL);
+      });
+    } finally {
+      fs.closeSync(fd);
+    }
   }
 }
 
