@@ -17,30 +17,6 @@
  * under the License.
  */
 
-const PulsarBinding = require('./src/pulsar-binding');
-const AuthenticationTls = require('./src/AuthenticationTls.js');
-const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
-const AuthenticationToken = require('./src/AuthenticationToken.js');
-const AuthenticationOauth2 = require('./src/AuthenticationOauth2.js');
 const Client = require('./src/Client.js');
 
-const LogLevel = {
-  DEBUG: 0,
-  INFO: 1,
-  WARN: 2,
-  ERROR: 3,
-  toString: (level) => Object.keys(LogLevel).find((key) => LogLevel[key] === level),
-};
-
-const Pulsar = {
-  Client,
-  Message: PulsarBinding.Message,
-  MessageId: PulsarBinding.MessageId,
-  AuthenticationTls,
-  AuthenticationAthenz,
-  AuthenticationToken,
-  AuthenticationOauth2,
-  LogLevel,
-};
-
-module.exports = Pulsar;
+Client.genCertFile();

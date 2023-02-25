@@ -26,3 +26,4 @@ report/
 *.tgz
 pkg/linux/pulsar-cpp/
 lib/
+src/cert.pem
