@@ -25,7 +25,7 @@ const certsFilePath = `${__dirname}/cert.pem`;
 
 class Client {
   constructor(params) {
-    if (typeof params.tlsTrustCertsFilePath === 'undefined') {
+    if (!params.tlsTrustCertsFilePath) {
       // eslint-disable-next-line no-param-reassign
       params.tlsTrustCertsFilePath = certsFilePath;
     }

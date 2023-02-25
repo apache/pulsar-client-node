@@ -19,6 +19,4 @@
 
 const Client = require('./src/Client.js');
 
-(() => {
-  Client.genCertFile();
-})();
+Client.genCertFile();
