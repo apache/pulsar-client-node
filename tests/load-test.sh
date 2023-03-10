@@ -38,6 +38,6 @@ cd $ROOT_DIR
 git archive -o pulsar-client-node.tar.gz HEAD
 
 docker run --platform $PLATFORM -v $PWD:/pulsar-client-node $IMAGE \
-    /bin/bash /pulsar-client-node/tests/docker-load-test.sh
+    sh /pulsar-client-node/tests/docker-load-test.sh
 
 rm pulsar-client-node.tar.gz
