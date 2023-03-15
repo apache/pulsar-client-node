@@ -189,7 +189,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   try {
     this->cClient = std::shared_ptr<pulsar_client_t>(
         pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
-  } catch (const std::exception& e) {
+  } catch (const std::exception &e) {
     Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
   }
 }
