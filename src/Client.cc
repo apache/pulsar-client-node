@@ -93,12 +93,11 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   Napi::HandleScope scope(env);
   Napi::Object clientConfig = info[0].As<Napi::Object>();
 
-  if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString()) {
-    if (clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
+  if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString()
+      || clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
       Napi::Error::New(env, "Service URL is required and must be specified as a string")
           .ThrowAsJavaScriptException();
       return;
-    }
   }
   Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
