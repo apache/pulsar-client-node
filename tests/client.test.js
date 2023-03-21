@@ -35,6 +35,13 @@ const Pulsar = require('../index.js');
         })).toThrow('Service URL is required and must be specified as a string');
       });
 
+      test('Set invalid url', async () => {
+        await expect(() => new Pulsar.Client({
+          serviceUrl: 'invalid://localhost:6655',
+          operationTimeoutSeconds: 30,
+        })).toThrow('Invalid scheme: invalid');
+      });
+
       test('Set not string url', async () => {
         await expect(() => new Pulsar.Client({
           serviceUrl: -1,
