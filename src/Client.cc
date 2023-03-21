@@ -93,12 +93,11 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   Napi::HandleScope scope(env);
   Napi::Object clientConfig = info[0].As<Napi::Object>();
 
-  if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString()) {
-    if (clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
-      Napi::Error::New(env, "Service URL is required and must be specified as a string")
-          .ThrowAsJavaScriptException();
-      return;
-    }
+  if (!clientConfig.Has(CFG_SERVICE_URL) || !clientConfig.Get(CFG_SERVICE_URL).IsString() ||
+      clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty()) {
+    Napi::Error::New(env, "Service URL is required and must be specified as a string")
+        .ThrowAsJavaScriptException();
+    return;
   }
   Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
 
@@ -186,8 +185,12 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig.get(), statsIntervalInSeconds);
   }
 
-  this->cClient = std::shared_ptr<pulsar_client_t>(
-      pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
+  try {
+    this->cClient = std::shared_ptr<pulsar_client_t>(
+        pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
+  } catch (const std::exception &e) {
+    Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
+  }
 }
 
 Client::~Client() {}
