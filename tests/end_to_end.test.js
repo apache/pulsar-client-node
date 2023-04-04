@@ -263,6 +263,69 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('Share consumers with message listener', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'test-shared-consumer-listener';
+      const producer = await client.createProducer({
+        topic,
+        batchingEnabled: false,
+      });
+
+      for (let i = 0; i < 100; i += 1) {
+        await producer.send(i);
+      }
+
+      let consumer1Recv = 0;
+
+      const consumer1 = await client.subscribe({
+        topic,
+        subscription: 'sub',
+        subscriptionType: 'Shared',
+        subscriptionInitialPosition: 'Earliest',
+        receiverQueueSize: 10,
+        listener: async (message, messageConsumer) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          consumer1Recv += 1;
+          await messageConsumer.acknowledge(message);
+        },
+      });
+
+      const consumer2 = await client.subscribe({
+        topic,
+        subscription: 'sub',
+        subscriptionType: 'Shared',
+        subscriptionInitialPosition: 'Earliest',
+        receiverQueueSize: 10,
+      });
+
+      let consumer2Recv = 0;
+      while (true) {
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        try {
+          const msg = await consumer2.receive(3000);
+          consumer2Recv += 1;
+          await consumer2.acknowledge(msg);
+        } catch (err) {
+          break;
+        }
+      }
+
+      // Ensure that each consumer receives at least 1 times (greater than and not equal)
+      // the receiver queue size messages.
+      // This way any of the consumers will not immediately empty all messages of a topic.
+      expect(consumer1Recv).toBeGreaterThan(10);
+      expect(consumer1Recv).toBeGreaterThan(10);
+
+      await consumer1.close();
+      await consumer2.close();
+      await producer.close();
+      await client.close();
+    });
+
     test('acknowledgeCumulative', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
