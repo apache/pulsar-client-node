@@ -25,6 +25,7 @@
 #include <pulsar/c/result.h>
 #include <atomic>
 #include <thread>
+#include <future>
 
 Napi::FunctionReference Consumer::constructor;
 
@@ -55,20 +56,33 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
 struct MessageListenerProxyData {
   std::shared_ptr<pulsar_message_t> cMessage;
   Consumer *consumer;
+  std::function<void(void)> callback;
 
-  MessageListenerProxyData(std::shared_ptr<pulsar_message_t> cMessage, Consumer *consumer)
-      : cMessage(cMessage), consumer(consumer) {}
+  MessageListenerProxyData(std::shared_ptr<pulsar_message_t> cMessage, Consumer *consumer,
+                           std::function<void(void)> callback)
+      : cMessage(cMessage), consumer(consumer), callback(callback) {}
 };
 
 void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListenerProxyData *data) {
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Consumer *consumer = data->consumer;
-  delete data;
 
   // `consumer` might be null in certain cases, segmentation fault might happend without this null check. We
   // need to handle this rare case in future.
   if (consumer) {
-    jsCallback.Call({msg, consumer->Value()});
+    Napi::Value ret = jsCallback.Call({msg, consumer->Value()});
+    if (ret.IsPromise()) {
+      Napi::Promise promise = ret.As<Napi::Promise>();
+      Napi::Value thenValue = promise.Get("then");
+      if (thenValue.IsFunction()) {
+        Napi::Function then = thenValue.As<Napi::Function>();
+        Napi::Function callback =
+            Napi::Function::New(env, [=](const Napi::CallbackInfo &info) { data->callback(); });
+        then.Call(promise, {callback});
+        return;
+      }
+    }
+    data->callback();
   }
 }
 
@@ -82,9 +96,15 @@ void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessag
     return;
   }
 
-  MessageListenerProxyData *dataPtr = new MessageListenerProxyData(cMessage, consumer);
+  std::promise<void> promise;
+  std::future<void> future = promise.get_future();
+  MessageListenerProxyData *dataPtr =
+      new MessageListenerProxyData(cMessage, consumer, [&]() { promise.set_value(); });
   listenerCallback->callback.BlockingCall(dataPtr, MessageListenerProxy);
   listenerCallback->callback.Release();
+
+  future.wait();
+  delete dataPtr;
 }
 
 void Consumer::SetCConsumer(std::shared_ptr<pulsar_consumer_t> cConsumer) { this->cConsumer = cConsumer; }
