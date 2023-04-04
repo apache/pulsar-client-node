@@ -30,6 +30,13 @@ bin/pulsar-daemon start standalone \
         --bookkeeper-dir data/bookkeeper
 
 echo "-- Wait for Pulsar service to be ready"
-until curl http://localhost:8080/metrics > /dev/null 2>&1 ; do sleep 1; done
+for i in $(seq 30); do
+    curl http://localhost:8080/metrics > /dev/null 2>&1 && break
+    if [ $i -lt 30 ]; then
+        sleep 1
+    else
+        exit 1
+    fi
+done
 
 echo "-- Ready to start tests"
