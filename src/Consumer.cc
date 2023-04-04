@@ -82,8 +82,8 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
         return;
       }
     }
-    data->callback();
   }
+  data->callback();
 }
 
 void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessage, void *ctx) {
