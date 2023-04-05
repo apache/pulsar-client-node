@@ -23,7 +23,7 @@
       "target_name": "pulsar",
       "cflags_cc": ["-std=gnu++11"],
       "cflags!": ["-fno-exceptions"],
-      "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17"],
+      "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17", "-fvisibility=hidden"],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
@@ -99,6 +99,9 @@
           ]
         }],
         ['OS=="linux"', {
+          "ldflags": [
+            "-Wl,--exclude-libs,ALL"
+          ],
           "dependencies": [
             "<!@(node -p \"require('node-addon-api').gyp\")"
           ],
