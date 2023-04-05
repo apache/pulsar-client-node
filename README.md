@@ -73,7 +73,7 @@ const Pulsar = require('pulsar-client');
     data: Buffer.from("hello")
   });
 
-  // Receive the message 
+  // Receive the message
   const msg = await consumer.receive();
   console.log(msg.getData().toString());
   consumer.acknowledge(msg);
@@ -133,6 +133,10 @@ npm install
 ```
 
 To verify it has been installed successfully, you can run an example like:
+
+> **Note**
+>
+> A running Pulsar server is required. The example uses `pulsar://localhost:6650` to connect to the server.
 
 ```shell
 node examples/producer

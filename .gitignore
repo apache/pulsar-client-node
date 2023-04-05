@@ -25,5 +25,6 @@ report/
 *.tar.gz
 *.tgz
 pkg/linux/pulsar-cpp/
+pkg/mac/build-pulsar/
 lib/
 src/cert.pem
