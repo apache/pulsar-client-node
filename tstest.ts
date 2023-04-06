@@ -344,33 +344,33 @@ import Pulsar = require('./index');
 
 // Missing required parameters
 (async () => {
-  // $ExpectError
+  // @ts-expect-error
   const authAthenz: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz({
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const client: Pulsar.Client = new Pulsar.Client({
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const producer: Pulsar.Producer = await client.createProducer({
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const consumer: Pulsar.Consumer = await client.subscribe({
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const reader1: Pulsar.Reader = await client.createReader({
     topic: 'persistent://public/default/my-topic',
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const reader2: Pulsar.Reader = await client.createReader({
     startMessageId: Pulsar.MessageId.latest(),
   });
 
-  // $ExpectError
+  // @ts-expect-error
   const messageId: Pulsar.MessageId = await producer.send({
   });
 })();

@@ -39,7 +39,7 @@
     "clang-format": "^1.4.0",
     "commander": "^6.1.0",
     "delay": "^4.4.0",
-    "dtslint": "^3.4.2",
+    "dtslint": "^4.2.1",
     "eslint": "^7.8.1",
     "eslint-config-airbnb-base": "^14.2.0",
     "eslint-plugin-import": "^2.22.0",

@@ -1,6 +1,6 @@
 {
     "entryPoints": ["index.d.ts"],
-    "out": "docs",
+    "out": "apidocs",
     "name": "Apache Pulsar",
     "tsconfig": "tsconfig.json",
     "excludePrivate": true,
