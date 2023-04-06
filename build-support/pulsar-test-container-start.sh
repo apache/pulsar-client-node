@@ -35,6 +35,7 @@ for i in $(seq 30); do
     if [ $i -lt 30 ]; then
         sleep 1
     else
+        echo '-- Pulsar standalone server startup timed out'
         exit 1
     fi
 done
