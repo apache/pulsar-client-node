@@ -22,9 +22,15 @@ const Pulsar = require('../index.js');
 
 (() => {
   describe('End To End', () => {
-    test('Produce/Consume', async () => {
+    test.each([
+      ['pulsar://localhost:6650'],
+      ['pulsar+ssl://localhost:6651'],
+      ['http://localhost:8080'],
+      ['https://localhost:8443'],
+    ])('Produce/Consume to %s', async (serviceUrl) => {
       const client = new Pulsar.Client({
-        serviceUrl: 'pulsar://localhost:6650',
+        serviceUrl,
+        tlsTrustCertsFilePath: `${__dirname}/certificate/server.crt`,
         operationTimeoutSeconds: 30,
       });
 

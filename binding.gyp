@@ -21,9 +21,9 @@
   "targets": [
     {
       "target_name": "pulsar",
-      "cflags_cc": ["-std=gnu++11"],
+      "cflags_cc": ["-std=gnu++11", "-fvisibility=hidden"],
       "cflags!": ["-fno-exceptions"],
-      "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17", "-fvisibility=hidden"],
+      "cflags_cc!": ["-fno-exceptions", "-std=gnu++14", "-std=gnu++17"],
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
