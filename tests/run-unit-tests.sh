@@ -28,7 +28,7 @@ pkg/linux/download-cpp-client.sh
 
 cd $ROOT_DIR
 build-support/pulsar-test-service-start.sh
-npm install && npm run lint && npm run dtslint && npm run docs && npm run build && npm run test
+npm install && npm run lint && npm run dtslint && npm run build && npm run test && npm run docs
 RES=$?
 build-support/pulsar-test-service-stop.sh
 
