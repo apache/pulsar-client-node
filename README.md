@@ -158,4 +158,13 @@ Sent message: my-message-9
 ```
 
 ## Documentation
+
 * Please see https://pulsar.apache.org/docs/client-libraries-node/ for more details about the Pulsar Node.js client.
+
+You can generate the API docs by:
+
+```shell
+npm install
+npx typedoc
+# Documentation generated at ./apidocs
+```
