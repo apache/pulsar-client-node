@@ -17,6 +17,7 @@
 # under the License.
 #
 
+apidocs/
 build/
 node_modules/
 report/
