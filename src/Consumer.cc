@@ -77,7 +77,7 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
       if (thenValue.IsFunction()) {
         Napi::Function then = thenValue.As<Napi::Function>();
         Napi::Function callback =
-            Napi::Function::New(env, [=](const Napi::CallbackInfo &info) { data->callback(); });
+            Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); });
         then.Call(promise, {callback});
         return;
       }
