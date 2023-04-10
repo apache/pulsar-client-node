@@ -98,13 +98,12 @@ void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessag
 
   std::promise<void> promise;
   std::future<void> future = promise.get_future();
-  MessageListenerProxyData *dataPtr =
-      new MessageListenerProxyData(cMessage, consumer, [&promise]() { promise.set_value(); });
-  listenerCallback->callback.BlockingCall(dataPtr, MessageListenerProxy);
+  std::unique_ptr<MessageListenerProxyData> dataPtr = std::unique_ptr<MessageListenerProxyData>(
+      new MessageListenerProxyData(cMessage, consumer, [&promise]() { promise.set_value(); }));
+  listenerCallback->callback.BlockingCall(dataPtr.get(), MessageListenerProxy);
   listenerCallback->callback.Release();
 
   future.wait();
-  delete dataPtr;
 }
 
 void Consumer::SetCConsumer(std::shared_ptr<pulsar_consumer_t> cConsumer) { this->cConsumer = cConsumer; }
