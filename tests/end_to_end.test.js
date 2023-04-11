@@ -310,9 +310,9 @@ const Pulsar = require('../index.js');
 
       let consumer2Recv = 0;
       while (true) {
-        await new Promise((resolve) => setTimeout(resolve, 10));
         try {
           const msg = await consumer2.receive(3000);
+          await new Promise((resolve) => setTimeout(resolve, 10));
           consumer2Recv += 1;
           await consumer2.acknowledge(msg);
         } catch (err) {
@@ -324,10 +324,64 @@ const Pulsar = require('../index.js');
       // the receiver queue size messages.
       // This way any of the consumers will not immediately empty all messages of a topic.
       expect(consumer1Recv).toBeGreaterThan(10);
-      expect(consumer1Recv).toBeGreaterThan(10);
+      expect(consumer2Recv).toBeGreaterThan(10);
 
       await consumer1.close();
       await consumer2.close();
+      await producer.close();
+      await client.close();
+    });
+
+    test('Share readers with message listener', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'test-shared-reader-listener';
+      const producer = await client.createProducer({
+        topic,
+        batchingEnabled: false,
+      });
+
+      for (let i = 0; i < 100; i += 1) {
+        await producer.send(i);
+      }
+
+      let reader1Recv = 0;
+
+      const reader1 = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.earliest(),
+        receiverQueueSize: 10,
+        listener: async (message, reader) => {
+          await new Promise((resolve) => setTimeout(resolve, 10));
+          reader1Recv += 1;
+        },
+      });
+
+      const reader2 = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.earliest(),
+        receiverQueueSize: 10,
+      });
+
+      let reader2Recv = 0;
+
+      while (reader2.hasNext()) {
+        await reader2.readNext();
+        await new Promise((resolve) => setTimeout(resolve, 10));
+        reader2Recv += 1;
+      }
+
+      // Ensure that each reader receives at least 1 times (greater than and not equal)
+      // the receiver queue size messages.
+      // This way any of the readers will not immediately empty all messages of a topic.
+      expect(reader1Recv).toBeGreaterThan(10);
+      expect(reader2Recv).toBeGreaterThan(10);
+
+      await reader1.close();
+      await reader2.close();
       await producer.close();
       await client.close();
     });

@@ -26,6 +26,7 @@
 #include <pulsar/c/reader.h>
 #include <atomic>
 #include <thread>
+#include <future>
 
 Napi::FunctionReference Reader::constructor;
 
@@ -49,17 +50,30 @@ void Reader::Init(Napi::Env env, Napi::Object exports) {
 struct ReaderListenerProxyData {
   std::shared_ptr<pulsar_message_t> cMessage;
   Reader *reader;
+  std::function<void(void)> callback;
 
-  ReaderListenerProxyData(std::shared_ptr<pulsar_message_t> cMessage, Reader *reader)
-      : cMessage(cMessage), reader(reader) {}
+  ReaderListenerProxyData(std::shared_ptr<pulsar_message_t> cMessage, Reader *reader,
+                          std::function<void(void)> callback)
+      : cMessage(cMessage), reader(reader), callback(callback) {}
 };
 
 void ReaderListenerProxy(Napi::Env env, Napi::Function jsCallback, ReaderListenerProxyData *data) {
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Reader *reader = data->reader;
-  delete data;
 
-  jsCallback.Call({msg, reader->Value()});
+  Napi::Value ret = jsCallback.Call({msg, reader->Value()});
+  if (ret.IsPromise()) {
+    Napi::Promise promise = ret.As<Napi::Promise>();
+    Napi::Value thenValue = promise.Get("then");
+    if (thenValue.IsFunction()) {
+      Napi::Function then = thenValue.As<Napi::Function>();
+      Napi::Function callback =
+          Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); });
+      then.Call(promise, {callback});
+      return;
+    }
+  }
+  data->callback();
 }
 
 void ReaderListener(pulsar_reader_t *rawReader, pulsar_message_t *rawMessage, void *ctx) {
@@ -69,9 +83,15 @@ void ReaderListener(pulsar_reader_t *rawReader, pulsar_message_t *rawMessage, vo
   if (readerListenerCallback->callback.Acquire() != napi_ok) {
     return;
   }
-  ReaderListenerProxyData *dataPtr = new ReaderListenerProxyData(cMessage, reader);
-  readerListenerCallback->callback.BlockingCall(dataPtr, ReaderListenerProxy);
+
+  std::promise<void> promise;
+  std::future<void> future = promise.get_future();
+  std::unique_ptr<ReaderListenerProxyData> dataPtr(
+      new ReaderListenerProxyData(cMessage, reader, [&promise]() { promise.set_value(); }));
+  readerListenerCallback->callback.BlockingCall(dataPtr.get(), ReaderListenerProxy);
   readerListenerCallback->callback.Release();
+
+  future.wait();
 }
 
 void Reader::SetCReader(std::shared_ptr<pulsar_reader_t> cReader) { this->cReader = cReader; }
