@@ -77,7 +77,7 @@ const Pulsar = require('../index.js');
   const numOfMessages = commander.messages;
   for (let i = 0; i < commander.iteration; i += 1) {
     const histogram = hdr.build({
-      bitBucketSize: 0,
+      bitBucketSize: 64,
       highestTrackableValue: 120000 * 1000,
       numberOfSignificantValueDigits: 5,
     });
@@ -104,7 +104,7 @@ const Pulsar = require('../index.js');
     console.log('Throughput produced: %f  msg/s --- %f Mbit/s --- Latency: mean: %f ms - med: %f - 95pct: %f - 99pct: %f - 99.9pct: %f - 99.99pct: %f - Max: %f',
       rate.toFixed(3),
       throuhputMbit.toFixed(3),
-      histogram.getMean(),
+      histogram.mean,
       histogram.getValueAtPercentile(50),
       histogram.getValueAtPercentile(95),
       histogram.getValueAtPercentile(99),
