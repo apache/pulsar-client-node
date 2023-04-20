@@ -386,6 +386,66 @@ const Pulsar = require('../index.js');
       await client.close();
     });
 
+    test('Message Listener error handling', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+      });
+      let syncFinsh;
+      const syncPromise = new Promise((resolve) => {
+        syncFinsh = resolve;
+      });
+      let asyncFinsh;
+      const asyncPromise = new Promise((resolve) => {
+        asyncFinsh = resolve;
+      });
+      Pulsar.Client.setLogHandler((level, file, line, message) => {
+        if (level === 3) { // should be error level
+          if (message.includes('consumer1 callback expected error')) {
+            syncFinsh();
+          }
+          if (message.includes('consumer2 callback expected error')) {
+            asyncFinsh();
+          }
+        }
+      });
+
+      const topic = 'test-error-listener';
+      const producer = await client.createProducer({
+        topic,
+        batchingEnabled: false,
+      });
+
+      await producer.send('test-message');
+
+      const consumer1 = await client.subscribe({
+        topic,
+        subscription: 'sync',
+        subscriptionType: 'Shared',
+        subscriptionInitialPosition: 'Earliest',
+        listener: (message, messageConsumer) => {
+          throw new Error('consumer1 callback expected error');
+        },
+      });
+
+      const consumer2 = await client.subscribe({
+        topic,
+        subscription: 'async',
+        subscriptionType: 'Shared',
+        subscriptionInitialPosition: 'Earliest',
+        listener: async (message, messageConsumer) => {
+          throw new Error('consumer2 callback expected error');
+        },
+      });
+
+      await syncPromise;
+      await asyncPromise;
+
+      await consumer1.close();
+      await consumer2.close();
+      await producer.close();
+      await client.close();
+    });
+
     test('acknowledgeCumulative', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
