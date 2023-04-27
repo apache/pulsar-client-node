@@ -36,6 +36,8 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   void SetListenerCallback(MessageListenerCallback *listener);
   void Cleanup();
   void CleanupListener();
+  std::string GetTopic();
+  std::string GetSubscriptionName();
 
  private:
   std::shared_ptr<pulsar_consumer_t> cConsumer;

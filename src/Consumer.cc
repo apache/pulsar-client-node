@@ -22,10 +22,12 @@
 #include "Message.h"
 #include "MessageId.h"
 #include "ThreadSafeDeferred.h"
+#include "LogUtils.h"
 #include <pulsar/c/result.h>
 #include <atomic>
 #include <thread>
 #include <future>
+#include <sstream>
 
 Napi::FunctionReference Consumer::constructor;
 
@@ -63,6 +65,13 @@ struct MessageListenerProxyData {
       : cMessage(cMessage), consumer(consumer), callback(callback) {}
 };
 
+inline void logMessageListenerError(Consumer *consumer, const char *err) {
+  std::ostringstream ss;
+  ss << "[" << consumer->GetTopic() << "][" << consumer->GetSubscriptionName()
+     << "] Message listener error in processing message: " << err;
+  LOG_ERROR(ss.str().c_str());
+}
+
 void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListenerProxyData *data) {
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Consumer *consumer = data->consumer;
@@ -70,17 +79,28 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
   // `consumer` might be null in certain cases, segmentation fault might happend without this null check. We
   // need to handle this rare case in future.
   if (consumer) {
-    Napi::Value ret = jsCallback.Call({msg, consumer->Value()});
+    Napi::Value ret;
+    try {
+      ret = jsCallback.Call({msg, consumer->Value()});
+    } catch (std::exception &exception) {
+      logMessageListenerError(consumer, exception.what());
+    }
+
     if (ret.IsPromise()) {
       Napi::Promise promise = ret.As<Napi::Promise>();
-      Napi::Value thenValue = promise.Get("then");
-      if (thenValue.IsFunction()) {
-        Napi::Function then = thenValue.As<Napi::Function>();
-        Napi::Function callback =
-            Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); });
-        then.Call(promise, {callback});
-        return;
-      }
+      Napi::Function catchFunc = promise.Get("catch").As<Napi::Function>();
+
+      ret = catchFunc.Call(promise, {Napi::Function::New(env, [consumer](const Napi::CallbackInfo &info) {
+                             Napi::Error error = info[0].As<Napi::Error>();
+                             logMessageListenerError(consumer, error.what());
+                           })});
+
+      promise = ret.As<Napi::Promise>();
+      Napi::Function finallyFunc = promise.Get("finally").As<Napi::Function>();
+
+      finallyFunc.Call(
+          promise, {Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); })});
+      return;
     }
   }
   data->callback();
@@ -225,6 +245,12 @@ Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_pt
   }
 
   return deferred->Promise();
+}
+
+std::string Consumer::GetTopic() { return {pulsar_consumer_get_topic(this->cConsumer.get())}; }
+
+std::string Consumer::GetSubscriptionName() {
+  return {pulsar_consumer_get_subscription_name(this->cConsumer.get())};
 }
 
 // We still need a receive worker because the c api is missing the equivalent async definition
