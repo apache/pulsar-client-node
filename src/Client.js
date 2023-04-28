@@ -44,6 +44,10 @@ class Client {
     return this.client.createReader(params);
   }
 
+  getPartitionsForTopic(params) {
+    return this.client.getPartitionsForTopic(params);
+  }
+
   close() {
     this.client.close();
   }

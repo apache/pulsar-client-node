@@ -57,6 +57,7 @@ class Client : public Napi::ObjectWrap<Client> {
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);
   Napi::Value Subscribe(const Napi::CallbackInfo &info);
   Napi::Value CreateReader(const Napi::CallbackInfo &info);
+  Napi::Value GetPartitionsForTopic(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);
 };
 
