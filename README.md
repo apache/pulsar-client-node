@@ -21,7 +21,7 @@
 
 # Pulsar Node.js client library
 
-The Pulsar Node.js client can be used to create Pulsar producers and consumers in Node.js.
+The Pulsar Node.js client can be used to create Pulsar producers and consumers in Node.js. For the supported Pulsar features, see [Client Feature Matrix](https://pulsar.apache.org/client-feature-matrix/).
 
 This library works only in Node.js 10.x or later because it uses the
 [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
@@ -49,28 +49,28 @@ yarn add pulsar-client
 Then you can run the following simple end-to-end example:
 
 ```javascript
-const Pulsar = require('pulsar-client');
+const Pulsar = require("pulsar-client");
 
 (async () => {
   // Create a client
   const client = new Pulsar.Client({
-    serviceUrl: 'pulsar://localhost:6650'
+    serviceUrl: "pulsar://localhost:6650",
   });
 
   // Create a producer
   const producer = await client.createProducer({
-    topic: 'persistent://public/default/my-topic',
+    topic: "persistent://public/default/my-topic",
   });
 
   // Create a consumer
   const consumer = await client.subscribe({
-    topic: 'persistent://public/default/my-topic',
-    subscription: 'sub1'
+    topic: "persistent://public/default/my-topic",
+    subscription: "sub1",
   });
 
   // Send a message
   producer.send({
-    data: Buffer.from("hello")
+    data: Buffer.from("hello"),
   });
 
   // Receive the message
@@ -96,7 +96,7 @@ You can see more examples in the [examples](./examples) directory. However, sinc
 
 > **Note**
 >
-> Build from source code requires the Node.js version greater than 16.18
+> Building from source code requires a Node.js version greater than 16.18.
 
 First, clone the repository.
 
@@ -159,9 +159,15 @@ Sent message: my-message-9
 
 ## Documentation
 
-* Please see https://pulsar.apache.org/docs/client-libraries-node/ for more details about the Pulsar Node.js client.
+For more details about Pulsar Node.js clients, see [Pulsar docs](https://pulsar.apache.org/docs/client-libraries-node/).
 
-You can generate the API docs by:
+### Contribute
+
+Contributions are welcomed and greatly appreciated.
+
+If your contribution adds Pulsar features for Node.js clients, you need to update both the [Pulsar docs](https://pulsar.apache.org/docs/client-libraries/) and the [Client Feature Matrix](https://pulsar.apache.org/client-feature-matrix/). See [Contribution Guide](https://pulsar.apache.org/contribute/site-intro/#pages) for more details.
+
+### Generate API docs
 
 ```shell
 npm install
