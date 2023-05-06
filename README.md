@@ -49,28 +49,28 @@ yarn add pulsar-client
 Then you can run the following simple end-to-end example:
 
 ```javascript
-const Pulsar = require("pulsar-client");
+const Pulsar = require('pulsar-client');
 
 (async () => {
   // Create a client
   const client = new Pulsar.Client({
-    serviceUrl: "pulsar://localhost:6650",
+    serviceUrl: 'pulsar://localhost:6650'
   });
 
   // Create a producer
   const producer = await client.createProducer({
-    topic: "persistent://public/default/my-topic",
+    topic: 'persistent://public/default/my-topic',
   });
 
   // Create a consumer
   const consumer = await client.subscribe({
-    topic: "persistent://public/default/my-topic",
-    subscription: "sub1",
+    topic: 'persistent://public/default/my-topic',
+    subscription: 'sub1'
   });
 
   // Send a message
   producer.send({
-    data: Buffer.from("hello"),
+    data: Buffer.from("hello")
   });
 
   // Receive the message
