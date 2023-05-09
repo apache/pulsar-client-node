@@ -31,7 +31,7 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
       responseBody += chunk;
     });
     res.on('end', () => {
-      resolve(responseBody);
+      resolve({ responseBody, statusCode: res.statusCode });
     });
   });
 
@@ -95,23 +95,29 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
         // test on nonPartitionedTopic
         const nonPartitionedTopicName = 'test-non-partitioned-topic';
         const nonPartitionedTopic = `persistent://public/default/${nonPartitionedTopicName}`;
-        await requestAdminApi(`${baseUrl}/admin/v2/persistent/public/default/${nonPartitionedTopicName}`, {
+        const nonPartitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${nonPartitionedTopicName}`;
+        const createNonPartitionedTopicRes = await requestAdminApi(nonPartitionedTopicAdminURL, {
           headers: {
             'Content-Type': 'application/json',
           },
         });
+        expect(createNonPartitionedTopicRes.statusCode).toBe(204);
+
         const nonPartitionedTopicList = await client.getPartitionsForTopic(nonPartitionedTopic);
         expect(nonPartitionedTopicList).toEqual([nonPartitionedTopic]);
 
         // test on partitioned with number
         const partitionedTopicName = 'test-partitioned-topic-1';
         const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
-        await requestAdminApi(`${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`, {
+        const partitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
+        const createPartitionedTopicRes = await requestAdminApi(partitionedTopicAdminURL, {
           headers: {
             'Content-Type': 'text/plain',
           },
-          data: '4',
+          data: 4,
         });
+        expect(createPartitionedTopicRes.statusCode).toBe(204);
+
         const partitionedTopicList = await client.getPartitionsForTopic(partitionedTopic);
         expect(partitionedTopicList).toEqual([
           'persistent://public/default/test-partitioned-topic-1-partition-0',
@@ -119,6 +125,11 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
           'persistent://public/default/test-partitioned-topic-1-partition-2',
           'persistent://public/default/test-partitioned-topic-1-partition-3',
         ]);
+
+        const deleteNonPartitionedTopicRes = await requestAdminApi(nonPartitionedTopicAdminURL, { method: 'DELETE' });
+        expect(deleteNonPartitionedTopicRes.statusCode).toBe(204);
+        const deletePartitionedTopicRes = await requestAdminApi(partitionedTopicAdminURL, { method: 'DELETE' });
+        expect(deletePartitionedTopicRes.statusCode).toBe(204);
 
         await client.close();
       });
