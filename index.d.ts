@@ -119,6 +119,8 @@ export interface ReaderConfig {
   subscriptionRolePrefix?: string;
   readCompacted?: boolean;
   listener?: (message: Message, reader: Reader) => void;
+  privateKeyPath?: string;
+  cryptoFailureAction?: ConsumerCryptoFailureAction;
 }
 
 export class Reader {
