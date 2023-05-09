@@ -19,6 +19,7 @@
 
 #include "ReaderConfig.h"
 #include "MessageId.h"
+#include <pulsar/c/consumer_configuration.h>
 #include <map>
 
 static const std::string CFG_TOPIC = "topic";
@@ -28,6 +29,14 @@ static const std::string CFG_READER_NAME = "readerName";
 static const std::string CFG_SUBSCRIPTION_ROLE_PREFIX = "subscriptionRolePrefix";
 static const std::string CFG_READ_COMPACTED = "readCompacted";
 static const std::string CFG_LISTENER = "listener";
+static const std::string CFG_PRIVATE_KEY_PATH = "privateKeyPath";
+static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
+
+static const std::map<std::string, pulsar_consumer_crypto_failure_action> CONSUMER_CRYPTO_FAILURE_ACTION = {
+    {"FAIL", pulsar_ConsumerFail},
+    {"DISCARD", pulsar_ConsumerDiscard},
+    {"CONSUME", pulsar_ConsumerConsume},
+};
 
 void FinalizeListenerCallback(Napi::Env env, ReaderListenerCallback *cb, void *) { delete cb; }
 
@@ -81,6 +90,21 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_liste
     this->listener->callback = std::move(callback);
     pulsar_reader_configuration_set_reader_listener(this->cReaderConfig.get(), readerListener,
                                                     this->listener);
+  }
+
+  if (readerConfig.Has(CFG_PRIVATE_KEY_PATH) && readerConfig.Get(CFG_PRIVATE_KEY_PATH).IsString()) {
+    std::string publicKeyPath = "";
+    std::string privateKeyPath = readerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
+    pulsar_reader_configuration_set_default_crypto_key_reader(this->cReaderConfig.get(),
+                                                              publicKeyPath.c_str(), privateKeyPath.c_str());
+    if (readerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
+        readerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
+      std::string cryptoFailureAction = readerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
+      if (CONSUMER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction)) {
+        pulsar_reader_configuration_set_crypto_failure_action(
+            this->cReaderConfig.get(), CONSUMER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
+      }
+    }
   }
 }
 
