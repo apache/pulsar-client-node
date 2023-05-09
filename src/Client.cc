@@ -79,6 +79,7 @@ Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
       {StaticMethod("setLogHandler", &Client::SetLogHandler),
        InstanceMethod("createProducer", &Client::CreateProducer),
        InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("createReader", &Client::CreateReader),
+       InstanceMethod("getPartitionsForTopic", &Client::GetPartitionsForTopic),
        InstanceMethod("close", &Client::Close)});
 
   constructor = Napi::Persistent(func);
@@ -204,6 +205,41 @@ Napi::Value Client::Subscribe(const Napi::CallbackInfo &info) {
 
 Napi::Value Client::CreateReader(const Napi::CallbackInfo &info) {
   return Reader::NewInstance(info, this->cClient);
+}
+
+Napi::Value Client::GetPartitionsForTopic(const Napi::CallbackInfo &info) {
+  Napi::String topicString = info[0].As<Napi::String>();
+  std::string topic = topicString.Utf8Value();
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext(deferred);
+
+  pulsar_client_get_topic_partitions_async(
+      this->cClient.get(), topic.c_str(),
+      [](pulsar_result result, pulsar_string_list_t *topicList, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        auto deferred = deferredContext->deferred;
+        delete deferredContext;
+
+        if (result == pulsar_result_Ok && topicList != nullptr) {
+          deferred->Resolve([topicList](const Napi::Env env) {
+            int listSize = pulsar_string_list_size(topicList);
+            Napi::Array jsArray = Napi::Array::New(env, listSize);
+
+            for (int i = 0; i < listSize; i++) {
+              const char *str = pulsar_string_list_get(topicList, i);
+              jsArray.Set(i, Napi::String::New(env, str));
+            }
+
+            return jsArray;
+          });
+        } else {
+          deferred->Reject(std::string("Failed to GetPartitionsForTopic: ") + pulsar_result_str(result));
+        }
+      },
+
+      ctx);
+
+  return deferred->Promise();
 }
 
 void LogMessageProxy(Napi::Env env, Napi::Function jsCallback, struct LogMessage *logMessage) {

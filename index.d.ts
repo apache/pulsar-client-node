@@ -39,6 +39,7 @@ export class Client {
   createProducer(config: ProducerConfig): Promise<Producer>;
   subscribe(config: ConsumerConfig): Promise<Consumer>;
   createReader(config: ReaderConfig): Promise<Reader>;
+  getPartitionsForTopic(topic: string): Promise<string[]>;
   close(): Promise<null>;
 }
 
