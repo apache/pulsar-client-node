@@ -102,7 +102,7 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Failed to create consumer: BrokerMetadataError');
+        })).rejects.toThrow('Failed to create consumer: TopicNotFound');
       });
 
       test('Not Exist Namespace', async () => {
@@ -111,7 +111,7 @@ const Pulsar = require('../index.js');
           subscription: 'sub1',
           ackTimeoutMs: 10000,
           nAckRedeliverTimeoutMs: 60000,
-        })).rejects.toThrow('Failed to create consumer: BrokerMetadataError');
+        })).rejects.toThrow('Failed to create consumer: TopicNotFound');
       });
 
       test('Not Positive NAckRedeliverTimeout', async () => {
