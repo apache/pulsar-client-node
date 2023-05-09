@@ -989,6 +989,47 @@ const Pulsar = require('../index.js');
       await consumer.close();
       await client.close();
     });
+    test('Basic produce and read encryption', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const topic = 'persistent://public/default/encryption-produce-read';
+      const producer = await client.createProducer({
+        topic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+        publicKeyPath: `${__dirname}/certificate/public-key.client-rsa.pem`,
+        encryptionKey: 'encryption-key',
+      });
+
+      const reader = await client.createReader({
+        topic,
+        startMessageId: Pulsar.MessageId.earliest(),
+        privateKeyPath: `${__dirname}/certificate/private-key.client-rsa.pem`,
+      });
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await reader.readNext();
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+      await producer.close();
+      await reader.close();
+      await client.close();
+    });
     test('Produce/Consume/Read/IsConnected', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
