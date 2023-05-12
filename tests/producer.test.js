@@ -55,7 +55,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://no-tenant/namespace/topic',
           sendTimeoutMs: 30000,
           batchingEnabled: true,
-        })).rejects.toThrow('Failed to create producer: BrokerMetadataError');
+        })).rejects.toThrow('Failed to create producer: TopicNotFound');
       });
 
       test('Not Exist Namespace', async () => {
@@ -63,7 +63,7 @@ const Pulsar = require('../index.js');
           topic: 'persistent://public/no-namespace/topic',
           sendTimeoutMs: 30000,
           batchingEnabled: true,
-        })).rejects.toThrow('Failed to create producer: BrokerMetadataError');
+        })).rejects.toThrow('Failed to create producer: TopicNotFound');
       });
 
       test('Automatic Producer Name', async () => {
