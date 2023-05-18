@@ -222,7 +222,9 @@ Napi::Value Reader::HasNext(const Napi::CallbackInfo &info) {
   int value = 0;
   pulsar_result result = pulsar_reader_has_message_available(this->cReader.get(), &value);
   if (result != pulsar_result_Ok) {
-    Napi::Error::New(info.Env(), "Failed to check if next message is available").ThrowAsJavaScriptException();
+    Napi::Error::New(
+        info.Env(), "Failed to check if next message is available: " + std::string(pulsar_result_str(result)))
+        .ThrowAsJavaScriptException();
     return Napi::Boolean::New(info.Env(), false);
   } else if (value == 1) {
     return Napi::Boolean::New(info.Env(), true);
