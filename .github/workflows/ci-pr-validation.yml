@@ -253,6 +253,7 @@ jobs:
           cache: 'npm'
       - name: Install CPP lib
         run: |
+          brew update
           brew install libpulsar
       - name: Build Node binaries lib
         run: |
