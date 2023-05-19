@@ -223,6 +223,19 @@ import Pulsar = require('./index');
     },
   });
 
+  const reader4: Pulsar.Reader = await client.createReader({
+    topic: 'persistent://public/default/my-topic',
+    startMessageId: Pulsar.MessageId.earliest(),
+    privateKeyPath: '/path/to/private.key',
+  });
+
+  const reader5: Pulsar.Reader = await client.createReader({
+    topic: 'persistent://public/default/my-topic',
+    startMessageId: Pulsar.MessageId.earliest(),
+    privateKeyPath: '/path/to/private.key',
+    cryptoFailureAction: 'CONSUME',
+  });
+
   const producerName: string = producer1.getProducerName();
   const topicName1: string = producer1.getTopic();
   const producerIsConnected: boolean = producer1.isConnected();
@@ -289,6 +302,8 @@ import Pulsar = require('./index');
   await reader1.close();
   await reader2.close();
   await reader3.close();
+  await reader4.close();
+  await reader5.close();
   await client.close();
 })();
 
