@@ -17,32 +17,10 @@
  * under the License.
  */
 
-const http = require('http');
+const httpRequest = require('./http_utils.js');
 const Pulsar = require('../index.js');
 
 const baseUrl = 'http://localhost:8080';
-const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Promise((resolve, reject) => {
-  const req = http.request(url, {
-    headers,
-    method,
-  }, (res) => {
-    let responseBody = '';
-    res.on('data', (chunk) => {
-      responseBody += chunk;
-    });
-    res.on('end', () => {
-      resolve({ responseBody, statusCode: res.statusCode });
-    });
-  });
-
-  req.on('error', (error) => {
-    reject(error);
-  });
-
-  req.write(JSON.stringify(data));
-
-  req.end();
-});
 
 (() => {
   describe('Client', () => {
@@ -96,11 +74,14 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
         const nonPartitionedTopicName = 'test-non-partitioned-topic';
         const nonPartitionedTopic = `persistent://public/default/${nonPartitionedTopicName}`;
         const nonPartitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${nonPartitionedTopicName}`;
-        const createNonPartitionedTopicRes = await requestAdminApi(nonPartitionedTopicAdminURL, {
-          headers: {
-            'Content-Type': 'application/json',
+        const createNonPartitionedTopicRes = await httpRequest(
+          nonPartitionedTopicAdminURL, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            method: 'PUT',
           },
-        });
+        );
         expect(createNonPartitionedTopicRes.statusCode).toBe(204);
 
         const nonPartitionedTopicList = await client.getPartitionsForTopic(nonPartitionedTopic);
@@ -110,12 +91,15 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
         const partitionedTopicName = 'test-partitioned-topic-1';
         const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
         const partitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
-        const createPartitionedTopicRes = await requestAdminApi(partitionedTopicAdminURL, {
-          headers: {
-            'Content-Type': 'text/plain',
+        const createPartitionedTopicRes = await httpRequest(
+          partitionedTopicAdminURL, {
+            headers: {
+              'Content-Type': 'text/plain',
+            },
+            data: 4,
+            method: 'PUT',
           },
-          data: 4,
-        });
+        );
         expect(createPartitionedTopicRes.statusCode).toBe(204);
 
         const partitionedTopicList = await client.getPartitionsForTopic(partitionedTopic);
@@ -126,9 +110,9 @@ const requestAdminApi = (url, { headers, data = {}, method = 'PUT' }) => new Pro
           'persistent://public/default/test-partitioned-topic-1-partition-3',
         ]);
 
-        const deleteNonPartitionedTopicRes = await requestAdminApi(nonPartitionedTopicAdminURL, { method: 'DELETE' });
+        const deleteNonPartitionedTopicRes = await httpRequest(nonPartitionedTopicAdminURL, { method: 'DELETE' });
         expect(deleteNonPartitionedTopicRes.statusCode).toBe(204);
-        const deletePartitionedTopicRes = await requestAdminApi(partitionedTopicAdminURL, { method: 'DELETE' });
+        const deletePartitionedTopicRes = await httpRequest(partitionedTopicAdminURL, { method: 'DELETE' });
         expect(deletePartitionedTopicRes.statusCode).toBe(204);
 
         await client.close();

@@ -17,7 +17,11 @@
  * under the License.
  */
 
+const lodash = require('lodash');
 const Pulsar = require('../index.js');
+const httpRequest = require('./http_utils');
+
+const baseUrl = 'http://localhost:8080';
 
 (() => {
   describe('Reader', () => {
@@ -64,6 +68,66 @@ const Pulsar = require('../index.js');
         topic: 'persistent://public/default/topic',
         startMessageId: 'not MessageId',
       })).rejects.toThrow('StartMessageId is required and must be specified as a MessageId object when creating reader');
+      await client.close();
+    });
+
+    test('Reader by Partitioned Topic', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      // Create partitioned topic.
+      const partitionedTopicName = 'test-reader-partitioned-topic';
+      const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
+      const partitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
+      const createPartitionedTopicRes = await httpRequest(
+        partitionedTopicAdminURL, {
+          headers: {
+            'Content-Type': 'text/plain',
+          },
+          data: 4,
+          method: 'PUT',
+        },
+      );
+      expect(createPartitionedTopicRes.statusCode).toBe(204);
+
+      const producer = await client.createProducer({
+        topic: partitionedTopic,
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+      expect(producer).not.toBeNull();
+
+      const reader = await client.createReader({
+        topic: partitionedTopic,
+        startMessageId: Pulsar.MessageId.latest(),
+      });
+      expect(reader).not.toBeNull();
+
+      const messages = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        messages.push(msg);
+      }
+      await producer.flush();
+
+      expect(reader.hasNext()).toBe(true);
+
+      const results = [];
+      for (let i = 0; i < 10; i += 1) {
+        const msg = await reader.readNext();
+        results.push(msg.getData().toString());
+      }
+      expect(lodash.difference(messages, results)).toEqual([]);
+
+      expect(reader.hasNext()).toBe(false);
+
+      await producer.close();
+      await reader.close();
       await client.close();
     });
   });
