@@ -63,6 +63,7 @@ export interface ProducerConfig {
   cryptoFailureAction?: ProducerCryptoFailureAction;
   chunkingEnabled?: boolean;
   schema?: SchemaInfo;
+  accessMode?: ProducerAccessMode;
 }
 
 export class Producer {
@@ -266,3 +267,9 @@ export type SchemaType =
   'Bytes' |
   'AutoConsume' |
   'AutoPublish';
+
+export type ProducerAccessMode =
+    'Shared' |
+    'Exclusive' |
+    'WaitForExclusive' |
+    'ExclusiveWithFencing';

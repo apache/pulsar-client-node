@@ -94,5 +94,67 @@ const Pulsar = require('../index.js');
         await producer.close();
       });
     });
+    describe('Access Mode', () => {
+      test('Exclusive', async () => {
+        const topicName = 'test-access-mode-exclusive';
+        const producer1 = await client.createProducer({
+          topic: topicName,
+          producerName: 'p-1',
+          accessMode: 'Exclusive',
+        });
+        expect(producer1.getProducerName()).toBe('p-1');
+
+        await expect(client.createProducer({
+          topic: topicName,
+          producerName: 'p-2',
+          accessMode: 'Exclusive',
+        })).rejects.toThrow('Failed to create producer: ResultProducerFenced');
+
+        await producer1.close();
+      });
+
+      test('WaitForExclusive', async () => {
+        const topicName = 'test-access-mode-wait-for-exclusive';
+        const producer1 = await client.createProducer({
+          topic: topicName,
+          producerName: 'p-1',
+          accessMode: 'Exclusive',
+        });
+        expect(producer1.getProducerName()).toBe('p-1');
+        // async close producer1
+        producer1.close();
+        // when p1 close, p2 success created.
+        const producer2 = await client.createProducer({
+          topic: topicName,
+          producerName: 'p-2',
+          accessMode: 'WaitForExclusive',
+        });
+        expect(producer2.getProducerName()).toBe('p-2');
+        await producer2.close();
+      });
+
+      test('ExclusiveWithFencing', async () => {
+        const topicName = 'test-access-mode';
+        const producer1 = await client.createProducer({
+          topic: topicName,
+          producerName: 'p-1',
+          accessMode: 'Exclusive',
+        });
+        expect(producer1.getProducerName()).toBe('p-1');
+        const producer2 = await client.createProducer({
+          topic: topicName,
+          producerName: 'p-2',
+          accessMode: 'ExclusiveWithFencing',
+        });
+        expect(producer2.getProducerName()).toBe('p-2');
+        // producer1 will be fenced.
+        await expect(
+          producer1.send({
+            data: Buffer.from('test-msg'),
+          }),
+        ).rejects.toThrow('Failed to send message: ResultProducerFenced');
+        await producer2.close();
+      });
+    });
   });
 })();
