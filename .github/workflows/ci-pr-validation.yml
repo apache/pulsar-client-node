@@ -253,6 +253,7 @@ jobs:
           cache: 'npm'
       - name: Install CPP lib
         run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
           brew update
           brew install libpulsar
       - name: Build Node binaries lib
