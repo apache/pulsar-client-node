@@ -140,5 +140,63 @@ const Pulsar = require('../index.js');
         await expect(consumer.close()).rejects.toThrow('Failed to close consumer: AlreadyClosed');
       });
     });
+
+    describe('Features', () => {
+      test('Batch index ack', async () => {
+        const topicName = 'test-batch-index-ack';
+        const producer = await client.createProducer({
+          topic: topicName,
+          batchingEnabled: true,
+          batchingMaxMessages: 100,
+          batchingMaxPublishDelayMs: 10000,
+        });
+
+        let consumer = await client.subscribe({
+          topic: topicName,
+          batchIndexAckEnabled: true,
+          subscription: 'test-batch-index-ack',
+        });
+
+        // Make sure send 0~5 is a batch msg.
+        for (let i = 0; i < 5; i += 1) {
+          const msg = `my-message-${i}`;
+          console.log(msg);
+          producer.send({
+            data: Buffer.from(msg),
+          });
+        }
+        await producer.flush();
+
+        // Receive msgs and just ack 0, 1 msgs
+        const results = [];
+        for (let i = 0; i < 5; i += 1) {
+          const msg = await consumer.receive();
+          results.push(msg);
+        }
+        expect(results.length).toEqual(5);
+        for (let i = 0; i < 2; i += 1) {
+          await consumer.acknowledge(results[i]);
+          await new Promise((resolve) => setTimeout(resolve, 200));
+        }
+
+        // Restart consumer after, just receive 2~5 msg.
+        await consumer.close();
+        consumer = await client.subscribe({
+          topic: topicName,
+          batchIndexAckEnabled: true,
+          subscription: 'test-batch-index-ack',
+        });
+        const results2 = [];
+        for (let i = 2; i < 5; i += 1) {
+          const msg = await consumer.receive();
+          results2.push(msg);
+        }
+        expect(results2.length).toEqual(3);
+        // assert no more msgs.
+        await expect(consumer.receive(1000)).rejects.toThrow(
+          'Failed to receive message: TimeOut',
+        );
+      });
+    });
   });
 })();

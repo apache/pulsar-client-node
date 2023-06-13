@@ -45,6 +45,7 @@ static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 static const std::string CFG_MAX_PENDING_CHUNKED_MESSAGE = "maxPendingChunkedMessage";
 static const std::string CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL =
     "autoAckOldestChunkedMessageOnQueueFull";
+static const std::string CFG_BATCH_INDEX_ACK_ENABLED = "batchIndexAckEnabled";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -214,6 +215,13 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
         consumerConfig.Get(CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL).ToBoolean();
     pulsar_consumer_configuration_set_auto_ack_oldest_chunked_message_on_queue_full(
         this->cConsumerConfig.get(), autoAckOldestChunkedMessageOnQueueFull);
+  }
+
+  if (consumerConfig.Has(CFG_BATCH_INDEX_ACK_ENABLED) &&
+      consumerConfig.Get(CFG_BATCH_INDEX_ACK_ENABLED).IsBoolean()) {
+    bool batchIndexAckEnabled = consumerConfig.Get(CFG_BATCH_INDEX_ACK_ENABLED).ToBoolean();
+    pulsar_consumer_configuration_set_batch_index_ack_enabled(this->cConsumerConfig.get(),
+                                                              batchIndexAckEnabled);
   }
 }
 

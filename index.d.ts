@@ -94,6 +94,7 @@ export interface ConsumerConfig {
   maxPendingChunkedMessage?: number;
   autoAckOldestChunkedMessageOnQueueFull?: number;
   schema?: SchemaInfo;
+  batchIndexAckEnabled?: boolean;
 }
 
 export class Consumer {
