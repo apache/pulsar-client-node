@@ -31,6 +31,7 @@ static const std::string CFG_TOPICS_PATTERN = "topicsPattern";
 static const std::string CFG_SUBSCRIPTION = "subscription";
 static const std::string CFG_SUBSCRIPTION_TYPE = "subscriptionType";
 static const std::string CFG_INIT_POSITION = "subscriptionInitialPosition";
+static const std::string CFG_REGEX_SUBSCRIPTION_MODE = "regexSubscriptionMode";
 static const std::string CFG_ACK_TIMEOUT = "ackTimeoutMs";
 static const std::string CFG_NACK_REDELIVER_TIMEOUT = "nAckRedeliverTimeoutMs";
 static const std::string CFG_RECV_QUEUE = "receiverQueueSize";
@@ -52,6 +53,11 @@ static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Shared", pulsar_ConsumerShared},
     {"KeyShared", pulsar_ConsumerKeyShared},
     {"Failover", pulsar_ConsumerFailover}};
+
+static const std::map<std::string, pulsar_consumer_regex_subscription_mode> REGEX_SUBSCRIPTION_MODE = {
+    {"PersistentOnly", pulsar_consumer_regex_sub_mode_PersistentOnly},
+    {"NonPersistentOnly", pulsar_consumer_regex_sub_mode_NonPersistentOnly},
+    {"AllTopics", pulsar_consumer_regex_sub_mode_AllTopics}};
 
 static const std::map<std::string, initial_position> INIT_POSITION = {
     {"Latest", initial_position_latest}, {"Earliest", initial_position_earliest}};
@@ -108,6 +114,16 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
     if (INIT_POSITION.count(initPosition)) {
       pulsar_consumer_set_subscription_initial_position(this->cConsumerConfig.get(),
                                                         INIT_POSITION.at(initPosition));
+    }
+  }
+
+  if (consumerConfig.Has(CFG_REGEX_SUBSCRIPTION_MODE) &&
+      consumerConfig.Get(CFG_REGEX_SUBSCRIPTION_MODE).IsString()) {
+    std::string regexSubscriptionMode =
+        consumerConfig.Get(CFG_REGEX_SUBSCRIPTION_MODE).ToString().Utf8Value();
+    if (REGEX_SUBSCRIPTION_MODE.count(regexSubscriptionMode)) {
+      pulsar_consumer_configuration_set_regex_subscription_mode(
+          this->cConsumerConfig.get(), REGEX_SUBSCRIPTION_MODE.at(regexSubscriptionMode));
     }
   }
 

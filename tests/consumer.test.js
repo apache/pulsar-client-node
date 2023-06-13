@@ -197,6 +197,56 @@ const Pulsar = require('../index.js');
           'Failed to receive message: TimeOut',
         );
       });
+
+      test('Regex subscription', async () => {
+        const topicName1 = 'persistent://public/default/regex-sub-1';
+        const topicName2 = 'persistent://public/default/regex-sub-2';
+        const topicName3 = 'non-persistent://public/default/regex-sub-3';
+        const topicName4 = 'persistent://public/default/no-match-regex-sub-2';
+        const producer1 = await client.createProducer({
+          topic: topicName1,
+        });
+        const producer2 = await client.createProducer({
+          topic: topicName2,
+        });
+        const producer3 = await client.createProducer({
+          topic: topicName3,
+        });
+        const producer4 = await client.createProducer({
+          topic: topicName4,
+        });
+
+        const consumer = await client.subscribe({
+          topicsPattern: 'persistent://public/default/regex-sub.*',
+          subscription: 'sub1',
+          subscriptionType: 'Shared',
+          regexSubscriptionMode: 'AllTopics',
+        });
+
+        const num = 10;
+        for (let i = 0; i < num; i += 1) {
+          const msg = `my-message-${i}`;
+          await producer1.send({ data: Buffer.from(msg) });
+          await producer2.send({ data: Buffer.from(msg) });
+          await producer3.send({ data: Buffer.from(msg) });
+          await producer4.send({ data: Buffer.from(msg) });
+        }
+        const results = [];
+        for (let i = 0; i < 3 * num; i += 1) {
+          const msg = await consumer.receive();
+          results.push(msg.getData().toString());
+        }
+        expect(results.length).toEqual(3 * num);
+        // assert no more msgs.
+        await expect(consumer.receive(1000)).rejects.toThrow(
+          'Failed to receive message: TimeOut',
+        );
+        await producer1.close();
+        await producer2.close();
+        await producer3.close();
+        await producer4.close();
+        await consumer.close();
+      });
     });
   });
 })();
