@@ -39,6 +39,7 @@ static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
 static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 static const std::string CFG_CHUNK_ENABLED = "chunkingEnabled";
+static const std::string CFG_ACCESS_MODE = "accessMode";
 
 static const std::map<std::string, pulsar_partitions_routing_mode> MESSAGE_ROUTING_MODE = {
     {"UseSinglePartition", pulsar_UseSinglePartition},
@@ -61,6 +62,13 @@ static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {
 static std::map<std::string, pulsar_producer_crypto_failure_action> PRODUCER_CRYPTO_FAILURE_ACTION = {
     {"FAIL", pulsar_ProducerFail},
     {"SEND", pulsar_ProducerSend},
+};
+
+static std::map<std::string, pulsar_producer_access_mode> PRODUCER_ACCESS_MODE = {
+    {"Shared", pulsar_ProducerAccessModeShared},
+    {"Exclusive", pulsar_ProducerAccessModeExclusive},
+    {"WaitForExclusive", pulsar_ProducerAccessModeWaitForExclusive},
+    {"ExclusiveWithFencing", pulsar_ProducerAccessModeExclusiveWithFencing},
 };
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
@@ -193,6 +201,12 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (producerConfig.Has(CFG_CHUNK_ENABLED) && producerConfig.Get(CFG_CHUNK_ENABLED).IsBoolean()) {
     bool chunkingEnabled = producerConfig.Get(CFG_CHUNK_ENABLED).ToBoolean().Value();
     pulsar_producer_configuration_set_chunking_enabled(this->cProducerConfig.get(), chunkingEnabled);
+  }
+
+  std::string accessMode = producerConfig.Get(CFG_ACCESS_MODE).ToString().Utf8Value();
+  if (PRODUCER_ACCESS_MODE.count(accessMode)) {
+    pulsar_producer_configuration_set_access_mode(this->cProducerConfig.get(),
+                                                  PRODUCER_ACCESS_MODE.at(accessMode));
   }
 }
 
