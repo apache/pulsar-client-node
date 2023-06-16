@@ -96,6 +96,7 @@ export interface ConsumerConfig {
   autoAckOldestChunkedMessageOnQueueFull?: number;
   schema?: SchemaInfo;
   batchIndexAckEnabled?: boolean;
+  regexSubscriptionMode?: RegexSubscriptionMode;
 }
 
 export class Consumer {
@@ -250,6 +251,11 @@ export type ConsumerCryptoFailureAction =
   'FAIL' |
   'DISCARD' |
   'CONSUME';
+
+export type RegexSubscriptionMode =
+  'PersistentOnly' |
+  'NonPersistentOnly' |
+  'AllTopics';
 
 export type SchemaType =
   'None' |
