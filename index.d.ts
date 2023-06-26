@@ -97,6 +97,7 @@ export interface ConsumerConfig {
   schema?: SchemaInfo;
   batchIndexAckEnabled?: boolean;
   regexSubscriptionMode?: RegexSubscriptionMode;
+  deadLetterPolicy?: DeadLetterPolicy;
 }
 
 export class Consumer {
@@ -172,6 +173,12 @@ export interface SchemaInfo {
   name?: string;
   schema?: string;
   properties?: Record<string, string>;
+}
+
+export interface DeadLetterPolicy {
+  deadLetterTopic: string;
+  maxRedeliverCount?: number;
+  initialSubscriptionName?: string;
 }
 
 export class AuthenticationTls {

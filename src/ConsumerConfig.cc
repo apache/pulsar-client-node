@@ -47,6 +47,10 @@ static const std::string CFG_MAX_PENDING_CHUNKED_MESSAGE = "maxPendingChunkedMes
 static const std::string CFG_AUTO_ACK_OLDEST_CHUNKED_MESSAGE_ON_QUEUE_FULL =
     "autoAckOldestChunkedMessageOnQueueFull";
 static const std::string CFG_BATCH_INDEX_ACK_ENABLED = "batchIndexAckEnabled";
+static const std::string CFG_DEAD_LETTER_POLICY = "deadLetterPolicy";
+static const std::string CFG_DLQ_POLICY_TOPIC = "deadLetterTopic";
+static const std::string CFG_DLQ_POLICY_MAX_REDELIVER_COUNT = "maxRedeliverCount";
+static const std::string CFG_DLQ_POLICY_INIT_SUB_NAME = "initialSubscriptionName";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -238,6 +242,28 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
     bool batchIndexAckEnabled = consumerConfig.Get(CFG_BATCH_INDEX_ACK_ENABLED).ToBoolean();
     pulsar_consumer_configuration_set_batch_index_ack_enabled(this->cConsumerConfig.get(),
                                                               batchIndexAckEnabled);
+  }
+
+  if (consumerConfig.Has(CFG_DEAD_LETTER_POLICY) && consumerConfig.Get(CFG_DEAD_LETTER_POLICY).IsObject()) {
+    pulsar_consumer_config_dead_letter_policy_t dlq_policy{};
+    Napi::Object dlqPolicyObject = consumerConfig.Get(CFG_DEAD_LETTER_POLICY).ToObject();
+    std::string dlq_topic_str;
+    std::string init_subscription_name;
+    if (dlqPolicyObject.Has(CFG_DLQ_POLICY_TOPIC) && dlqPolicyObject.Get(CFG_DLQ_POLICY_TOPIC).IsString()) {
+      dlq_topic_str = dlqPolicyObject.Get(CFG_DLQ_POLICY_TOPIC).ToString().Utf8Value();
+      dlq_policy.dead_letter_topic = dlq_topic_str.c_str();
+    }
+    if (dlqPolicyObject.Has(CFG_DLQ_POLICY_MAX_REDELIVER_COUNT) &&
+        dlqPolicyObject.Get(CFG_DLQ_POLICY_MAX_REDELIVER_COUNT).IsNumber()) {
+      dlq_policy.max_redeliver_count =
+          dlqPolicyObject.Get(CFG_DLQ_POLICY_MAX_REDELIVER_COUNT).ToNumber().Int32Value();
+    }
+    if (dlqPolicyObject.Has(CFG_DLQ_POLICY_INIT_SUB_NAME) &&
+        dlqPolicyObject.Get(CFG_DLQ_POLICY_INIT_SUB_NAME).IsString()) {
+      init_subscription_name = dlqPolicyObject.Get(CFG_DLQ_POLICY_INIT_SUB_NAME).ToString().Utf8Value();
+      dlq_policy.initial_subscription_name = init_subscription_name.c_str();
+    }
+    pulsar_consumer_configuration_set_dlq_policy(this->cConsumerConfig.get(), &dlq_policy);
   }
 }
 

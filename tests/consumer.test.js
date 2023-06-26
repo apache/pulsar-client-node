@@ -247,6 +247,74 @@ const Pulsar = require('../index.js');
         await producer4.close();
         await consumer.close();
       });
+
+      test('Dead Letter topic', async () => {
+        const topicName = 'test-dead_letter_topic';
+        const dlqTopicName = 'test-dead_letter_topic_customize';
+        const producer = await client.createProducer({
+          topic: topicName,
+        });
+
+        const maxRedeliverCountNum = 3;
+        const consumer = await client.subscribe({
+          topic: topicName,
+          subscription: 'sub-1',
+          subscriptionType: 'Shared',
+          deadLetterPolicy: {
+            deadLetterTopic: dlqTopicName,
+            maxRedeliverCount: maxRedeliverCountNum,
+            initialSubscriptionName: 'init-sub-1-dlq',
+          },
+          nAckRedeliverTimeoutMs: 50,
+        });
+
+        // Send messages.
+        const sendNum = 5;
+        const messages = [];
+        for (let i = 0; i < sendNum; i += 1) {
+          const msg = `my-message-${i}`;
+          await producer.send({ data: Buffer.from(msg) });
+          messages.push(msg);
+        }
+
+        // Redelivery all messages maxRedeliverCountNum time.
+        let results = [];
+        for (let i = 1; i <= maxRedeliverCountNum * sendNum + sendNum; i += 1) {
+          const msg = await consumer.receive();
+          results.push(msg);
+          if (i % sendNum === 0) {
+            results.forEach((message) => {
+              console.log(`Redeliver message ${message.getData().toString()} ${i} times ${message.getRedeliveryCount()} redeliver Count`);
+              consumer.negativeAcknowledge(message);
+            });
+            results = [];
+          }
+        }
+        // assert no more msgs.
+        await expect(consumer.receive(100)).rejects.toThrow(
+          'Failed to receive message: TimeOut',
+        );
+
+        const dlqConsumer = await client.subscribe({
+          topic: dlqTopicName,
+          subscription: 'sub-1',
+        });
+        const dlqResult = [];
+        for (let i = 0; i < sendNum; i += 1) {
+          const msg = await dlqConsumer.receive();
+          dlqResult.push(msg.getData().toString());
+        }
+        expect(dlqResult).toEqual(messages);
+
+        // assert no more msgs.
+        await expect(dlqConsumer.receive(500)).rejects.toThrow(
+          'Failed to receive message: TimeOut',
+        );
+
+        producer.close();
+        consumer.close();
+        dlqConsumer.close();
+      });
     });
   });
 })();
