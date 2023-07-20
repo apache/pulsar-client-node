@@ -18,7 +18,7 @@
  */
 
 const lodash = require('lodash');
-const Pulsar = require('../index.js');
+const Pulsar = require('../index');
 
 (() => {
   describe('End To End', () => {
