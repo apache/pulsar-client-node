@@ -17,8 +17,8 @@
  * under the License.
  */
 
-const httpRequest = require('./http_utils.js');
-const Pulsar = require('../index.js');
+const httpRequest = require('./http_utils');
+const Pulsar = require('../index');
 
 const baseUrl = 'http://localhost:8080';
 

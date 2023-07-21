@@ -18,7 +18,7 @@
  */
 
 const lodash = require('lodash');
-const Pulsar = require('../index.js');
+const Pulsar = require('../index');
 const httpRequest = require('./http_utils');
 
 const baseUrl = 'http://localhost:8080';

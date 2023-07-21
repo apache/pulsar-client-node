@@ -18,11 +18,11 @@
  */
 
 const PulsarBinding = require('./src/pulsar-binding');
-const AuthenticationTls = require('./src/AuthenticationTls.js');
-const AuthenticationAthenz = require('./src/AuthenticationAthenz.js');
-const AuthenticationToken = require('./src/AuthenticationToken.js');
-const AuthenticationOauth2 = require('./src/AuthenticationOauth2.js');
-const Client = require('./src/Client.js');
+const AuthenticationTls = require('./src/AuthenticationTls');
+const AuthenticationAthenz = require('./src/AuthenticationAthenz');
+const AuthenticationToken = require('./src/AuthenticationToken');
+const AuthenticationOauth2 = require('./src/AuthenticationOauth2');
+const Client = require('./src/Client');
 
 const LogLevel = {
   DEBUG: 0,

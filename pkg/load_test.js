@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const Pulsar = require('../index.js');
+const Pulsar = require('../index');
 
 (async () => {
   Pulsar.Client.setLogHandler((level, file, line, message) => {

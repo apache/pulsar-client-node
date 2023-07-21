@@ -17,6 +17,6 @@
  * under the License.
  */
 
-const Client = require('./src/Client.js');
+const Client = require('./src/Client');
 
 Client.genCertFile();
