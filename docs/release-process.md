@@ -197,7 +197,7 @@ Source files:
 https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-rc.1/
 
 Pulsar's KEYS file containing PGP keys we use to sign the release:
-https://dist.apache.org/repos/dist/dev/pulsar/KEYS
+https://downloads.apache.org/pulsar/KEYS
 
 SHA-512 checksum:
 5f6c7e1a096a3ae66eee71c552af89532ed86bf94da3f3d49836c080426ee5dcaabeda440a989d51772d2e67e2dca953eeee9ea83cfbc7c2a0847a0ec04b310f  apache-pulsar-client-node-1.X.0.tar.gz
