@@ -1,0 +1,43 @@
+{
+  "license": "license-header.txt",
+  "trailingWhitespace": "TRIM",
+  "ignoreFile": ".gitignore",
+  "ignore": [
+    "NOTICE",
+    "**/*.txt",
+    "**/*.bat",
+    "**/*.pem",
+    "**/*.key",
+    "**/*.crt"
+  ],
+  "defaultFormat": {
+    "prepend": "#",
+    "eachLine": {
+      "prepend": "# "
+    },
+    "append": "#"
+  },
+  "licenseFormats": {
+    "c|cc|cpp|h|hpp|js|ts|css": {
+      "prepend": "/**",
+      "eachLine": {
+        "prepend": " * "
+      },
+      "append": " */"
+    },
+    "conf|gitignore|npmignore|eslintignore|sh|py|yml|yaml": {
+      "prepend": "#",
+      "eachLine": {
+        "prepend": "# "
+      },
+      "append": "#"
+    },
+    "html|xml|md": {
+      "prepend": "<!--\n",
+      "eachLine": {
+        "prepend": "    "
+      },
+      "append": "\n-->"
+    }
+  }
+}
