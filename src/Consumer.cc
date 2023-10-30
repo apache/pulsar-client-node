@@ -145,12 +145,11 @@ void Consumer::SetListenerCallback(MessageListenerCallback *listener) {
 Consumer::Consumer(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Consumer>(info), listener(nullptr) {}
 
 struct ConsumerNewInstanceContext {
-  ConsumerNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred,
-                             std::shared_ptr<pulsar_client_t> cClient,
+  ConsumerNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred, pulsar_client_t *cClient,
                              std::shared_ptr<ConsumerConfig> consumerConfig)
       : deferred(deferred), cClient(cClient), consumerConfig(consumerConfig){};
   std::shared_ptr<ThreadSafeDeferred> deferred;
-  std::shared_ptr<pulsar_client_t> cClient;
+  pulsar_client_t *cClient;
   std::shared_ptr<ConsumerConfig> consumerConfig;
 
   static void subscribeCallback(pulsar_result result, pulsar_consumer_t *rawConsumer, void *ctx) {
@@ -189,7 +188,7 @@ struct ConsumerNewInstanceContext {
   }
 };
 
-Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
+Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
   auto deferred = ThreadSafeDeferred::New(info.Env());
   auto config = info[0].As<Napi::Object>();
   std::shared_ptr<ConsumerConfig> consumerConfig = std::make_shared<ConsumerConfig>(config, &MessageListener);
@@ -226,7 +225,7 @@ Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_pt
   auto ctx = new ConsumerNewInstanceContext(deferred, cClient, consumerConfig);
 
   if (!topicsPattern.empty()) {
-    pulsar_client_subscribe_pattern_async(cClient.get(), topicsPattern.c_str(), subscription.c_str(),
+    pulsar_client_subscribe_pattern_async(cClient, topicsPattern.c_str(), subscription.c_str(),
                                           consumerConfig->GetCConsumerConfig().get(),
                                           &ConsumerNewInstanceContext::subscribeCallback, ctx);
   } else if (topics.size() > 0) {
@@ -234,12 +233,12 @@ Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_pt
     for (size_t i = 0; i < topics.size(); i++) {
       cTopics[i] = topics[i].c_str();
     }
-    pulsar_client_subscribe_multi_topics_async(cClient.get(), cTopics, topics.size(), subscription.c_str(),
+    pulsar_client_subscribe_multi_topics_async(cClient, cTopics, topics.size(), subscription.c_str(),
                                                consumerConfig->GetCConsumerConfig().get(),
                                                &ConsumerNewInstanceContext::subscribeCallback, ctx);
     delete[] cTopics;
   } else {
-    pulsar_client_subscribe_async(cClient.get(), topic.c_str(), subscription.c_str(),
+    pulsar_client_subscribe_async(cClient, topic.c_str(), subscription.c_str(),
                                   consumerConfig->GetCConsumerConfig().get(),
                                   &ConsumerNewInstanceContext::subscribeCallback, ctx);
   }

@@ -112,12 +112,11 @@ void Reader::SetListenerCallback(ReaderListenerCallback *listener) {
 Reader::Reader(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Reader>(info), listener(nullptr) {}
 
 struct ReaderNewInstanceContext {
-  ReaderNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred,
-                           std::shared_ptr<pulsar_client_t> cClient,
+  ReaderNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred, pulsar_client_t *cClient,
                            std::shared_ptr<ReaderConfig> readerConfig)
       : deferred(deferred), cClient(cClient), readerConfig(readerConfig){};
   std::shared_ptr<ThreadSafeDeferred> deferred;
-  std::shared_ptr<pulsar_client_t> cClient;
+  pulsar_client_t *cClient;
   std::shared_ptr<ReaderConfig> readerConfig;
 
   static void createReaderCallback(pulsar_result result, pulsar_reader_t *rawReader, void *ctx) {
@@ -143,7 +142,7 @@ struct ReaderNewInstanceContext {
   }
 };
 
-Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
+Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
   auto deferred = ThreadSafeDeferred::New(info.Env());
   Napi::Object config = info[0].As<Napi::Object>();
 
@@ -162,7 +161,7 @@ Napi::Value Reader::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<
 
   auto ctx = new ReaderNewInstanceContext(deferred, cClient, readerConfig);
 
-  pulsar_client_create_reader_async(cClient.get(), topic.c_str(), readerConfig->GetCStartMessageId().get(),
+  pulsar_client_create_reader_async(cClient, topic.c_str(), readerConfig->GetCStartMessageId().get(),
                                     readerConfig->GetCReaderConfig().get(),
                                     &ReaderNewInstanceContext::createReaderCallback, ctx);
 

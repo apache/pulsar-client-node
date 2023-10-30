@@ -28,7 +28,7 @@
 class Consumer : public Napi::ObjectWrap<Consumer> {
  public:
   static void Init(Napi::Env env, Napi::Object exports);
-  static Napi::Value NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient);
+  static Napi::Value NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient);
   static Napi::FunctionReference constructor;
   Consumer(const Napi::CallbackInfo &info);
   ~Consumer();

@@ -51,7 +51,7 @@ class Client : public Napi::ObjectWrap<Client> {
  private:
   static LogCallback *logCallback;
   static Napi::FunctionReference constructor;
-  std::shared_ptr<pulsar_client_t> cClient;
+  pulsar_client_t *cClient;
   std::shared_ptr<pulsar_client_configuration_t> cClientConfig;
 
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);

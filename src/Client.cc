@@ -187,8 +187,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   }
 
   try {
-    this->cClient = std::shared_ptr<pulsar_client_t>(
-        pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
+    this->cClient = pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get());
   } catch (const std::exception &e) {
     Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
   }
@@ -214,7 +213,7 @@ Napi::Value Client::GetPartitionsForTopic(const Napi::CallbackInfo &info) {
   auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_client_get_topic_partitions_async(
-      this->cClient.get(), topic.c_str(),
+      this->cClient, topic.c_str(),
       [](pulsar_result result, pulsar_string_list_t *topicList, void *ctx) {
         auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;
@@ -275,7 +274,7 @@ Napi::Value Client::Close(const Napi::CallbackInfo &info) {
   auto ctx = new ExtDeferredContext(deferred);
 
   pulsar_client_close_async(
-      this->cClient.get(),
+      this->cClient,
       [](pulsar_result result, void *ctx) {
         auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
         auto deferred = deferredContext->deferred;

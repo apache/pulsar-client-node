@@ -44,16 +44,15 @@ void Producer::Init(Napi::Env env, Napi::Object exports) {
 void Producer::SetCProducer(std::shared_ptr<pulsar_producer_t> cProducer) { this->cProducer = cProducer; }
 
 struct ProducerNewInstanceContext {
-  ProducerNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred,
-                             std::shared_ptr<pulsar_client_t> cClient,
+  ProducerNewInstanceContext(std::shared_ptr<ThreadSafeDeferred> deferred, pulsar_client_t *cClient,
                              std::shared_ptr<ProducerConfig> producerConfig)
       : deferred(deferred), cClient(cClient), producerConfig(producerConfig){};
   std::shared_ptr<ThreadSafeDeferred> deferred;
-  std::shared_ptr<pulsar_client_t> cClient;
+  pulsar_client_t *cClient;
   std::shared_ptr<ProducerConfig> producerConfig;
 };
 
-Napi::Value Producer::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
+Napi::Value Producer::NewInstance(const Napi::CallbackInfo &info, pulsar_client_t *cClient) {
   auto deferred = ThreadSafeDeferred::New(info.Env());
   auto config = info[0].As<Napi::Object>();
   auto producerConfig = std::make_shared<ProducerConfig>(config);
@@ -68,7 +67,7 @@ Napi::Value Producer::NewInstance(const Napi::CallbackInfo &info, std::shared_pt
   auto ctx = new ProducerNewInstanceContext(deferred, cClient, producerConfig);
 
   pulsar_client_create_producer_async(
-      cClient.get(), topic.c_str(), producerConfig->GetCProducerConfig().get(),
+      cClient, topic.c_str(), producerConfig->GetCProducerConfig().get(),
       [](pulsar_result result, pulsar_producer_t *rawProducer, void *ctx) {
         auto instanceContext = static_cast<ProducerNewInstanceContext *>(ctx);
         auto deferred = instanceContext->deferred;
