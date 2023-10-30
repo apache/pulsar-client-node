@@ -18,7 +18,8 @@
     "format": "clang-format-lint --fix src/*.cc src/*.h && eslint --fix --ext .js .",
     "dtslint": "dtslint .",
     "license:report": "mkdir -p report && license-checker --json > report/licenses.json",
-    "license:addheader": "license-check-and-add",
+    "license:checkheader": "license-check-and-add check",
+    "license:addheader": "license-check-and-add add",
     "test": "jest --verbose --detectOpenHandles",
     "docs": "typedoc"
   },
@@ -46,7 +47,7 @@
     "eslint-plugin-jest": "^24.3.6",
     "hdr-histogram-js": "^2.0.1",
     "jest": "^27.2.4",
-    "license-check-and-add": "^2.3.6",
+    "license-check-and-add": "^4.0.5",
     "license-checker": "^25.0.1",
     "lodash": "^4.17.21",
     "typedoc": "^0.23.28",
@@ -63,57 +64,5 @@
     "host": "https://archive.apache.org/dist/pulsar/pulsar-client-node/",
     "remote_path": "pulsar-client-node-{version}",
     "package_name": "napi-{platform}-{libc}-{arch}.tar.gz"
-  },
-  "license-check-and-add-config": {
-    "folder": ".",
-    "license": "license-header.txt",
-    "exact_paths_method": "EXCLUDE",
-    "exact_paths": [
-      ".git/",
-      "build/",
-      "node_modules/",
-      "report/",
-      "LICENSE"
-    ],
-    "file_type_method": "EXCLUDE",
-    "file_types": [
-      ".json",
-      ".pem",
-      ".txt",
-      ".gz",
-      ".bat"
-    ],
-    "trailing_whitespace": "TRIM",
-    "insert_license": true,
-    "default_format": {
-      "prepend": "#",
-      "eachLine": {
-        "prepend": "# "
-      },
-      "append": "#"
-    },
-    "license_formats": {
-      "c|cc|cpp|h|hpp|js|ts|css": {
-        "prepend": "/**",
-        "eachLine": {
-          "prepend": " * "
-        },
-        "append": " */"
-      },
-      "conf|gitignore|npmignore|eslintignore|sh|py": {
-        "prepend": "#",
-        "eachLine": {
-          "prepend": "# "
-        },
-        "append": "#"
-      },
-      "html|xml|md": {
-        "prepend": "<!--\n",
-        "eachLine": {
-          "prepend": "    "
-        },
-        "append": "\n-->"
-      }
-    }
   }
 }

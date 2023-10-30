@@ -37,10 +37,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
-
       - name: Run Test
         run: |
           ./tests/run-unit-tests.sh
+      - name: Check license headers
+        run: |
+          npm run license:checkheader
 
   validation-yarn:
     name: Validation use yarn install
