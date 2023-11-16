@@ -30,6 +30,10 @@ jobs:
     name: Run unit tests
     runs-on: ubuntu-22.04
     timeout-minutes: 120
+    strategy:
+      matrix:
+        python:
+          - "3.10"
 
     steps:
       - uses: actions/checkout@v3
@@ -37,6 +41,12 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 18
+
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
+          
       - name: Run Test
         run: |
           ./tests/run-unit-tests.sh
@@ -73,6 +83,8 @@ jobs:
           - arm64
         nodejs:
           - 18
+        python:
+          - "3.10"
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -80,6 +92,11 @@ jobs:
         with:
           node-version: ${{ matrix.nodejs }}
           cache: 'npm'
+          
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Cache Dependencies
         id: cache-dependencies
@@ -196,6 +213,8 @@ jobs:
           - x86
         nodejs:
           - 18
+        python:
+          - "3.10"
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -204,6 +223,11 @@ jobs:
           node-version: ${{ matrix.nodejs }}
           architecture: ${{ matrix.arch }}
           cache: 'npm'
+
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Cache CPP Client
         id: cache-dependencies
@@ -246,6 +270,10 @@ jobs:
     timeout-minutes: 3000
     strategy:
       fail-fast: false
+      matrix:
+        python:
+          - "3.10"
+
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
@@ -253,6 +281,10 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
       - name: Install CPP lib
         run: |
           export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=true
@@ -276,6 +308,10 @@ jobs:
     timeout-minutes: 3000
     strategy:
       fail-fast: false
+      matrix:
+        python:
+          - "3.10"
+          
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js 18
@@ -283,6 +319,12 @@ jobs:
         with:
           node-version: 18
           cache: 'npm'
+
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
+          
       - name: Install CPP lib
         run: |
           source pulsar-client-cpp.txt

@@ -41,6 +41,8 @@ jobs:
           - arm64
         nodejs:
           - 18
+        python:
+          - "3.10"
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -48,7 +50,12 @@ jobs:
         with:
           node-version: ${{ matrix.nodejs }}
           cache: 'npm'
-
+          
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
+          
       - name: Cache Dependencies
         id: cache-dependencies
         uses: actions/cache@v3
@@ -162,6 +169,8 @@ jobs:
           - x86
         nodejs:
           - 18
+        python:
+          - "3.10"
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -170,6 +179,11 @@ jobs:
           node-version: ${{ matrix.nodejs }}
           architecture: ${{ matrix.arch }}
           cache: 'npm'
+
+      - name: Use Python ${{ matrix.python }}
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python }}
 
       - name: Cache CPP Client
         id: cache-dependencies
