@@ -19,9 +19,13 @@
 
 const Pulsar = require('../');
 
+// It will be released and disconnected when there are no references,
+// so declare it with let.
+let client;
+
 (async () => {
   // Create a client
-  const client = new Pulsar.Client({
+  client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
     operationTimeoutSeconds: 30,
   });
