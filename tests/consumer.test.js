@@ -137,7 +137,7 @@ const Pulsar = require('../index');
 
         await expect(consumer.close()).resolves.toEqual(null);
 
-        await expect(consumer.close()).rejects.toThrow('Failed to close consumer: AlreadyClosed');
+        await expect(consumer.close()).resolves.toEqual(null);
       });
     });
 
