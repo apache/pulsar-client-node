@@ -105,10 +105,11 @@ if [ ! -f protobuf-${PROTOBUF_VERSION}.done ]; then
     curl -O -L  https://github.com/google/protobuf/releases/download/v${PROTOBUF_VERSION}/protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     tar xfz protobuf-cpp-${PROTOBUF_VERSION}.tar.gz
     pushd protobuf-${PROTOBUF_VERSION}
-      CXXFLAGS="-fPIC -arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
-            ./configure --prefix=$PREFIX
-      make -j16 V=1
-      make install
+     pushd cmake/
+       cmake -B build -DCMAKE_CXX_FLAGS="-fPIC -arch arm64 -arch x86_64 -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}" \
+           -DCMAKE_INSTALL_PREFIX=$PREFIX
+       cmake --build build -j16 --target install
+     popd
     popd
 
     pushd install/lib
