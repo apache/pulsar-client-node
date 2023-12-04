@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env bash
 #
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -18,7 +18,19 @@
 # under the License.
 #
 
-import yaml, sys
+set -e -x
 
-deps = yaml.safe_load(open("dependencies.yaml"))
-print(deps[sys.argv[1]])
+ROOT_DIR=`cd $(dirname $0) && cd ../../ && pwd`
+source $ROOT_DIR/pulsar-client-cpp.txt
+
+if [ -z "$ARCH" ]; then
+   export ARCH=$(uname -m)
+fi
+
+rm -rf $ROOT_DIR/pkg/mac/build-pulsar
+mkdir -p $ROOT_DIR/pkg/mac/build-pulsar/install
+cd $ROOT_DIR/pkg/mac
+curl -L -O ${CPP_CLIENT_BASE_URL}/macos-${ARCH}.zip
+unzip -d $ROOT_DIR/pkg/mac/build-pulsar/install macos-${ARCH}.zip
+rm -rf macos-${ARCH}.zip
+

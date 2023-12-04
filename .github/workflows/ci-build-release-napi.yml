@@ -71,20 +71,10 @@ jobs:
             echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
           fi
 
-      - name: Build CPP dependencies lib
-        if: steps.cache-dependencies.outputs.cache-hit != 'true'
-        run: |
-          export ARCH=${{ env.ARCH }}
-          pkg/mac/build-cpp-deps-lib.sh
-
-      - name: Build CPP lib
-        if: steps.cache-pulsar.outputs.cache-hit != 'true'
-        run: |
-          export ARCH=${{ env.ARCH }}
-          pkg/mac/build-cpp-lib.sh
-
       - name: Build Node binaries lib
         run: |
+          export ARCH=${{ env.ARCH }}
+          pkg/mac/download-cpp-client.sh
           npm install --ignore-scripts
           npx node-pre-gyp configure --target_arch=${{ matrix.arch }}
           npx node-pre-gyp build --target_arch=${{ matrix.arch }}
