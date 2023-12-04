@@ -23,10 +23,6 @@ set -e -x
 ROOT_DIR=`cd $(dirname $0) && cd ../../ && pwd`
 source $ROOT_DIR/pulsar-client-cpp.txt
 
-if [ $USER != "root" ]; then
-  SUDO="sudo"
-fi
-
 if [ -z "$ARCH" ]; then
    export ARCH=$(uname -m)
 fi
