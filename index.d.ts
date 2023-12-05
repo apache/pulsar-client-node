@@ -98,10 +98,12 @@ export interface ConsumerConfig {
   batchIndexAckEnabled?: boolean;
   regexSubscriptionMode?: RegexSubscriptionMode;
   deadLetterPolicy?: DeadLetterPolicy;
+  batchReceivePolicy?: ConsumerBatchReceivePolicy;
 }
 
 export class Consumer {
   receive(timeout?: number): Promise<Message>;
+  batchReceive(): Promise<Message []>;
   acknowledge(message: Message): Promise<null>;
   acknowledgeId(messageId: MessageId): Promise<null>;
   negativeAcknowledge(message: Message): void;
@@ -179,6 +181,12 @@ export interface DeadLetterPolicy {
   deadLetterTopic: string;
   maxRedeliverCount?: number;
   initialSubscriptionName?: string;
+}
+
+export interface ConsumerBatchReceivePolicy {
+  maxNumMessages?: number;
+  maxNumBytes?: number;
+  timeoutMs?: number;
 }
 
 export class AuthenticationTls {

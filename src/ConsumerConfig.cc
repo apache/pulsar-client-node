@@ -51,6 +51,10 @@ static const std::string CFG_DEAD_LETTER_POLICY = "deadLetterPolicy";
 static const std::string CFG_DLQ_POLICY_TOPIC = "deadLetterTopic";
 static const std::string CFG_DLQ_POLICY_MAX_REDELIVER_COUNT = "maxRedeliverCount";
 static const std::string CFG_DLQ_POLICY_INIT_SUB_NAME = "initialSubscriptionName";
+static const std::string CFG_BATCH_RECEIVE_POLICY = "batchReceivePolicy";
+static const std::string CFG_BATCH_RECEIVE_POLICY_MAX_NUM_MESSAGES = "maxNumMessages";
+static const std::string CFG_BATCH_RECEIVE_POLICY_MAX_NUM_BYTES = "maxNumBytes";
+static const std::string CFG_BATCH_RECEIVE_POLICY_TIMEOUT_MS = "timeoutMs";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -74,7 +78,7 @@ static const std::map<std::string, pulsar_consumer_crypto_failure_action> CONSUM
 
 void FinalizeListenerCallback(Napi::Env env, MessageListenerCallback *cb, void *) { delete cb; }
 
-ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_message_listener messageListener)
+ConsumerConfig::ConsumerConfig()
     : topic(""),
       topicsPattern(""),
       subscription(""),
@@ -83,7 +87,10 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
       listener(nullptr) {
   this->cConsumerConfig = std::shared_ptr<pulsar_consumer_configuration_t>(
       pulsar_consumer_configuration_create(), pulsar_consumer_configuration_free);
+}
 
+void ConsumerConfig::InitConfig(const std::shared_ptr<ThreadSafeDeferred> deferred,
+                                const Napi::Object &consumerConfig, pulsar_message_listener messageListener) {
   if (consumerConfig.Has(CFG_TOPIC) && consumerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = consumerConfig.Get(CFG_TOPIC).ToString().Utf8Value();
   }
@@ -101,8 +108,20 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
     this->topicsPattern = consumerConfig.Get(CFG_TOPICS_PATTERN).ToString().Utf8Value();
   }
 
+  if (this->topic.empty() && this->topics.size() == 0 && this->topicsPattern.empty()) {
+    deferred->Reject(
+        std::string("Topic, topics or topicsPattern is required and must be specified as a string when "
+                    "creating consumer"));
+    return;
+  }
+
   if (consumerConfig.Has(CFG_SUBSCRIPTION) && consumerConfig.Get(CFG_SUBSCRIPTION).IsString()) {
     this->subscription = consumerConfig.Get(CFG_SUBSCRIPTION).ToString().Utf8Value();
+  }
+  if (subscription.empty()) {
+    deferred->Reject(
+        std::string("Subscription is required and must be specified as a string when creating consumer"));
+    return;
   }
 
   if (consumerConfig.Has(CFG_SUBSCRIPTION_TYPE) && consumerConfig.Get(CFG_SUBSCRIPTION_TYPE).IsString()) {
@@ -139,18 +158,25 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
 
   if (consumerConfig.Has(CFG_ACK_TIMEOUT) && consumerConfig.Get(CFG_ACK_TIMEOUT).IsNumber()) {
     this->ackTimeoutMs = consumerConfig.Get(CFG_ACK_TIMEOUT).ToNumber().Int64Value();
-    if (this->ackTimeoutMs == 0 || this->ackTimeoutMs >= MIN_ACK_TIMEOUT_MILLIS) {
-      pulsar_consumer_set_unacked_messages_timeout_ms(this->cConsumerConfig.get(), this->ackTimeoutMs);
+    if (this->ackTimeoutMs != 0 && ackTimeoutMs < MIN_ACK_TIMEOUT_MILLIS) {
+      std::string msg("Ack timeout should be 0 or greater than or equal to " +
+                      std::to_string(MIN_ACK_TIMEOUT_MILLIS));
+      deferred->Reject(msg);
+      return;
     }
+    pulsar_consumer_set_unacked_messages_timeout_ms(this->cConsumerConfig.get(), this->ackTimeoutMs);
   }
 
   if (consumerConfig.Has(CFG_NACK_REDELIVER_TIMEOUT) &&
       consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).IsNumber()) {
     this->nAckRedeliverTimeoutMs = consumerConfig.Get(CFG_NACK_REDELIVER_TIMEOUT).ToNumber().Int64Value();
-    if (this->nAckRedeliverTimeoutMs >= 0) {
-      pulsar_configure_set_negative_ack_redelivery_delay_ms(this->cConsumerConfig.get(),
-                                                            this->nAckRedeliverTimeoutMs);
+    if (nAckRedeliverTimeoutMs < 0) {
+      std::string msg("NAck timeout should be greater than or equal to zero");
+      deferred->Reject(msg);
+      return;
     }
+    pulsar_configure_set_negative_ack_redelivery_delay_ms(this->cConsumerConfig.get(),
+                                                          this->nAckRedeliverTimeoutMs);
   }
 
   if (consumerConfig.Has(CFG_RECV_QUEUE) && consumerConfig.Get(CFG_RECV_QUEUE).IsNumber()) {
@@ -264,6 +290,39 @@ ConsumerConfig::ConsumerConfig(const Napi::Object &consumerConfig, pulsar_messag
       dlq_policy.initial_subscription_name = init_subscription_name.c_str();
     }
     pulsar_consumer_configuration_set_dlq_policy(this->cConsumerConfig.get(), &dlq_policy);
+  }
+
+  if (consumerConfig.Has(CFG_BATCH_RECEIVE_POLICY) &&
+      consumerConfig.Get(CFG_BATCH_RECEIVE_POLICY).IsObject()) {
+    Napi::Object propObj = consumerConfig.Get(CFG_BATCH_RECEIVE_POLICY).ToObject();
+    int maxNumMessages = -1;
+    if (propObj.Has(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_MESSAGES) &&
+        propObj.Get(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_MESSAGES).IsNumber()) {
+      maxNumMessages = propObj.Get(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_MESSAGES).ToNumber().Int32Value();
+    }
+    int maxNumBytes = 10 * 1024 * 1024;
+    if (propObj.Has(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_BYTES) &&
+        propObj.Get(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_BYTES).IsNumber()) {
+      maxNumBytes = propObj.Get(CFG_BATCH_RECEIVE_POLICY_MAX_NUM_BYTES).ToNumber().Int64Value();
+    }
+    int timeoutMs = 100;
+    if (propObj.Has(CFG_BATCH_RECEIVE_POLICY_TIMEOUT_MS) &&
+        propObj.Get(CFG_BATCH_RECEIVE_POLICY_TIMEOUT_MS).IsNumber()) {
+      timeoutMs = propObj.Get(CFG_BATCH_RECEIVE_POLICY_TIMEOUT_MS).ToNumber().Int64Value();
+    }
+    if (maxNumMessages <= 0 && maxNumBytes <= 0 && timeoutMs <= 0) {
+      std::string msg("At least one of maxNumMessages, maxNumBytes and timeoutMs must be specified.");
+      deferred->Reject(msg);
+      return;
+    }
+    pulsar_consumer_batch_receive_policy_t batch_receive_policy{maxNumMessages, maxNumBytes, timeoutMs};
+    int result = pulsar_consumer_configuration_set_batch_receive_policy(this->cConsumerConfig.get(),
+                                                                        &batch_receive_policy);
+    if (result == -1) {
+      std::string msg("Set batch receive policy failed: C client returned failure");
+      deferred->Reject(msg);
+      return;
+    }
   }
 }
 

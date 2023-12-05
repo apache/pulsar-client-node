@@ -96,3 +96,7 @@ void ThreadSafeDeferred::Reject(const std::string &errorMsg) {
   this->fate = EFate::REJECTED;
   this->tsf.Release();
 }
+
+bool ThreadSafeDeferred::IsDone() const {
+  return this->fate == EFate::RESOLVED || this->fate == EFate::REJECTED;
+}

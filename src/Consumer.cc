@@ -38,6 +38,7 @@ void Consumer::Init(Napi::Env env, Napi::Object exports) {
       DefineClass(env, "Consumer",
                   {
                       InstanceMethod("receive", &Consumer::Receive),
+                      InstanceMethod("batchReceive", &Consumer::BatchReceive),
                       InstanceMethod("acknowledge", &Consumer::Acknowledge),
                       InstanceMethod("acknowledgeId", &Consumer::AcknowledgeId),
                       InstanceMethod("negativeAcknowledge", &Consumer::NegativeAcknowledge),
@@ -192,36 +193,17 @@ struct ConsumerNewInstanceContext {
 Napi::Value Consumer::NewInstance(const Napi::CallbackInfo &info, std::shared_ptr<pulsar_client_t> cClient) {
   auto deferred = ThreadSafeDeferred::New(info.Env());
   auto config = info[0].As<Napi::Object>();
-  std::shared_ptr<ConsumerConfig> consumerConfig = std::make_shared<ConsumerConfig>(config, &MessageListener);
+  std::shared_ptr<ConsumerConfig> consumerConfig = std::make_shared<ConsumerConfig>();
+
+  consumerConfig->InitConfig(deferred, config, &MessageListener);
+  if (deferred->IsDone()) {
+    return deferred->Promise();
+  }
 
   const std::string &topic = consumerConfig->GetTopic();
   const std::vector<std::string> &topics = consumerConfig->GetTopics();
   const std::string &topicsPattern = consumerConfig->GetTopicsPattern();
-  if (topic.empty() && topics.size() == 0 && topicsPattern.empty()) {
-    deferred->Reject(
-        std::string("Topic, topics or topicsPattern is required and must be specified as a string when "
-                    "creating consumer"));
-    return deferred->Promise();
-  }
   const std::string &subscription = consumerConfig->GetSubscription();
-  if (subscription.empty()) {
-    deferred->Reject(
-        std::string("Subscription is required and must be specified as a string when creating consumer"));
-    return deferred->Promise();
-  }
-  int32_t ackTimeoutMs = consumerConfig->GetAckTimeoutMs();
-  if (ackTimeoutMs != 0 && ackTimeoutMs < MIN_ACK_TIMEOUT_MILLIS) {
-    std::string msg("Ack timeout should be 0 or greater than or equal to " +
-                    std::to_string(MIN_ACK_TIMEOUT_MILLIS));
-    deferred->Reject(msg);
-    return deferred->Promise();
-  }
-  int32_t nAckRedeliverTimeoutMs = consumerConfig->GetNAckRedeliverTimeoutMs();
-  if (nAckRedeliverTimeoutMs < 0) {
-    std::string msg("NAck timeout should be greater than or equal to zero");
-    deferred->Reject(msg);
-    return deferred->Promise();
-  }
 
   auto ctx = new ConsumerNewInstanceContext(deferred, cClient, consumerConfig);
 
@@ -290,6 +272,39 @@ class ConsumerReceiveWorker : public Napi::AsyncWorker {
   std::shared_ptr<pulsar_message_t> cMessage;
   int64_t timeout;
 };
+
+Napi::Value Consumer::BatchReceive(const Napi::CallbackInfo &info) {
+  auto deferred = ThreadSafeDeferred::New(Env());
+  auto ctx = new ExtDeferredContext(deferred);
+  pulsar_consumer_batch_receive_async(
+      this->cConsumer.get(),
+      [](pulsar_result result, pulsar_messages_t *rawMessages, void *ctx) {
+        auto deferredContext = static_cast<ExtDeferredContext *>(ctx);
+        auto deferred = deferredContext->deferred;
+        delete deferredContext;
+
+        if (result != pulsar_result_Ok) {
+          deferred->Reject(std::string("Failed to batch receive message: ") + pulsar_result_str(result));
+        } else {
+          deferred->Resolve([rawMessages](const Napi::Env env) {
+            int listSize = pulsar_messages_size(rawMessages);
+            Napi::Array jsArray = Napi::Array::New(env, listSize);
+            for (int i = 0; i < listSize; i++) {
+              pulsar_message_t *rawMessage = pulsar_messages_get(rawMessages, i);
+              pulsar_message_t *message = pulsar_message_create();
+              pulsar_message_copy(rawMessage, message);
+              Napi::Object obj =
+                  Message::NewInstance({}, std::shared_ptr<pulsar_message_t>(message, pulsar_message_free));
+              jsArray.Set(i, obj);
+            }
+            pulsar_messages_free(rawMessages);
+            return jsArray;
+          });
+        }
+      },
+      ctx);
+  return deferred->Promise();
+}
 
 Napi::Value Consumer::Receive(const Napi::CallbackInfo &info) {
   if (info[0].IsUndefined()) {
