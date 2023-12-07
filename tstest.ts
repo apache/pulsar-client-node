@@ -37,6 +37,16 @@ import Pulsar = require('./index');
     principalHeader: 'Athenz-Principal-Auth',
     roleHeader: 'Athenz-Role-Auth',
     tokenExpirationTime: '3600',
+    caCert: 'file:///path/to/cacert.pem',
+  });
+
+  const authAthenz3: Pulsar.AuthenticationAthenz = new Pulsar.AuthenticationAthenz({
+    providerDomain: 'athenz.provider.domain',
+    privateKey: 'file:///path/to/private.key',
+    ztsUrl: 'https://localhost:8443',
+    roleHeader: 'Athenz-Role-Auth',
+    x509CertChain: 'file:///path/to/x509cert.pem',
+    caCert: 'file:///path/to/cacert.pem',
   });
 
   const authOauth2PrivateKey: Pulsar.AuthenticationOauth2 = new Pulsar.AuthenticationOauth2({

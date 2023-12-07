@@ -186,7 +186,7 @@ export class AuthenticationTls {
 }
 
 export class AuthenticationAthenz {
-  constructor(params: string | AthenzConfig);
+  constructor(params: string | AthenzConfig | AthenzX509Config);
 }
 
 export interface AthenzConfig {
@@ -198,7 +198,20 @@ export interface AthenzConfig {
   keyId?: string;
   principalHeader?: string;
   roleHeader?: string;
+  caCert?: string;
+  /**
+   * @deprecated
+   */
   tokenExpirationTime?: string;
+}
+
+export class AthenzX509Config {
+  providerDomain: string;
+  privateKey: string;
+  x509CertChain: string;
+  ztsUrl: string;
+  roleHeader?: string;
+  caCert?: string;
 }
 
 export class AuthenticationToken {
