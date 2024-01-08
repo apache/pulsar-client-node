@@ -30,7 +30,7 @@ class ConsumerConfig {
  public:
   ConsumerConfig();
   ~ConsumerConfig();
-  void InitConfig(const std::shared_ptr<ThreadSafeDeferred> deferred, const Napi::Object &consumerConfig,
+  void InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred, const Napi::Object &consumerConfig,
                   pulsar_message_listener messageListener);
   std::shared_ptr<pulsar_consumer_configuration_t> GetCConsumerConfig();
   std::string GetTopic();

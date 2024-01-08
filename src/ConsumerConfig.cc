@@ -89,7 +89,7 @@ ConsumerConfig::ConsumerConfig()
       pulsar_consumer_configuration_create(), pulsar_consumer_configuration_free);
 }
 
-void ConsumerConfig::InitConfig(const std::shared_ptr<ThreadSafeDeferred> deferred,
+void ConsumerConfig::InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred,
                                 const Napi::Object &consumerConfig, pulsar_message_listener messageListener) {
   if (consumerConfig.Has(CFG_TOPIC) && consumerConfig.Get(CFG_TOPIC).IsString()) {
     this->topic = consumerConfig.Get(CFG_TOPIC).ToString().Utf8Value();

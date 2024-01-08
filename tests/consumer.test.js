@@ -347,7 +347,7 @@ const Pulsar = require('../index');
         dlqConsumer.close();
       });
 
-      test('Batch Receive', async () => {
+      test('Batch Receive by maxNumberMessages', async () => {
         const topicName = 'batch-receive-test-topic';
         const producer = await client.createProducer({
           topic: topicName,
@@ -363,6 +363,48 @@ const Pulsar = require('../index');
             timeoutMs: 500,
           },
         });
+        const num = 10;
+        const messages = [];
+        for (let i = 0; i < num; i += 1) {
+          const msg = `my-message-${i}`;
+          await producer.send({ data: Buffer.from(msg) });
+          messages.push(msg);
+        }
+
+        const receiveMessages = await consumer.batchReceive();
+        expect(receiveMessages.length).toEqual(num);
+        const results = [];
+        for (let i = 0; i < receiveMessages.length; i += 1) {
+          const msg = receiveMessages[i];
+          console.log(msg.getData().toString());
+          results.push(msg.getData().toString());
+        }
+        expect(results).toEqual(messages);
+
+        // assert no more msgs.
+        expect(await consumer.batchReceive()).toEqual([]);
+
+        await producer.close();
+        await consumer.close();
+      });
+
+      test('Batch Receive by timeOutMs', async () => {
+        const topicName = 'batch-receive-test-topic-timeout';
+        const producer = await client.createProducer({
+          topic: topicName,
+        });
+
+        const consumer = await client.subscribe({
+          topic: topicName,
+          subscription: 'sub1',
+          subscriptionType: 'Shared',
+          batchReceivePolicy: {
+            maxNumMessages: 100,
+            maxNumBytes: -1,
+            timeoutMs: 500,
+          },
+        });
+        // just send 10 message waite trigger timeout.
         const num = 10;
         const messages = [];
         for (let i = 0; i < num; i += 1) {
