@@ -73,6 +73,7 @@ class ThreadSafeDeferred : public Napi::Promise::Deferred {
   inline void Reject() { this->Reject(""); }
   void Reject(
       const std::string &);  // <- if only Reject were virtual... But we can live without polymorphism here
+  bool IsDone() const;
 
   static std::shared_ptr<ThreadSafeDeferred> New(const Napi::Env env);
 };

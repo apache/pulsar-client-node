@@ -21,14 +21,17 @@
 #define CONSUMER_CONFIG_H
 
 #include <pulsar/c/consumer_configuration.h>
+#include "ThreadSafeDeferred.h"
 #include "MessageListener.h"
 
 #define MIN_ACK_TIMEOUT_MILLIS 10000
 
 class ConsumerConfig {
  public:
-  ConsumerConfig(const Napi::Object &consumerConfig, pulsar_message_listener messageListener);
+  ConsumerConfig();
   ~ConsumerConfig();
+  void InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred, const Napi::Object &consumerConfig,
+                  pulsar_message_listener messageListener);
   std::shared_ptr<pulsar_consumer_configuration_t> GetCConsumerConfig();
   std::string GetTopic();
   std::vector<std::string> GetTopics();

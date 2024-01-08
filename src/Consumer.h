@@ -44,6 +44,7 @@ class Consumer : public Napi::ObjectWrap<Consumer> {
   MessageListenerCallback *listener;
 
   Napi::Value Receive(const Napi::CallbackInfo &info);
+  Napi::Value BatchReceive(const Napi::CallbackInfo &info);
   Napi::Value Acknowledge(const Napi::CallbackInfo &info);
   Napi::Value AcknowledgeId(const Napi::CallbackInfo &info);
   void NegativeAcknowledge(const Napi::CallbackInfo &info);
