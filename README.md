@@ -122,8 +122,7 @@ pkg\windows\download-cpp-client.bat
 - Install C++ client on macOS:
 
 ```shell
-pkg/mac/build-cpp-deps-lib.sh
-pkg/mac/build-cpp-lib.sh
+pkg/mac/download-cpp-client.sh
 ```
 
 After the C++ client is installed, run the following command to build this C++ addon.
