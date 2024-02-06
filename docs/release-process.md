@@ -253,7 +253,15 @@ If there are any new contributors for this release, please add a `New Contributo
 
 Once the PR has been approved, add release notes to the Github release page (https://github.com/apache/pulsar-client-node/releases)
 
-#### 10. Announce the release
+#### 10. Add api docs
+Create a PR to add api docs to the pulsar site. Here is the example: https://github.com/apache/pulsar-site/pull/784
+
+```shell
+cd pulsar-site/tools/pytools
+poetry run bin/js-apidoc-generator.py 1.X.0
+```
+
+#### 11. Announce the release
 
 Once the release artifact is available in the npm registry, we need to announce the release.
 
