@@ -23,15 +23,16 @@ const Pulsar = require('../index');
 (() => {
   describe('End To End', () => {
     test.each([
-      ['pulsar://localhost:6650'],
-      ['pulsar+ssl://localhost:6651'],
-      ['http://localhost:8080'],
-      ['https://localhost:8443'],
-    ])('Produce/Consume to %s', async (serviceUrl) => {
+      { serviceUrl: 'pulsar://localhost:6650', listenerName: undefined },
+      { serviceUrl: 'pulsar+ssl://localhost:6651', listenerName: 'localhost6651' },
+      { serviceUrl: 'http://localhost:8080', listenerName: undefined },
+      { serviceUrl: 'https://localhost:8443', listenerName: 'localhost8443' },
+    ])('Produce/Consume to $serviceUrl', async ({ serviceUrl, listenerName }) => {
       const client = new Pulsar.Client({
         serviceUrl,
         tlsTrustCertsFilePath: `${__dirname}/certificate/server.crt`,
         operationTimeoutSeconds: 30,
+        listenerName,
       });
 
       const topic = 'persistent://public/default/produce-consume';

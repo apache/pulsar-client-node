@@ -40,6 +40,7 @@ static const std::string CFG_TLS_VALIDATE_HOSTNAME = "tlsValidateHostname";
 static const std::string CFG_TLS_ALLOW_INSECURE = "tlsAllowInsecureConnection";
 static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
 static const std::string CFG_LOG = "log";
+static const std::string CFG_LISTENER_NAME = "listenerName";
 
 LogCallback *Client::logCallback = nullptr;
 
@@ -184,6 +185,11 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   if (clientConfig.Has(CFG_STATS_INTERVAL) && clientConfig.Get(CFG_STATS_INTERVAL).IsNumber()) {
     uint32_t statsIntervalInSeconds = clientConfig.Get(CFG_STATS_INTERVAL).ToNumber().Uint32Value();
     pulsar_client_configuration_set_stats_interval_in_seconds(cClientConfig.get(), statsIntervalInSeconds);
+  }
+
+  if (clientConfig.Has(CFG_LISTENER_NAME) && clientConfig.Get(CFG_LISTENER_NAME).IsString()) {
+    Napi::String listenerName = clientConfig.Get(CFG_LISTENER_NAME).ToString();
+    pulsar_client_configuration_set_listener_name(cClientConfig.get(), listenerName.Utf8Value().c_str());
   }
 
   try {
