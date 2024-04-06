@@ -30,6 +30,7 @@ export interface ClientConfig {
   tlsValidateHostname?: boolean;
   tlsAllowInsecureConnection?: boolean;
   statsIntervalInSeconds?: number;
+  listenerName?: string;
   log?: (level: LogLevel, file: string, line: number, message: string) => void;
 }
 
