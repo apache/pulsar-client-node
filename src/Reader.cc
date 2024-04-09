@@ -60,17 +60,19 @@ struct ReaderListenerProxyData {
 void ReaderListenerProxy(Napi::Env env, Napi::Function jsCallback, ReaderListenerProxyData *data) {
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Reader *reader = data->reader;
-
-  Napi::Value ret = jsCallback.Call({msg, reader->Value()});
-  if (ret.IsPromise()) {
-    Napi::Promise promise = ret.As<Napi::Promise>();
-    Napi::Value thenValue = promise.Get("then");
-    if (thenValue.IsFunction()) {
-      Napi::Function then = thenValue.As<Napi::Function>();
-      Napi::Function callback =
-          Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); });
-      then.Call(promise, {callback});
-      return;
+  // `reader` might be null in certain cases, segmentation fault might happend without this null check.
+  if (reader) {
+    Napi::Value ret = jsCallback.Call({msg, reader->Value()});
+    if (ret.IsPromise()) {
+      Napi::Promise promise = ret.As<Napi::Promise>();
+      Napi::Value thenValue = promise.Get("then");
+      if (thenValue.IsFunction()) {
+        Napi::Function then = thenValue.As<Napi::Function>();
+        Napi::Function callback =
+            Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); });
+        then.Call(promise, {callback});
+        return;
+      }
     }
   }
   data->callback();
