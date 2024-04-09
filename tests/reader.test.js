@@ -130,5 +130,46 @@ const baseUrl = 'http://localhost:8080';
       await reader.close();
       await client.close();
     });
+
+    test('Reader should not throw segmentation fault when create and close', async () => {
+      const NUM_ITS = 1000;
+      const its = Array.from({ length: NUM_ITS }, (_, i) => i);
+
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+      });
+
+      const producer = await client.createProducer({
+        topic: 'persistent://public/default/my-topic',
+        sendTimeoutMs: 30000,
+        batchingEnabled: true,
+      });
+
+      // Send messages
+      for (let i = 0; i < 10; i += 1) {
+        const msg = `my-message-${i}`;
+        producer.send({
+          data: Buffer.from(msg),
+        });
+        console.log(`Sent message: ${msg}`);
+      }
+      await producer.flush();
+
+      await Promise.all(
+        its.map(async () => {
+          const reader = await client.createReader({
+            topic: 'persistent://public/default/my-topic',
+            startMessageId: Pulsar.MessageId.earliest(),
+            listener: (message) => {
+              console.log(message.getData().toString());
+            },
+          });
+          await reader.close();
+        }),
+      );
+      await producer.close();
+      await client.close();
+      expect(true).toBe(true);
+    });
   });
 })();
