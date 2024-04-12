@@ -23,8 +23,9 @@
 
 The Pulsar Node.js client can be used to create Pulsar producers and consumers in Node.js. For the supported Pulsar features, see [Client Feature Matrix](https://pulsar.apache.org/client-feature-matrix/).
 
-This library works only in Node.js 10.x or later because it uses the
-[node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
+This library works only in Node.js 12.3 or later because it uses:
+1. The [node-addon-api](https://github.com/nodejs/node-addon-api) module to wrap the C++ library.
+2. The [Mozilla CA](https://nodejs.org/api/tls.html#tlsrootcertificates) file, which is provided by Node.js v12.3.0 and subsequent versions.
 
 ## Getting Started
 
