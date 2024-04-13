@@ -32,7 +32,7 @@
   "license": "Apache-2.0",
   "gypfile": true,
   "engines": {
-    "node": ">=10.16.0"
+    "node": ">=12.3.0"
   },
   "devDependencies": {
     "@seadub/clang-format-lint": "0.0.2",
