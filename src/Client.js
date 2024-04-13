@@ -57,7 +57,14 @@ class Client {
   }
 
   static genCertFile() {
-    fs.rmSync(certsFilePath, { force: true });
+    try {
+      if (fs.existsSync(certsFilePath)) {
+        fs.unlinkSync(certsFilePath);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+
     const fd = fs.openSync(certsFilePath, 'a');
     try {
       tls.rootCertificates.forEach((cert) => {
