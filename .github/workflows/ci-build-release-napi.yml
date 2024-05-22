@@ -30,7 +30,7 @@ concurrency:
 jobs:
   macos-napi:
     name: Build NAPI macos - Node ${{matrix.nodejs}} - ${{matrix.arch}}
-    runs-on: macos-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 3000
 
     strategy:
@@ -43,6 +43,12 @@ jobs:
           - 18
         python:
           - "3.10"
+        include:
+          - arch: x64
+            os: macos-13
+          - arch: arm64
+            # macos-14 is used for arm64
+            os: macos-14
     steps:
       - uses: actions/checkout@v3
       - name: Use Node.js ${{ matrix.nodejs }}
@@ -56,31 +62,19 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           
-      - name: Cache Dependencies
-        id: cache-dependencies
-        uses: actions/cache@v3
-        with:
-          path: pkg/mac/build
-          key: ${{ runner.os }}-${{ matrix.arch }}-mac-${{ hashFiles('pkg/mac/build-cpp-deps-lib.sh') }}
-
-      - name: Add arch env vars
-        run: |
-          if [ "${{ matrix.arch }}" = "x64" ]; then
-            echo "ARCH=x86_64" >> $GITHUB_ENV
-          else
-            echo "ARCH=${{ matrix.arch }}" >> $GITHUB_ENV
-          fi
-
       - name: Build Node binaries lib
         run: |
-          export ARCH=${{ env.ARCH }}
+          if [ "${{ matrix.arch }}" = "x64" ]; then
+            export ARCH=x86_64
+          else
+            export ARCH=${{ matrix.arch }}
+          fi
           pkg/mac/download-cpp-client.sh
           npm install --ignore-scripts
           npx node-pre-gyp configure --target_arch=${{ matrix.arch }}
           npx node-pre-gyp build --target_arch=${{ matrix.arch }}
 
       - name: Test loading Node binaries lib
-        if: matrix.arch == 'x64'
         run: |
           node pkg/load_test.js
 
