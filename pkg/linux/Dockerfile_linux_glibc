@@ -17,19 +17,15 @@
 # under the License.
 #
 
-FROM centos:7
+ARG NODE_VERSION
 
-RUN yum update -y
-RUN yum install -y gcc gcc-c++ make python3
+FROM node:${NODE_VERSION}-buster
 
-WORKDIR /app
-ARG PLATFORM
-RUN SUFFIX=$(echo ${PLATFORM} | sed 's/86_//') && \
-  echo $SUFFIX && \
-  curl -O -L https://nodejs.org/download/release/v16.19.0/node-v16.19.0-linux-$SUFFIX.tar.gz && \
-  tar zxf node-v16.19.0-linux-$SUFFIX.tar.gz && \
-  mv node-v16.19.0-linux-$SUFFIX node-v16.19.0
-
-ENV PATH="/app/node-v16.19.0/bin:$PATH"
+RUN apt-get update -y && \
+     apt-get install -y \
+        curl \
+        g++ \
+        make \
+        python3
 
 CMD ["sh"]
