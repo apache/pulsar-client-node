@@ -22,6 +22,7 @@ const AuthenticationTls = require('./src/AuthenticationTls');
 const AuthenticationAthenz = require('./src/AuthenticationAthenz');
 const AuthenticationToken = require('./src/AuthenticationToken');
 const AuthenticationOauth2 = require('./src/AuthenticationOauth2');
+const AuthenticationBasic = require('./src/AuthenticationBasic');
 const Client = require('./src/Client');
 
 const LogLevel = {
@@ -40,6 +41,7 @@ const Pulsar = {
   AuthenticationAthenz,
   AuthenticationToken,
   AuthenticationOauth2,
+  AuthenticationBasic,
   LogLevel,
 };
 

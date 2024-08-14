@@ -22,6 +22,8 @@
 static const std::string PARAM_TLS_CERT = "certificatePath";
 static const std::string PARAM_TLS_KEY = "privateKeyPath";
 static const std::string PARAM_TOKEN = "token";
+static const std::string PARAM_USERNAME = "username";
+static const std::string PARAM_PASSWORD = "password";
 
 Napi::FunctionReference Authentication::constructor;
 
@@ -49,7 +51,7 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
 
   std::string authMethod = info[0].ToString().Utf8Value();
 
-  if (authMethod == "tls" || authMethod == "token") {
+  if (authMethod == "tls" || authMethod == "token" || authMethod == "basic") {
     if (info.Length() < 2 || !info[1].IsObject()) {
       Napi::Error::New(env, "Authentication parameter must be a object").ThrowAsJavaScriptException();
       return;
@@ -73,6 +75,15 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
       }
       this->cAuthentication =
           pulsar_authentication_token_create(obj.Get(PARAM_TOKEN).ToString().Utf8Value().c_str());
+    } else if (authMethod == "basic") {
+      if (!obj.Has(PARAM_USERNAME) || !obj.Get(PARAM_USERNAME).IsString() || !obj.Has(PARAM_PASSWORD) ||
+          !obj.Get(PARAM_PASSWORD).IsString()) {
+        Napi::Error::New(env, "Missing required parameter").ThrowAsJavaScriptException();
+        return;
+      }
+      this->cAuthentication =
+          pulsar_authentication_basic_create(obj.Get(PARAM_USERNAME).ToString().Utf8Value().c_str(),
+                                             obj.Get(PARAM_PASSWORD).ToString().Utf8Value().c_str());
     }
   } else if (authMethod == "athenz") {
     if (info.Length() < 2 || !info[1].IsString()) {
