@@ -20,7 +20,7 @@
 
 export interface ClientConfig {
   serviceUrl: string;
-  authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken | AuthenticationOauth2;
+  authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken | AuthenticationOauth2 | AuthenticationBasic;
   operationTimeoutSeconds?: number;
   ioThreads?: number;
   messageListenerThreads?: number;
@@ -236,6 +236,13 @@ export class AuthenticationOauth2 {
     private_key?: string;
     audience?: string;
     scope?: string;
+  });
+}
+
+export class AuthenticationBasic {
+  constructor(params: {
+    username: string;
+    password: string;
   });
 }
 

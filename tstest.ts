@@ -70,6 +70,11 @@ import Pulsar = require('./index');
     token: 'foobar',
   });
 
+  const authBasic: Pulsar.AuthenticationBasic = new Pulsar.AuthenticationBasic({
+    username: 'basic.username',
+    password: 'basic.password',
+  });
+
   const client: Pulsar.Client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
     authentication: authToken,
