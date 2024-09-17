@@ -18,12 +18,70 @@
  */
 
 #include "Authentication.h"
+#include "TokenSupplier.h"
+#include <future>
 
 static const std::string PARAM_TLS_CERT = "certificatePath";
 static const std::string PARAM_TLS_KEY = "privateKeyPath";
 static const std::string PARAM_TOKEN = "token";
 static const std::string PARAM_USERNAME = "username";
 static const std::string PARAM_PASSWORD = "password";
+
+void FinalizeTokenSupplierCallback(Napi::Env env, TokenSupplierCallback *cb, void *) { delete cb; }
+
+struct TokenSupplierProxyData {
+  std::function<void(void)> callback;
+  std::string token;
+
+  TokenSupplierProxyData(std::function<void(void)> callback) : callback(callback), token(std::string()) {}
+};
+
+void TokenSupplierProxy(Napi::Env env, Napi::Function jsCallback, TokenSupplierProxyData *data) {
+  Napi::Value ret = jsCallback.Call({});
+  if (ret.IsPromise()) {
+    Napi::Promise promise = ret.As<Napi::Promise>();
+    Napi::Value thenValue = promise.Get("then");
+    if (thenValue.IsFunction()) {
+      Napi::Function then = thenValue.As<Napi::Function>();
+      Napi::Function callback = Napi::Function::New(env, [data](const Napi::CallbackInfo &info) {
+        Napi::Value value = info[0];
+        if (value.IsString()) {
+          data->token = value.ToString().Utf8Value();
+        }
+        data->callback();
+      });
+      then.Call(promise, {callback});
+      return;
+    }
+  }
+  if (ret.IsString()) {
+    data->token = ret.ToString().Utf8Value();
+  }
+  data->callback();
+}
+
+char *TokenSupplier(void *ctx) {
+  TokenSupplierCallback *tokenSupplierCallback = (TokenSupplierCallback *)ctx;
+  if (tokenSupplierCallback->callback.Acquire() != napi_ok) {
+    char *empty = (char *)malloc(0);
+    return empty;
+  }
+
+  std::promise<void> promise;
+  std::future<void> future = promise.get_future();
+
+  std::unique_ptr<TokenSupplierProxyData> dataPtr(
+      new TokenSupplierProxyData([&promise]() { promise.set_value(); }));
+
+  tokenSupplierCallback->callback.BlockingCall(dataPtr.get(), TokenSupplierProxy);
+  tokenSupplierCallback->callback.Release();
+
+  future.wait();
+
+  char *token = (char *)malloc(dataPtr->token.size());
+  strcpy(token, dataPtr->token.c_str());
+  return token;
+}
 
 Napi::FunctionReference Authentication::constructor;
 
@@ -69,12 +127,28 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
           pulsar_authentication_tls_create(obj.Get(PARAM_TLS_CERT).ToString().Utf8Value().c_str(),
                                            obj.Get(PARAM_TLS_KEY).ToString().Utf8Value().c_str());
     } else if (authMethod == "token") {
-      if (!obj.Has(PARAM_TOKEN) || !obj.Get(PARAM_TOKEN).IsString()) {
-        Napi::Error::New(env, "Missing required parameter").ThrowAsJavaScriptException();
-        return;
+      if (obj.Has(PARAM_TOKEN)) {
+        if (obj.Get(PARAM_TOKEN).IsString()) {
+          this->cAuthentication =
+              pulsar_authentication_token_create(obj.Get(PARAM_TOKEN).ToString().Utf8Value().c_str());
+          return;
+        }
+
+        if (obj.Get(PARAM_TOKEN).IsFunction()) {
+          TokenSupplierCallback *tokenSupplier = new TokenSupplierCallback();
+          Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
+              obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(), "Token Supplier Callback", 1, 1,
+              (void *)NULL, FinalizeTokenSupplierCallback, tokenSupplier);
+          tokenSupplier->callback = std::move(callback);
+
+          this->cAuthentication =
+              pulsar_authentication_token_create_with_supplier(&TokenSupplier, tokenSupplier);
+          return;
+        }
       }
-      this->cAuthentication =
-          pulsar_authentication_token_create(obj.Get(PARAM_TOKEN).ToString().Utf8Value().c_str());
+
+      Napi::Error::New(env, "Missing required parameter").ThrowAsJavaScriptException();
+      return;
     } else if (authMethod == "basic") {
       if (!obj.Has(PARAM_USERNAME) || !obj.Get(PARAM_USERNAME).IsString() || !obj.Has(PARAM_PASSWORD) ||
           !obj.Get(PARAM_PASSWORD).IsString()) {
