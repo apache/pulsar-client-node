@@ -18,7 +18,6 @@
  */
 
 #include "Authentication.h"
-#include "TokenSupplier.h"
 #include <future>
 
 static const std::string PARAM_TLS_CERT = "certificatePath";
@@ -135,14 +134,14 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
         }
 
         if (obj.Get(PARAM_TOKEN).IsFunction()) {
-          TokenSupplierCallback *tokenSupplier = new TokenSupplierCallback();
+          this->tokenSupplier = new TokenSupplierCallback();
           Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
               obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(), "Token Supplier Callback", 1, 1,
-              (void *)NULL, FinalizeTokenSupplierCallback, tokenSupplier);
-          tokenSupplier->callback = std::move(callback);
+              (void *)NULL, FinalizeTokenSupplierCallback, this->tokenSupplier);
+          this->tokenSupplier->callback = std::move(callback);
 
           this->cAuthentication =
-              pulsar_authentication_token_create_with_supplier(&TokenSupplier, tokenSupplier);
+              pulsar_authentication_token_create_with_supplier(&TokenSupplier, this->tokenSupplier);
           return;
         }
       }
@@ -179,6 +178,9 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
 }
 
 Authentication::~Authentication() {
+  if (this->tokenSupplier != nullptr) {
+    this->tokenSupplier->callback.Release();
+  }
   if (this->cAuthentication != nullptr) {
     pulsar_authentication_free(this->cAuthentication);
   }

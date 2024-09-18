@@ -22,6 +22,7 @@
 
 #include <napi.h>
 #include <pulsar/c/authentication.h>
+#include "TokenSupplier.h"
 
 class Authentication : public Napi::ObjectWrap<Authentication> {
  public:
@@ -33,6 +34,8 @@ class Authentication : public Napi::ObjectWrap<Authentication> {
  private:
   static Napi::FunctionReference constructor;
   pulsar_authentication_t *cAuthentication;
+
+  TokenSupplierCallback *tokenSupplier;
 };
 
 #endif

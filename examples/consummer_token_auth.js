@@ -49,5 +49,4 @@ console.log("Starting consumer");
 
   await consumer.close();
   await client.close();
-  exit(0);
 })();
