@@ -17,25 +17,15 @@
  * under the License.
  */
 
-#ifndef AUTH_H
-#define AUTH_H
+#ifndef PULSAR_CLIENT_NODE_TOKENSUPPLIER_H
+#define PULSAR_CLIENT_NODE_TOKENSUPPLIER_H
 
 #include <napi.h>
-#include <pulsar/c/authentication.h>
-#include "TokenSupplier.h"
 
-class Authentication : public Napi::ObjectWrap<Authentication> {
- public:
-  static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  Authentication(const Napi::CallbackInfo &info);
-  ~Authentication();
-  pulsar_authentication_t *GetCAuthentication();
+struct TokenSupplierCallback {
+  Napi::ThreadSafeFunction callback;
 
- private:
-  static Napi::FunctionReference constructor;
-  pulsar_authentication_t *cAuthentication;
-
-  TokenSupplierCallback *tokenSupplier;
+  TokenSupplierCallback() {}
 };
 
-#endif
+#endif  // PULSAR_CLIENT_NODE_TOKENSUPPLIER_H
