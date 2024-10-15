@@ -32,6 +32,7 @@ export interface ClientConfig {
   statsIntervalInSeconds?: number;
   listenerName?: string;
   log?: (level: LogLevel, file: string, line: number, message: string) => void;
+  logLevel?: LogLevel;
 }
 
 export class Client {
