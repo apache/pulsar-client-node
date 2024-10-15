@@ -40,6 +40,7 @@ static const std::string CFG_TLS_VALIDATE_HOSTNAME = "tlsValidateHostname";
 static const std::string CFG_TLS_ALLOW_INSECURE = "tlsAllowInsecureConnection";
 static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
 static const std::string CFG_LOG = "log";
+static const std::string CFG_LOG_LEVEL = "logLevel";
 static const std::string CFG_LISTENER_NAME = "listenerName";
 
 LogCallback *Client::logCallback = nullptr;
@@ -107,7 +108,18 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
                                                                        pulsar_client_configuration_free);
 
   // The logger can only be set once per process, so we will take control of it
-  pulsar_client_configuration_set_logger(cClientConfig.get(), &LogMessage, nullptr);
+  if (clientConfig.Has(CFG_LOG_LEVEL) && clientConfig.Get(CFG_LOG_LEVEL).IsNumber()) {
+    int32_t logLevelInt = clientConfig.Get(CFG_LOG_LEVEL).ToNumber().Int32Value();
+    this->logLevel = static_cast<pulsar_logger_level_t>(logLevelInt);
+  }
+  pulsar_logger_t logger;
+  logger.ctx = &this->logLevel;
+  logger.is_enabled = [](pulsar_logger_level_t level, void *ctx) {
+    auto *logLevel = static_cast<pulsar_logger_level_t *>(ctx);
+    return level >= *logLevel;
+  };
+  logger.log = &LogMessage;
+  pulsar_client_configuration_set_logger_t(cClientConfig.get(), logger);
 
   // log config option should be deprecated in favour of static setLogHandler method
   if (clientConfig.Has(CFG_LOG) && clientConfig.Get(CFG_LOG).IsFunction()) {

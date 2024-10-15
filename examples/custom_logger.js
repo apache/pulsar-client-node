@@ -24,10 +24,10 @@ const Pulsar = require('..');
     const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
         operationTimeoutSeconds: 30,
-    });
-
-    Pulsar.Client.setLogHandler((level, file, line, message) => {
-        console.log('[%s][%s:%d] %s', Pulsar.LogLevel.toString(level), file, line, message);
+        log: (level, file, line, message) => {
+            console.log('[%s][%s:%d] %s', Pulsar.LogLevel.toString(level), file, line, message);
+        },
+        logLevel: Pulsar.LogLevel.DEBUG,
     });
 
     // Create a producer
