@@ -20,9 +20,7 @@
 const Pulsar = require('../');
 
 (async () => {
-  const auth = new Pulsar.AuthenticationToken({token: async () => {
-    return "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY"
-  }});
+  const auth = new Pulsar.AuthenticationToken({token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY"});
 
   // Create a client
   const client = new Pulsar.Client({

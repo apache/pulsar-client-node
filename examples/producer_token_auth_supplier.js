@@ -17,12 +17,15 @@
  * under the License.
  */
 
-const { exit } = require('process');
-const Pulsar = require('../');
-console.log("Starting consumer");
-(async () => {
+const Pulsar = require('..');
 
-  const auth = new Pulsar.AuthenticationToken({token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY"});
+async function getToken() {
+  console.log("Get token");
+  return "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY";
+}
+
+(async () => {
+  const auth = new Pulsar.AuthenticationToken({token: getToken});
 
   // Create a client
   const client = new Pulsar.Client({
@@ -30,21 +33,21 @@ console.log("Starting consumer");
     authentication: auth,
   });
 
-  // Create a consumer
-  const consumer = await client.subscribe({
+  // Create a producer
+  const producer = await client.createProducer({
     topic: 'persistent://public/default/my-topic',
-    subscription: 'sub1',
-    subscriptionType: 'Shared',
-    ackTimeoutMs: 10000,
   });
 
-  // Receive messages
+  // Send messages
   for (let i = 0; i < 10; i += 1) {
-    const msg = await consumer.receive();
-    console.log(msg.getData().toString());
-    consumer.acknowledge(msg);
+    const msg = `my-message-${i}`;
+    producer.send({
+      data: Buffer.from(msg),
+    });
+    console.log(`Sent message: ${msg}`);
   }
+  await producer.flush();
 
-  await consumer.close();
+  await producer.close();
   await client.close();
 })();

@@ -18,11 +18,17 @@
  */
 
 const { exit } = require('process');
-const Pulsar = require('../');
+const Pulsar = require('..');
 console.log("Starting consumer");
+
+async function getToken() {
+  console.log("Get token");
+  return "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY";
+}
+
 (async () => {
 
-  const auth = new Pulsar.AuthenticationToken({token: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY"});
+  const auth = new Pulsar.AuthenticationToken({token: getToken});
 
   // Create a client
   const client = new Pulsar.Client({

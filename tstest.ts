@@ -66,17 +66,7 @@ import Pulsar = require('./index');
     scope: "scope"
   });
 
-  const authToken1: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
-    token: 'foobar',
-  });
-
-  const authToken2: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
-    token: () => {
-      return 'foobar';
-    },
-  });
-
-  const authToken3: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
+  const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
     token: async () => {
       return 'foobar';
     },
@@ -89,7 +79,7 @@ import Pulsar = require('./index');
 
   const client: Pulsar.Client = new Pulsar.Client({
     serviceUrl: 'pulsar://localhost:6650',
-    authentication: authToken1,
+    authentication: authToken,
     operationTimeoutSeconds: 30,
     ioThreads: 4,
     messageListenerThreads: 4,
