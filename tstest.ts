@@ -67,7 +67,9 @@ import Pulsar = require('./index');
   });
 
   const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
-    token: 'foobar',
+    token: async () => {
+      return 'foobar';
+    },
   });
 
   const authBasic: Pulsar.AuthenticationBasic = new Pulsar.AuthenticationBasic({

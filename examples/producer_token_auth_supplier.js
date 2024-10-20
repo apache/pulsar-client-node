@@ -17,25 +17,37 @@
  * under the License.
  */
 
-#ifndef AUTH_H
-#define AUTH_H
+const Pulsar = require('..');
 
-#include <napi.h>
-#include <pulsar/c/authentication.h>
-#include "TokenSupplier.h"
+async function getToken() {
+  console.log("Get token");
+  return "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJKb2UifQ.ipevRNuRP6HflG8cFKnmUPtypruRC4fb1DWtoLL62SY";
+}
 
-class Authentication : public Napi::ObjectWrap<Authentication> {
- public:
-  static Napi::Object Init(Napi::Env env, Napi::Object exports);
-  Authentication(const Napi::CallbackInfo &info);
-  ~Authentication();
-  pulsar_authentication_t *GetCAuthentication();
+(async () => {
+  const auth = new Pulsar.AuthenticationToken({token: getToken});
 
- private:
-  static Napi::FunctionReference constructor;
-  pulsar_authentication_t *cAuthentication;
+  // Create a client
+  const client = new Pulsar.Client({
+    serviceUrl: 'pulsar://localhost:6650',
+    authentication: auth,
+  });
 
-  TokenSupplierCallback *tokenSupplier;
-};
+  // Create a producer
+  const producer = await client.createProducer({
+    topic: 'persistent://public/default/my-topic',
+  });
 
-#endif
+  // Send messages
+  for (let i = 0; i < 10; i += 1) {
+    const msg = `my-message-${i}`;
+    producer.send({
+      data: Buffer.from(msg),
+    });
+    console.log(`Sent message: ${msg}`);
+  }
+  await producer.flush();
+
+  await producer.close();
+  await client.close();
+})();

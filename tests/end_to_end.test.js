@@ -1284,5 +1284,49 @@ const Pulsar = require('../index');
       await consumer.close();
       await client.close();
     });
+
+    test('AuthenticationToken token supplier', async () => {
+      const mockTokenSupplier = jest.fn().mockReturnValue('token');
+      const auth = new Pulsar.AuthenticationToken({
+        token: mockTokenSupplier,
+      });
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        authentication: auth,
+      });
+
+      // A producer/consumer is needed to triger the callback function
+      const topic = 'persistent://public/default/token-auth';
+      const producer = await client.createProducer({
+        topic,
+      });
+      expect(producer).not.toBeNull();
+      expect(mockTokenSupplier).toHaveBeenCalledTimes(1);
+
+      await producer.close();
+      await client.close();
+    });
+
+    test('AuthenticationToken async token supplier', async () => {
+      const mockTokenSupplier = jest.fn().mockResolvedValue('token');
+      const auth = new Pulsar.AuthenticationToken({
+        token: mockTokenSupplier,
+      });
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        authentication: auth,
+      });
+
+      // A producer/consumer is needed to triger the callback function
+      const topic = 'persistent://public/default/token-auth';
+      const producer = await client.createProducer({
+        topic,
+      });
+      expect(producer).not.toBeNull();
+      expect(mockTokenSupplier).toHaveBeenCalledTimes(1);
+
+      await producer.close();
+      await client.close();
+    });
   });
 })();

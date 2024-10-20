@@ -225,7 +225,7 @@ export class AthenzX509Config {
 }
 
 export class AuthenticationToken {
-  constructor(params: { token: string });
+  constructor(params: { token: string | (() => string) | (() => Promise<string>) });
 }
 
 export class AuthenticationOauth2 {
