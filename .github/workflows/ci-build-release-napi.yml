@@ -83,7 +83,7 @@ jobs:
           npx node-pre-gyp package --target_arch=${{ matrix.arch }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: macos-${{matrix.nodejs}}-${{matrix.arch}}
           path: build/stage/*/*.tar.gz
@@ -135,7 +135,7 @@ jobs:
               /pulsar-client-node/pkg/linux/build-napi-inside-docker.sh
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{matrix.image}}-${{matrix.nodejs}}-${{matrix.cpu.platform}}
           path: build/stage/*/*.tar.gz
@@ -205,7 +205,7 @@ jobs:
           npx node-pre-gyp package --target_arch=${{ env.TARGET }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: windows-${{matrix.nodejs}}-${{matrix.arch}}
           path: build/stage/*/*.tar.gz
