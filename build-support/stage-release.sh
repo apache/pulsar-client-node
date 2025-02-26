@@ -20,7 +20,7 @@
 
 set -e -x
 
-if [ $# -neq 2 ]; then
+if [ "$#" -ne 2 ]; then
     echo "Usage: $0 \$DEST_PATH \$WORKFLOW_ID"
     exit 1
 fi

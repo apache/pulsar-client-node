@@ -17,8 +17,12 @@
 # specific language governing permissions and limitations
 # under the License.
 #
-
-import sys, json, urllib.request, os, shutil, zipfile, tempfile
+import sys
+import requests
+import os
+import shutil
+import zipfile
+import tempfile
 from pathlib import Path
 
 if len(sys.argv) != 3:
@@ -39,36 +43,35 @@ workflow_run_id = int(sys.argv[1])
 dest_path = sys.argv[2]
 
 workflow_run_url = LIST_URL % workflow_run_id
-request = urllib.request.Request(workflow_run_url,
-                    headers={'Accept': ACCEPT_HEADER, 'Authorization': 'Bearer ' + GITHUB_TOKEN})
-with urllib.request.urlopen(request) as response:
-    data = json.loads(response.read().decode("utf-8"))
-    for artifact in data['artifacts']:
-        name = artifact['name']
-        url = artifact['archive_download_url']
+headers = {'Accept': ACCEPT_HEADER, 'Authorization': f'Bearer {GITHUB_TOKEN}'}
 
-        print('Downloading %s from %s' % (name, url))
-        artifact_request = urllib.request.Request(url,
-                    headers={'Authorization': 'Bearer ' + GITHUB_TOKEN})
-        with urllib.request.urlopen(artifact_request) as response:
-            tmp_zip = tempfile.NamedTemporaryFile(delete=False)
-            try:
-                #
-                shutil.copyfileobj(response, tmp_zip)
-                tmp_zip.close()
+response = requests.get(workflow_run_url, headers=headers)
+response.raise_for_status()
 
-                dest_dir = os.path.join(dest_path, name)
-                Path(dest_dir).mkdir(parents=True, exist_ok=True)
-                with zipfile.ZipFile(tmp_zip.name, 'r') as z:
-                    z.extractall(dest_dir)
-            finally:
-                os.unlink(tmp_zip.name)
+data = response.json()
+for artifact in data['artifacts']:
+    name = artifact['name']
+    url = artifact['archive_download_url']
 
-    for root, dirs, files in os.walk(dest_path, topdown=False):
-        for name in files:
-            shutil.move(os.path.join(root, name), dest_path)
-        if not os.listdir(root):
-            os.rmdir(root)
+    print(f'Downloading {name} from {url}')
+    artifact_response = requests.get(url, headers=headers, stream=True)
+    artifact_response.raise_for_status()
 
+    with tempfile.NamedTemporaryFile(delete=False) as tmp_zip:
+        for chunk in artifact_response.iter_content(chunk_size=8192):
+            tmp_zip.write(chunk)
+        tmp_zip_path = tmp_zip.name
 
+    try:
+        dest_dir = os.path.join(dest_path, name)
+        Path(dest_dir).mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(tmp_zip_path, 'r') as z:
+            z.extractall(dest_dir)
+    finally:
+        os.unlink(tmp_zip_path)
 
+for root, dirs, files in os.walk(dest_path, topdown=False):
+    for name in files:
+        shutil.move(os.path.join(root, name), dest_path)
+    if not os.listdir(root):
+        os.rmdir(root)
