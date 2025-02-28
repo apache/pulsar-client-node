@@ -109,7 +109,7 @@ void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessag
   std::shared_ptr<pulsar_message_t> cMessage(rawMessage, pulsar_message_free);
   MessageListenerCallback *listenerCallback = (MessageListenerCallback *)ctx;
 
-  Consumer *consumer = static_cast<Consumer*>(listenerCallback->consumerFuture.get());
+  Consumer *consumer = static_cast<Consumer *>(listenerCallback->consumerFuture.get());
 
   if (listenerCallback->callback.Acquire() != napi_ok) {
     return;
