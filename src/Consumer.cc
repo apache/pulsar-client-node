@@ -111,7 +111,7 @@ void MessageListener(pulsar_consumer_t *rawConsumer, pulsar_message_t *rawMessag
   std::shared_ptr<pulsar_message_t> cMessage(rawMessage, pulsar_message_free);
   MessageListenerCallback *listenerCallback = (MessageListenerCallback *)ctx;
 
-  Consumer *consumer = (Consumer *)listenerCallback->consumer;
+  Consumer *consumer = static_cast<Consumer*>(listenerCallback->consumerFuture.get());
 
   if (listenerCallback->callback.Acquire() != napi_ok) {
     return;
@@ -135,7 +135,7 @@ void Consumer::SetListenerCallback(MessageListenerCallback *listener) {
   }
 
   if (listener != nullptr) {
-    listener->consumer = this;
+    listener->consumerPromise.set_value(this);
     // If a consumer listener is set, the Consumer instance is kept alive even if it goes out of scope in JS
     // code.
     this->Ref();
@@ -168,22 +168,12 @@ struct ConsumerNewInstanceContext {
     auto cConsumer = std::shared_ptr<pulsar_consumer_t>(rawConsumer, pulsar_consumer_free);
     auto listener = consumerConfig->GetListenerCallback();
 
-    if (listener) {
-      // pause, will resume in OnOK, to prevent MessageListener get a nullptr of consumer
-      pulsar_consumer_pause_message_listener(cConsumer.get());
-    }
-
     deferred->Resolve([cConsumer, consumerConfig, listener](const Napi::Env env) {
       Napi::Object obj = Consumer::constructor.New({});
       Consumer *consumer = Consumer::Unwrap(obj);
 
       consumer->SetCConsumer(cConsumer);
       consumer->SetListenerCallback(listener);
-
-      if (listener) {
-        // resume to enable MessageListener function callback
-        resume_message_listener(cConsumer.get());
-      }
 
       return obj;
     });
