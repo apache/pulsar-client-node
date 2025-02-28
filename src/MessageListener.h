@@ -21,14 +21,16 @@
 #define MESSAGELISTENER_H
 
 #include <napi.h>
+#include <future>
 
 struct MessageListenerCallback {
   Napi::ThreadSafeFunction callback;
 
-  // Using consumer as void* since the ListenerCallback is shared between Config and Consumer.
-  void *consumer;
+  // Use future store consumer point, because need ensure sync.
+  std::promise<void *> consumerPromise;
+  std::shared_future<void *> consumerFuture;
 
-  MessageListenerCallback() : consumer(nullptr) {}
+  MessageListenerCallback() : consumerPromise(), consumerFuture(consumerPromise.get_future()) {}
 };
 
 #endif
