@@ -77,30 +77,28 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Consumer *consumer = data->consumer;
 
-  if (consumer) {
-    Napi::Value ret;
-    try {
-      ret = jsCallback.Call({msg, consumer->Value()});
-    } catch (std::exception &exception) {
-      logMessageListenerError(consumer, exception.what());
-    }
+  Napi::Value ret;
+  try {
+    ret = jsCallback.Call({msg, consumer->Value()});
+  } catch (std::exception &exception) {
+    logMessageListenerError(consumer, exception.what());
+  }
 
-    if (ret.IsPromise()) {
-      Napi::Promise promise = ret.As<Napi::Promise>();
-      Napi::Function catchFunc = promise.Get("catch").As<Napi::Function>();
+  if (ret.IsPromise()) {
+    Napi::Promise promise = ret.As<Napi::Promise>();
+    Napi::Function catchFunc = promise.Get("catch").As<Napi::Function>();
 
-      ret = catchFunc.Call(promise, {Napi::Function::New(env, [consumer](const Napi::CallbackInfo &info) {
-                             Napi::Error error = info[0].As<Napi::Error>();
-                             logMessageListenerError(consumer, error.what());
-                           })});
+    ret = catchFunc.Call(promise, {Napi::Function::New(env, [consumer](const Napi::CallbackInfo &info) {
+                           Napi::Error error = info[0].As<Napi::Error>();
+                           logMessageListenerError(consumer, error.what());
+                         })});
 
-      promise = ret.As<Napi::Promise>();
-      Napi::Function finallyFunc = promise.Get("finally").As<Napi::Function>();
+    promise = ret.As<Napi::Promise>();
+    Napi::Function finallyFunc = promise.Get("finally").As<Napi::Function>();
 
-      finallyFunc.Call(
-          promise, {Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); })});
-      return;
-    }
+    finallyFunc.Call(
+        promise, {Napi::Function::New(env, [data](const Napi::CallbackInfo &info) { data->callback(); })});
+    return;
   }
   data->callback();
 }
