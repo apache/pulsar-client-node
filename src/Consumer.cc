@@ -77,8 +77,6 @@ void MessageListenerProxy(Napi::Env env, Napi::Function jsCallback, MessageListe
   Napi::Object msg = Message::NewInstance({}, data->cMessage);
   Consumer *consumer = data->consumer;
 
-  // `consumer` might be null in certain cases, segmentation fault might happend without this null check. We
-  // need to handle this rare case in future.
   if (consumer) {
     Napi::Value ret;
     try {
