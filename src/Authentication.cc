@@ -97,7 +97,7 @@ Napi::Object Authentication::Init(Napi::Env env, Napi::Object exports) {
 }
 
 Authentication::Authentication(const Napi::CallbackInfo &info)
-    : Napi::ObjectWrap<Authentication>(info), cAuthentication(nullptr) {
+    : Napi::ObjectWrap<Authentication>(info), cAuthentication(nullptr), tokenSupplier(nullptr) {
   Napi::Env env = info.Env();
   Napi::HandleScope scope(env);
 
