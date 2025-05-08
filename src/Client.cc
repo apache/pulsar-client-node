@@ -139,7 +139,6 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     Napi::Object obj = clientConfig.Get(CFG_AUTH).ToObject();
     if (obj.Has(CFG_AUTH_PROP) && obj.Get(CFG_AUTH_PROP).IsObject()) {
       this->authRef_ = Napi::Persistent(obj.Get(CFG_AUTH_PROP).As<Napi::Object>());
-      this->authRef_.SuppressDestruct();
       Authentication *auth = Authentication::Unwrap(this->authRef_.Value());
       pulsar_client_configuration_set_auth(cClientConfig.get(), auth->GetCAuthentication());
     }
