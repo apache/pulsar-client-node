@@ -23,14 +23,14 @@ set -e -x
 ROOT_DIR=`cd $(dirname $0) && cd ../../ && pwd`
 source $ROOT_DIR/pulsar-client-cpp.txt
 
-if [ $USER != "root" ]; then
+if [ "$USER" != "root" -a "$USER" != "" ]; then
   SUDO="sudo"
 fi
 
 # Get the flavor of Linux
 export $(cat /etc/*-release | grep "^ID=")
 UNAME_ARCH=$(uname -m)
-if [ $UNAME_ARCH == 'aarch64' ]; then
+if [ "$UNAME_ARCH" == 'aarch64' ]; then
   PLATFORM=arm64
 else
   PLATFORM=x86_64
@@ -42,18 +42,18 @@ rm -rf $ROOT_DIR/pkg/linux/tmp
 mkdir $ROOT_DIR/pkg/linux/tmp
 cd $ROOT_DIR/pkg/linux/tmp
 
-if [ $ID == 'ubuntu' -o $ID == 'debian' ]; then
+if [ "$ID" == 'ubuntu' -o "$ID" == 'debian' ]; then
   curl -L -O ${CPP_CLIENT_BASE_URL}/deb-${PLATFORM}/apache-pulsar-client-dev.deb
   $SUDO ar x apache-pulsar-client-dev.deb
   $SUDO tar -xvf data.tar.xz
   cp -r usr/* $ROOT_DIR/pkg/linux/pulsar-cpp/
 
-elif [ $ID == 'alpine' ]; then
+elif [ "$ID" == 'alpine' ]; then
   curl -L -O ${CPP_CLIENT_BASE_URL}/apk-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
   $SUDO tar -xvf apache-pulsar-client-dev-${CPP_CLIENT_VERSION}-r0.apk
   cp -r usr/* $ROOT_DIR/pkg/linux/pulsar-cpp/
 
-elif [ $ID == '"centos"' -o $ID == '"rocky"' ]; then
+elif [ "$ID" == '"centos"' -o "$ID" == '"rocky"' ]; then
   curl -L -O ${CPP_CLIENT_BASE_URL}/rpm-${PLATFORM}/${UNAME_ARCH}/apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm
   $SUDO rpm -i --prefix=$ROOT_DIR/pkg/linux/pulsar-cpp apache-pulsar-client-devel-${CPP_CLIENT_VERSION}-1.${UNAME_ARCH}.rpm --nodeps --force
 
