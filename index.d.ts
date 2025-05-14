@@ -33,6 +33,7 @@ export interface ClientConfig {
   listenerName?: string;
   log?: (level: LogLevel, file: string, line: number, message: string) => void;
   logLevel?: LogLevel;
+  connectionTimeoutMs?: number;
 }
 
 export class Client {
