@@ -32,6 +32,7 @@ const Pulsar = require('../index');
         serviceUrl,
         tlsTrustCertsFilePath: `${__dirname}/certificate/server.crt`,
         operationTimeoutSeconds: 30,
+        connectionTimeoutMs: 20000,
         listenerName,
       });
 

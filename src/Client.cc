@@ -26,6 +26,7 @@
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
+#include "pulsar/ClientConfiguration.h"
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
 static const std::string CFG_AUTH = "authentication";
@@ -42,8 +43,13 @@ static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
 static const std::string CFG_LOG = "log";
 static const std::string CFG_LOG_LEVEL = "logLevel";
 static const std::string CFG_LISTENER_NAME = "listenerName";
+static const std::string CFG_CONNECTION_TIMEOUT = "connectionTimeoutMs";
 
 LogCallback *Client::logCallback = nullptr;
+
+struct _pulsar_client_configuration {
+  pulsar::ClientConfiguration conf;
+};
 
 void Client::SetLogHandler(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
@@ -154,6 +160,13 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     int32_t ioThreads = clientConfig.Get(CFG_IO_THREADS).ToNumber().Int32Value();
     if (ioThreads > 0) {
       pulsar_client_configuration_set_io_threads(cClientConfig.get(), ioThreads);
+    }
+  }
+
+  if (clientConfig.Has(CFG_CONNECTION_TIMEOUT) && clientConfig.Get(CFG_CONNECTION_TIMEOUT).IsNumber()) {
+    int32_t connectionTimeoutMs = clientConfig.Get(CFG_CONNECTION_TIMEOUT).ToNumber().Int32Value();
+    if (connectionTimeoutMs > 0) {
+      cClientConfig.get()->conf.setConnectionTimeout(connectionTimeoutMs);
     }
   }
 
