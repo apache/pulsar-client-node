@@ -72,7 +72,8 @@ ReaderConfig::ReaderConfig(const Napi::Object &readerConfig, pulsar_reader_liste
     std::string subscriptionRolePrefix =
         readerConfig.Get(CFG_SUBSCRIPTION_ROLE_PREFIX).ToString().Utf8Value();
     if (!subscriptionRolePrefix.empty())
-      pulsar_reader_configuration_set_reader_name(this->cReaderConfig.get(), subscriptionRolePrefix.c_str());
+      pulsar_reader_configuration_set_subscription_role_prefix(this->cReaderConfig.get(),
+                                                               subscriptionRolePrefix.c_str());
   }
 
   if (readerConfig.Has(CFG_READ_COMPACTED) && readerConfig.Get(CFG_READ_COMPACTED).IsBoolean()) {
