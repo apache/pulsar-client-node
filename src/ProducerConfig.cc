@@ -19,6 +19,7 @@
 #include "SchemaInfo.h"
 #include "ProducerConfig.h"
 #include <map>
+#include "pulsar/ProducerConfiguration.h"
 
 static const std::string CFG_TOPIC = "topic";
 static const std::string CFG_PRODUCER_NAME = "producerName";
@@ -40,6 +41,11 @@ static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 static const std::string CFG_CHUNK_ENABLED = "chunkingEnabled";
 static const std::string CFG_ACCESS_MODE = "accessMode";
+static const std::string CFG_BATCHING_TYPE = "batchingType";
+
+struct _pulsar_producer_configuration {
+  pulsar::ProducerConfiguration conf;
+};
 
 static const std::map<std::string, pulsar_partitions_routing_mode> MESSAGE_ROUTING_MODE = {
     {"UseSinglePartition", pulsar_UseSinglePartition},
@@ -69,6 +75,11 @@ static std::map<std::string, pulsar_producer_access_mode> PRODUCER_ACCESS_MODE =
     {"Exclusive", pulsar_ProducerAccessModeExclusive},
     {"WaitForExclusive", pulsar_ProducerAccessModeWaitForExclusive},
     {"ExclusiveWithFencing", pulsar_ProducerAccessModeExclusiveWithFencing},
+};
+
+static std::map<std::string, pulsar::ProducerConfiguration::BatchingType> PRODUCER_BATCHING_TYPE = {
+    {"DefaultBatching", pulsar::ProducerConfiguration::DefaultBatching},
+    {"KeyBasedBatching", pulsar::ProducerConfiguration::KeyBasedBatching},
 };
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
@@ -207,6 +218,11 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   if (PRODUCER_ACCESS_MODE.count(accessMode)) {
     pulsar_producer_configuration_set_access_mode(this->cProducerConfig.get(),
                                                   PRODUCER_ACCESS_MODE.at(accessMode));
+  }
+
+  std::string batchingType = producerConfig.Get(CFG_BATCHING_TYPE).ToString().Utf8Value();
+  if (PRODUCER_BATCHING_TYPE.count(batchingType)) {
+    this->cProducerConfig.get()->conf.setBatchingType(PRODUCER_BATCHING_TYPE.at(batchingType));
   }
 }
 
