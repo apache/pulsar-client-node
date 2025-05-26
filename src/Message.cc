@@ -45,7 +45,8 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getPublishTimestamp", &Message::GetPublishTimestamp),
        InstanceMethod("getEventTimestamp", &Message::GetEventTimestamp),
        InstanceMethod("getRedeliveryCount", &Message::GetRedeliveryCount),
-       InstanceMethod("getPartitionKey", &Message::GetPartitionKey)});
+       InstanceMethod("getPartitionKey", &Message::GetPartitionKey),
+       InstanceMethod("getOrderingKey", &Message::GetOrderingKey)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -136,6 +137,14 @@ Napi::Value Message::GetPartitionKey(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   return Napi::String::New(env, pulsar_message_get_partitionKey(this->cMessage.get()));
+}
+
+Napi::Value Message::GetOrderingKey(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+  return Napi::String::New(env, pulsar_message_get_orderingKey(this->cMessage.get()));
 }
 
 bool Message::ValidateCMessage(Napi::Env env) {
