@@ -67,6 +67,7 @@ export interface ProducerConfig {
   chunkingEnabled?: boolean;
   schema?: SchemaInfo;
   accessMode?: ProducerAccessMode;
+  batchingType?: ProducerBatchType;
 }
 
 export class Producer {
@@ -163,6 +164,7 @@ export class Message {
   getEventTimestamp(): number;
   getRedeliveryCount(): number;
   getPartitionKey(): string;
+  getOrderingKey(): string;
 }
 
 export class MessageId {
@@ -270,6 +272,10 @@ export type CompressionType =
   'LZ4' |
   'ZSTD' |
   'SNAPPY';
+
+export type ProducerBatchType =
+    'DefaultBatching' |
+    'KeyBasedBatching';
 
 export type ProducerCryptoFailureAction =
   'FAIL' |

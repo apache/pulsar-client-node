@@ -1330,4 +1330,124 @@ const Pulsar = require('../index');
       await client.close();
     });
   });
+  describe('KeyBasedBatchingTest', () => {
+    let client;
+    let producer;
+    let consumer;
+    let topicName;
+
+    beforeAll(async () => {
+      client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+      });
+    });
+
+    afterAll(async () => {
+      await client.close();
+    });
+
+    beforeEach(async () => {
+      topicName = `KeyBasedBatchingTest-${Date.now()}`;
+    });
+
+    afterEach(async () => {
+      if (producer) await producer.close();
+      if (consumer) await consumer.close();
+    });
+
+    const initProducer = async (maxMessages) => {
+      producer = await client.createProducer({
+        topic: topicName,
+        batchingEnabled: true,
+        batchingMaxMessages: maxMessages,
+        batchingType: 'KeyBasedBatching',
+        batchingMaxPublishDelayMs: 3600 * 1000,
+      });
+    };
+
+    const initConsumer = async () => {
+      consumer = await client.subscribe({
+        topic: topicName,
+        subscription: 'SubscriptionName',
+        subscriptionType: 'Exclusive',
+      });
+    };
+
+    const receiveAndAck = async () => {
+      const msg = await consumer.receive();
+      await consumer.acknowledge(msg);
+      return msg;
+    };
+
+    test('testSequenceId', async () => {
+      await initProducer(6);
+      await initConsumer();
+
+      // 0. Send 6 messages, use different keys and order
+      await Promise.all([
+        producer.send({ data: Buffer.from('0'), partitionKey: 'A' }),
+        producer.send({ data: Buffer.from('1'), partitionKey: 'B' }),
+        producer.send({ data: Buffer.from('2'), partitionKey: 'C' }),
+        producer.send({ data: Buffer.from('3'), partitionKey: 'B' }),
+        producer.send({ data: Buffer.from('4'), partitionKey: 'C' }),
+        producer.send({ data: Buffer.from('5'), partitionKey: 'A' }),
+      ]);
+
+      // 1. Wait for all message flushed
+      await producer.flush();
+
+      // 2. Receive all messages
+      const received = [];
+      for (let i = 0; i < 6; i += 1) {
+        const msg = await receiveAndAck();
+        received.push({
+          key: msg.getPartitionKey().toString(),
+          value: msg.getData().toString(),
+        });
+      }
+
+      // Verify message order (based on key dictionary order)
+      const expected = [
+        { key: 'B', value: '1' },
+        { key: 'B', value: '3' },
+        { key: 'C', value: '2' },
+        { key: 'C', value: '4' },
+        { key: 'A', value: '0' },
+        { key: 'A', value: '5' },
+      ];
+
+      expect(received).toEqual(expected);
+    });
+
+    test('testOrderingKeyPriority', async () => {
+      await initProducer(3);
+      await initConsumer();
+
+      // 1. Send 3 messages to verify orderingKey takes precedence over partitionKey
+      await Promise.all([
+        producer.send({
+          data: Buffer.from('0'),
+          orderingKey: 'A',
+          partitionKey: 'B',
+        }),
+        producer.send({ data: Buffer.from('2'), orderingKey: 'B' }),
+        producer.send({ data: Buffer.from('1'), orderingKey: 'A' }),
+      ]);
+      await producer.flush();
+
+      // 2. Receive messages and verify their order and keys
+      const msg1 = await receiveAndAck();
+      expect(msg1.getData().toString()).toBe('2');
+      expect(msg1.getOrderingKey().toString()).toBe('B');
+
+      const msg2 = await receiveAndAck();
+      expect(msg2.getData().toString()).toBe('0');
+      expect(msg2.getOrderingKey()).toBe('A');
+      expect(msg2.getPartitionKey()).toBe('B');
+
+      const msg3 = await receiveAndAck();
+      expect(msg3.getData().toString()).toBe('1');
+      expect(msg3.getOrderingKey().toString()).toBe('A');
+    });
+  });
 })();
