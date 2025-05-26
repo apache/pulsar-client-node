@@ -1384,19 +1384,15 @@ const Pulsar = require('../index');
       await initConsumer();
 
       // 0. Send 6 messages, use different keys and order
-      await Promise.all([
-        producer.send({ data: Buffer.from('0'), partitionKey: 'A' }),
-        producer.send({ data: Buffer.from('1'), partitionKey: 'B' }),
-        producer.send({ data: Buffer.from('2'), partitionKey: 'C' }),
-        producer.send({ data: Buffer.from('3'), partitionKey: 'B' }),
-        producer.send({ data: Buffer.from('4'), partitionKey: 'C' }),
-        producer.send({ data: Buffer.from('5'), partitionKey: 'A' }),
-      ]);
-
-      // 1. Wait for all message flushed
+      producer.send({ data: Buffer.from('0'), partitionKey: 'A' });
+      producer.send({ data: Buffer.from('1'), partitionKey: 'B' });
+      producer.send({ data: Buffer.from('2'), partitionKey: 'C' });
+      producer.send({ data: Buffer.from('3'), partitionKey: 'B' });
+      producer.send({ data: Buffer.from('4'), partitionKey: 'C' });
+      producer.send({ data: Buffer.from('5'), partitionKey: 'A' });
       await producer.flush();
 
-      // 2. Receive all messages
+      // 1. Receive all messages
       const received = [];
       for (let i = 0; i < 6; i += 1) {
         const msg = await receiveAndAck();
@@ -1406,7 +1402,7 @@ const Pulsar = require('../index');
         });
       }
 
-      // Verify message order (based on key dictionary order)
+      // 2. Verify message order (based on key dictionary order)
       const expected = [
         { key: 'B', value: '1' },
         { key: 'B', value: '3' },
@@ -1424,15 +1420,13 @@ const Pulsar = require('../index');
       await initConsumer();
 
       // 1. Send 3 messages to verify orderingKey takes precedence over partitionKey
-      await Promise.all([
-        producer.send({
-          data: Buffer.from('0'),
-          orderingKey: 'A',
-          partitionKey: 'B',
-        }),
-        producer.send({ data: Buffer.from('2'), orderingKey: 'B' }),
-        producer.send({ data: Buffer.from('1'), orderingKey: 'A' }),
-      ]);
+      producer.send({
+        data: Buffer.from('0'),
+        orderingKey: 'A',
+        partitionKey: 'B',
+      });
+      producer.send({ data: Buffer.from('2'), orderingKey: 'B' });
+      producer.send({ data: Buffer.from('1'), orderingKey: 'A' });
       await producer.flush();
 
       // 2. Receive messages and verify their order and keys
