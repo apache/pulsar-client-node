@@ -103,6 +103,7 @@ export interface ConsumerConfig {
   regexSubscriptionMode?: RegexSubscriptionMode;
   deadLetterPolicy?: DeadLetterPolicy;
   batchReceivePolicy?: ConsumerBatchReceivePolicy;
+  keySharedPolicy?: KeySharedPolicy;
 }
 
 export class Consumer {
@@ -192,6 +193,18 @@ export interface ConsumerBatchReceivePolicy {
   maxNumMessages?: number;
   maxNumBytes?: number;
   timeoutMs?: number;
+}
+
+export interface ConsumerKeyShareStickyRange {
+  start: number;
+  end: number;
+}
+export type ConsumerKeyShareStickyRanges = ConsumerKeyShareStickyRange[];
+
+export interface KeySharedPolicy {
+  keyShareMode?: ConsumerKeyShareMode;
+  allowOutOfOrderDelivery?: boolean;
+  stickyRanges?: ConsumerKeyShareStickyRanges;
 }
 
 export class AuthenticationTls {
@@ -295,6 +308,10 @@ export type ConsumerCryptoFailureAction =
   'FAIL' |
   'DISCARD' |
   'CONSUME';
+
+export type ConsumerKeyShareMode =
+    'AutoSplit' |
+    'Sticky';
 
 export type RegexSubscriptionMode =
   'PersistentOnly' |
