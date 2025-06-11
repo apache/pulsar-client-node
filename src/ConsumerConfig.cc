@@ -21,6 +21,7 @@
 #include "Consumer.h"
 #include "SchemaInfo.h"
 #include "Message.h"
+#include "pulsar/ConsumerConfiguration.h"
 #include <pulsar/c/consumer_configuration.h>
 #include <pulsar/c/consumer.h>
 #include <map>
@@ -55,6 +56,10 @@ static const std::string CFG_BATCH_RECEIVE_POLICY = "batchReceivePolicy";
 static const std::string CFG_BATCH_RECEIVE_POLICY_MAX_NUM_MESSAGES = "maxNumMessages";
 static const std::string CFG_BATCH_RECEIVE_POLICY_MAX_NUM_BYTES = "maxNumBytes";
 static const std::string CFG_BATCH_RECEIVE_POLICY_TIMEOUT_MS = "timeoutMs";
+static const std::string CFG_KEY_SHARED_POLICY = "keySharedPolicy";
+static const std::string CFG_KEY_SHARED_POLICY_MODE = "keyShareMode";
+static const std::string CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER = "allowOutOfOrderDelivery";
+static const std::string CFG_KEY_SHARED_POLICY_STICKY_RANGES = "stickyRanges";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -74,6 +79,15 @@ static const std::map<std::string, pulsar_consumer_crypto_failure_action> CONSUM
     {"FAIL", pulsar_ConsumerFail},
     {"DISCARD", pulsar_ConsumerDiscard},
     {"CONSUME", pulsar_ConsumerConsume},
+};
+
+static const std::map<std::string, pulsar::KeySharedMode> CONSUMER_KEY_SHARED_POLICY_MODE = {
+    {"AutoSplit", pulsar::KeySharedMode::AUTO_SPLIT},
+    {"Sticky", pulsar::KeySharedMode::STICKY},
+};
+
+struct _pulsar_consumer_configuration {
+  pulsar::ConsumerConfiguration consumerConfiguration;
 };
 
 void FinalizeListenerCallback(Napi::Env env, MessageListenerCallback *cb, void *) { delete cb; }
@@ -323,6 +337,58 @@ void ConsumerConfig::InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred,
       deferred->Reject(msg);
       return;
     }
+  }
+
+  if (consumerConfig.Has(CFG_KEY_SHARED_POLICY) && consumerConfig.Get(CFG_KEY_SHARED_POLICY).IsObject()) {
+    Napi::Object propObj = consumerConfig.Get(CFG_KEY_SHARED_POLICY).ToObject();
+    pulsar::KeySharedPolicy cppKeySharedPolicy;
+
+    if (propObj.Has(CFG_KEY_SHARED_POLICY_MODE) && propObj.Get(CFG_KEY_SHARED_POLICY_MODE).IsString()) {
+      std::string keyShareModeStr = propObj.Get(CFG_KEY_SHARED_POLICY_MODE).ToString().Utf8Value();
+      if (CONSUMER_KEY_SHARED_POLICY_MODE.count(keyShareModeStr)) {
+        cppKeySharedPolicy.setKeySharedMode(CONSUMER_KEY_SHARED_POLICY_MODE.at(keyShareModeStr));
+      }
+    }
+
+    if (propObj.Has(CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER) &&
+        propObj.Get(CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER).IsBoolean()) {
+      bool allowOutOfOrderDelivery = propObj.Get(CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER).ToBoolean();
+      cppKeySharedPolicy.setAllowOutOfOrderDelivery(allowOutOfOrderDelivery);
+    }
+
+    if (propObj.Has(CFG_KEY_SHARED_POLICY_STICKY_RANGES) &&
+        propObj.Get(CFG_KEY_SHARED_POLICY_STICKY_RANGES).IsArray()) {
+      Napi::Array rangesArray = propObj.Get(CFG_KEY_SHARED_POLICY_STICKY_RANGES).As<Napi::Array>();
+      pulsar::StickyRanges stickyRanges;
+      for (uint32_t i = 0; i < rangesArray.Length(); i++) {
+        if (rangesArray.Get(i).IsObject()) {
+          Napi::Object rangeObj = rangesArray.Get(i).ToObject();
+          if (rangeObj.Has("start") && rangeObj.Has("end") && rangeObj.Get("start").IsNumber() &&
+              rangeObj.Get("end").IsNumber()) {
+            int start = rangeObj.Get("start").ToNumber().Int32Value();
+            int end = rangeObj.Get("end").ToNumber().Int32Value();
+            if (start > end) {
+              std::string error = "Invalid sticky range at index " + std::to_string(i) + ": start (" +
+                                  std::to_string(start) + ") > end (" + std::to_string(end) + ")";
+              deferred->Reject(error);
+              return;
+            }
+            stickyRanges.emplace_back(start, end);
+          } else {
+            std::string error = "Invalid sticky range format at index " + std::to_string(i) +
+                                ": missing 'start'/'end' or invalid type, should be number type";
+            deferred->Reject(error);
+            return;
+          }
+        } else {
+          std::string error = "Sticky range element at index " + std::to_string(i) + " is not an object";
+          deferred->Reject(error);
+          return;
+        }
+      }
+      cppKeySharedPolicy.setStickyRanges(stickyRanges);
+    }
+    this->cConsumerConfig.get()->consumerConfiguration.setKeySharedPolicy(cppKeySharedPolicy);
   }
 }
 

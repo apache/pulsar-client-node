@@ -429,6 +429,97 @@ const Pulsar = require('../index');
         await producer.close();
         await consumer.close();
       });
+      test('testStickyConsumer', async () => {
+        const topicName = `KeySharedPolicyTest-sticky-consumer-${Date.now()}`;
+        const subName = 'SubscriptionName';
+        const numMessages = 1000;
+        const numConsumers = 3;
+
+        // Create producer with round-robin routing
+        const producer = await client.createProducer({
+          topic: topicName,
+          batchingEnabled: false,
+          messageRoutingMode: 'RoundRobinDistribution',
+        });
+
+        // Create 3 consumers with different hash ranges
+        const consumers = [];
+        const stickyRanges = [
+          { start: 0, end: 1000 }, // let consumer 1 handle small range
+          { start: 1001, end: 30000 },
+          { start: 30001, end: 65535 },
+        ];
+        let i = 0;
+        while (i < numConsumers) {
+          const consumer = await client.subscribe({
+            topic: topicName,
+            subscription: subName,
+            subscriptionType: 'KeyShared',
+            keySharedPolicy: {
+              keyShareMode: 'Sticky',
+              stickyRanges: [stickyRanges[i]],
+            },
+          });
+          consumers.push(consumer);
+          i += 1;
+        }
+
+        // Send messages with random keys
+        const keys = Array.from({ length: 300 }, (_, index) => index.toString());
+        let msgIndex = 0;
+        while (msgIndex < numMessages) {
+          const key = keys[Math.floor(Math.random() * keys.length)];
+          await producer.send({
+            data: Buffer.from(msgIndex.toString()),
+            partitionKey: key,
+          });
+          msgIndex += 1;
+        }
+
+        const assertKeyConsumerIndex = (keyToConsumer, key, expectedIndex) => {
+          const actualIndex = keyToConsumer.get(key);
+          expect(actualIndex).toBe(expectedIndex, `Key ${key} assigned to different consumer`);
+        };
+
+        // Verify message distribution
+        const messagesPerConsumer = Array(numConsumers).fill(0);
+        const keyToConsumer = new Map();
+        let messagesReceived = 0;
+        // eslint-disable-next-line no-restricted-syntax
+        for (const [index, consumer] of consumers.entries()) {
+          let msg;
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            try {
+              msg = await consumer.receive(2000);
+            } catch (err) {
+              if (err.message.includes('TimeOut')) {
+                break;
+              } else {
+                console.error('Receive error:', err);
+              }
+            }
+            const key = msg.getPartitionKey() || msg.getOrderingKey();
+            messagesPerConsumer[index] += 1;
+            messagesReceived += 1;
+            if (keyToConsumer.has(key)) {
+              assertKeyConsumerIndex(keyToConsumer, key, index);
+            } else {
+              keyToConsumer.set(key, index);
+            }
+            await consumer.acknowledge(msg);
+          }
+        }
+        expect(messagesReceived).toBe(numMessages);
+
+        // Verify even distribution across consumers
+        console.log('Messages per consumer:', messagesPerConsumer);
+        // Consumer 0 are expected to receive a message count < 100
+        expect(messagesPerConsumer[0]).toBeLessThan(100);
+        // Consumer 1 and 2 are expected to receive a message count > 400
+        expect(messagesPerConsumer[1]).toBeGreaterThan(400);
+        expect(messagesPerConsumer[2]).toBeGreaterThan(400);
+      }, 20000);
     });
   });
 })();
