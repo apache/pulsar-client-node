@@ -37,10 +37,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Use Python ${{ matrix.python }}
         uses: actions/setup-python@v3
@@ -61,10 +61,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          Use Node.js 22
 
       - name: Use yarn install
         run: |
@@ -82,7 +82,7 @@ jobs:
           - x64
           - arm64
         nodejs:
-          - 18
+          - 22
         python:
           - "3.10"
         include:
@@ -136,7 +136,7 @@ jobs:
           - 'linux_glibc'
           - 'linux_musl'
         nodejs:
-          - 18
+          - 22
         cpu:
           - {arch: 'x86_64', platform: 'x86_64'}
           - {arch: 'aarch64', platform: 'arm64'}
@@ -173,14 +173,19 @@ jobs:
       - name: Test NAPI file in linux_glibc containers
         if: matrix.image == 'linux_glibc'
         run: |
-          ./tests/load-test.sh node:16-buster ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:16-bullseye ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:22-buster ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:22-bullseye ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:19-buster ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:19-bullseye ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:18-buster ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:18-bullseye ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:16-buster ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:16-bullseye ${{matrix.cpu.platform}}
 
       - name: Test NAPI file in linux_musl containers
         if: matrix.image == 'linux_musl'
         run: |
+          ./tests/load-test.sh node:22-alpine3.15 ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:18-alpine3.15 ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:16-alpine3.15 ${{matrix.cpu.platform}}
 
@@ -196,7 +201,7 @@ jobs:
           - x64
           - x86
         nodejs:
-          - 18
+          - 22
         python:
           - "3.10"
     steps:
@@ -260,10 +265,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           cache: 'npm'
       - name: Use Python ${{ matrix.python }}
         uses: actions/setup-python@v3
@@ -298,10 +303,10 @@ jobs:
           
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           cache: 'npm'
 
       - name: Use Python ${{ matrix.python }}
