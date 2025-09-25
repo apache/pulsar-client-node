@@ -82,6 +82,24 @@ static std::map<std::string, pulsar::ProducerConfiguration::BatchingType> PRODUC
     {"KeyBasedBatching", pulsar::ProducerConfiguration::KeyBasedBatching},
 };
 
+// Define a special key that the JS layer will use to pass the partition index.
+static const std::string PARTITION_PROP_KEY = "__partition__";
+
+static int internalCppMessageRouter(pulsar_message_t *msg, pulsar_topic_metadata_t *topicMetadata,
+                                    void *ctx) {
+  int numPartitions = pulsar_topic_metadata_get_num_partitions(topicMetadata);
+  if (pulsar_message_has_property(msg, PARTITION_PROP_KEY.c_str())) {
+    const char *partitionStr = pulsar_message_get_property(msg, PARTITION_PROP_KEY.c_str());
+    try {
+      return std::stoi(partitionStr);
+    } catch (...) {
+      return numPartitions;
+    }
+  }
+  // return numPartitions to make cpp client failed callback
+  return numPartitions;
+}
+
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   this->cProducerConfig = std::shared_ptr<pulsar_producer_configuration_t>(
       pulsar_producer_configuration_create(), pulsar_producer_configuration_free);
@@ -133,9 +151,14 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
 
   if (producerConfig.Has(CFG_ROUTING_MODE) && producerConfig.Get(CFG_ROUTING_MODE).IsString()) {
     std::string messageRoutingMode = producerConfig.Get(CFG_ROUTING_MODE).ToString().Utf8Value();
-    if (MESSAGE_ROUTING_MODE.count(messageRoutingMode))
+    if (MESSAGE_ROUTING_MODE.count(messageRoutingMode)) {
       pulsar_producer_configuration_set_partitions_routing_mode(this->cProducerConfig.get(),
                                                                 MESSAGE_ROUTING_MODE.at(messageRoutingMode));
+    }
+    if (messageRoutingMode == "CustomPartition") {
+      pulsar_producer_configuration_set_message_router(this->cProducerConfig.get(), internalCppMessageRouter,
+                                                       nullptr);
+    }
   }
 
   if (producerConfig.Has(CFG_HASH_SCHEME) && producerConfig.Get(CFG_HASH_SCHEME).IsString()) {

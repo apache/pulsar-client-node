@@ -18,6 +18,9 @@
  */
 
 const Pulsar = require('../index');
+const httpRequest = require('./http_utils');
+
+const adminUrl = 'http://localhost:8080';
 
 (() => {
   describe('Producer', () => {
@@ -155,6 +158,100 @@ const Pulsar = require('../index');
         ).rejects.toThrow('Failed to send message: ResultProducerFenced');
         await producer2.close();
       });
+    });
+    describe('Message Routing', () => {
+      test('Custom Message Router', async () => {
+        // 1. Define a partitioned topic and a custom router
+        const targetPartition = 1;
+        const partitionedTopicName = `test-custom-router-${Date.now()}`;
+        const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
+        const numPartitions = 10;
+
+        // Use admin client to create a partitioned topic. This is more robust.
+        // Assuming 'adminUrl' and 'httpRequest' are available from your test setup.
+        const partitionedTopicAdminURL = `${adminUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
+        const createPartitionedTopicRes = await httpRequest(
+          partitionedTopicAdminURL, {
+            headers: {
+              'Content-Type': 'application/json', // Use application/json for REST API
+            },
+            data: numPartitions,
+            method: 'PUT',
+          },
+        );
+        // 204 No Content is success for PUT create
+        expect(createPartitionedTopicRes.statusCode).toBe(204);
+
+        // 2. Create a producer with the custom message router
+        const producer = await client.createProducer({
+          topic: partitionedTopic, // Note: For producer, use the base topic name
+          messageRouter: (message, topicMetadata) =>
+            // Always route to the target partition for this test
+            targetPartition,
+          messageRoutingMode: 'CustomPartition',
+        });
+
+        // 3. Create a single consumer for the entire partitioned topic
+        const consumer = await client.subscribe({
+          topic: partitionedTopic,
+          subscription: 'test-sub',
+          subscriptionInitialPosition: 'Earliest',
+        });
+
+        // 4. Send 1000 messages in parallel for efficiency
+        console.log(`Sending messages to partitioned topic ${partitionedTopic}...`);
+        const numMessages = 1000;
+        for (let i = 0; i < numMessages; i += 1) {
+          const msg = `message-${i}`;
+          producer.send({
+            data: Buffer.from(msg),
+          });
+        }
+        await producer.flush();
+        console.log(`Sent ${numMessages} messages.`);
+
+        // 5. Receive messages and assert they all come from the target partition
+        const receivedMessages = new Set();
+        const expectedPartitionName = `${partitionedTopic}-partition-${targetPartition}`;
+
+        for (let i = 0; i < numMessages; i += 1) {
+          const msg = await consumer.receive(10000);
+          // eslint-disable-next-line no-underscore-dangle
+          expect(msg.getProperties().__partition__).toBe(String(targetPartition));
+          expect(msg.getTopicName()).toBe(expectedPartitionName);
+          receivedMessages.add(msg.getData().toString());
+          await consumer.acknowledge(msg);
+        }
+        // Final assertion to ensure all unique messages were received
+        expect(receivedMessages.size).toBe(numMessages);
+        console.log(`Successfully received and verified ${receivedMessages.size} messages from ${expectedPartitionName}.`);
+        await producer.close();
+        await consumer.close();
+        await client.close();
+      }, 30000);
+
+      test('Custom Message Router Exception', async () => {
+        // 1. Define a partitioned topic and a custom router
+        const partitionedTopicName = `test-custom-router-${Date.now()}`;
+        const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
+
+        // 2. Create a producer with the custom message router
+        const producer = await client.createProducer({
+          topic: partitionedTopic, // Note: For producer, use the base topic name
+          messageRouter: (message, topicMetadata) => {
+            throw new Error('Custom router error');
+          },
+          messageRoutingMode: 'CustomPartition',
+        });
+
+        // 4. Send 1000 messages in parallel for efficiency
+        await expect(
+          producer.send({ data: Buffer.from('test') }),
+        ).rejects.toThrow('Custom router error');
+
+        await producer.close();
+        await client.close();
+      }, 30000);
     });
   });
 })();

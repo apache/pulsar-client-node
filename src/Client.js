@@ -20,6 +20,7 @@ const fs = require('fs');
 const tls = require('tls');
 const os = require('os');
 const PulsarBinding = require('./pulsar-binding');
+const Producer = require('./Producer');
 
 const certsFilePath = `${__dirname}/cert.pem`;
 
@@ -32,8 +33,9 @@ class Client {
     this.client = new PulsarBinding.Client(params);
   }
 
-  createProducer(params) {
-    return this.client.createProducer(params);
+  async createProducer(params) {
+    const addonProducer = await this.client.createProducer(params);
+    return new Producer(this, addonProducer, params);
   }
 
   subscribe(params) {
