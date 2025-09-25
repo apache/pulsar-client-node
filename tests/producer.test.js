@@ -185,9 +185,7 @@ const adminUrl = 'http://localhost:8080';
         // 2. Create a producer with the custom message router
         const producer = await client.createProducer({
           topic: partitionedTopic, // Note: For producer, use the base topic name
-          messageRouter: (message, topicMetadata) =>
-            // Always route to the target partition for this test
-            targetPartition,
+          messageRouter: (message, topicMetadata) => targetPartition,
           messageRoutingMode: 'CustomPartition',
         });
 
