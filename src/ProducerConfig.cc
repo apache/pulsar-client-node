@@ -100,7 +100,7 @@ static int internalCppMessageRouter(pulsar_message_t *msg, pulsar_topic_metadata
   return numPartitions;
 }
 
-ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
+ProducerConfig::ProducerConfig(const Napi::Object &producerConfig) : topic("") {
   this->cProducerConfig = std::shared_ptr<pulsar_producer_configuration_t>(
       pulsar_producer_configuration_create(), pulsar_producer_configuration_free);
 
@@ -197,7 +197,7 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   }
 
   if (producerConfig.Has(CFG_SCHEMA) && producerConfig.Get(CFG_SCHEMA).IsObject()) {
-    SchemaInfo* schemaInfo = new SchemaInfo(producerConfig.Get(CFG_SCHEMA).ToObject());
+    SchemaInfo *schemaInfo = new SchemaInfo(producerConfig.Get(CFG_SCHEMA).ToObject());
     schemaInfo->SetProducerSchema(this->cProducerConfig);
     delete schemaInfo;
   }
