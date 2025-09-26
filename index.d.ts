@@ -191,7 +191,7 @@ export interface MessageRouter {
    * @param topicMetadata Metadata for the topic.
    * @returns The partition index to send the message to.
    */
-  getPartition(message: ProducerMessage, topicMetadata: TopicMetadata): number;
+  getPartition(message: Message, topicMetadata: TopicMetadata): number;
 }
 
 export interface SchemaInfo {
