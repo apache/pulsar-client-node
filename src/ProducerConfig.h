@@ -22,6 +22,11 @@
 
 #include <napi.h>
 #include <pulsar/c/producer_configuration.h>
+#include <memory>
+
+struct MessageRouterContext {
+  Napi::FunctionReference messageRouter;
+};
 
 class ProducerConfig {
  public:
@@ -33,6 +38,8 @@ class ProducerConfig {
  private:
   std::shared_ptr<pulsar_producer_configuration_t> cProducerConfig;
   std::string topic;
+  std::unique_ptr<MessageRouterContext> routerContext;
+  Napi::FunctionReference messageRouter;
 };
 
 #endif

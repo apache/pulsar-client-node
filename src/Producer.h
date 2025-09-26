@@ -23,6 +23,8 @@
 #include <napi.h>
 #include <pulsar/c/client.h>
 #include <pulsar/c/producer.h>
+#include <memory>
+#include "ProducerConfig.h"
 
 class Producer : public Napi::ObjectWrap<Producer> {
  public:
@@ -35,6 +37,9 @@ class Producer : public Napi::ObjectWrap<Producer> {
 
  private:
   std::shared_ptr<pulsar_producer_t> cProducer;
+  // Extend the lifetime of the producer config since it's env and router function could be used when sending
+  // messages
+  std::shared_ptr<ProducerConfig> producerConfig;
   Napi::Value Send(const Napi::CallbackInfo &info);
   Napi::Value Flush(const Napi::CallbackInfo &info);
   Napi::Value Close(const Napi::CallbackInfo &info);

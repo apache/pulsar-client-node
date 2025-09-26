@@ -68,6 +68,7 @@ export interface ProducerConfig {
   schema?: SchemaInfo;
   accessMode?: ProducerAccessMode;
   batchingType?: ProducerBatchType;
+  messageRouter?: MessageRouter;
 }
 
 export class Producer {
@@ -174,6 +175,23 @@ export class MessageId {
   static deserialize(data: Buffer): MessageId;
   serialize(): Buffer;
   toString(): string;
+}
+
+export interface TopicMetadata {
+  numPartitions: number;
+}
+
+/**
+ * A custom message router interface that can be implemented by the user.
+ */
+export interface MessageRouter {
+  /**
+   * Choose a partition for the given message.
+   * @param message The message to be routed.
+   * @param topicMetadata Metadata for the topic.
+   * @returns The partition index to send the message to.
+   */
+  getPartition(message: ProducerMessage, topicMetadata: TopicMetadata): number;
 }
 
 export interface SchemaInfo {
