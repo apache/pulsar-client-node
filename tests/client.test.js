@@ -17,7 +17,7 @@
  * under the License.
  */
 
-const httpRequest = require('./http_utils');
+const httpUtils = require('./http_utils');
 const Pulsar = require('../index');
 
 const baseUrl = 'http://localhost:8080';
@@ -74,7 +74,7 @@ const baseUrl = 'http://localhost:8080';
         const nonPartitionedTopicName = 'test-non-partitioned-topic';
         const nonPartitionedTopic = `persistent://public/default/${nonPartitionedTopicName}`;
         const nonPartitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${nonPartitionedTopicName}`;
-        const createNonPartitionedTopicRes = await httpRequest(
+        const createNonPartitionedTopicRes = await httpUtils.request(
           nonPartitionedTopicAdminURL, {
             headers: {
               'Content-Type': 'application/json',
@@ -91,7 +91,7 @@ const baseUrl = 'http://localhost:8080';
         const partitionedTopicName = 'test-partitioned-topic-1';
         const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
         const partitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
-        const createPartitionedTopicRes = await httpRequest(
+        const createPartitionedTopicRes = await httpUtils.request(
           partitionedTopicAdminURL, {
             headers: {
               'Content-Type': 'text/plain',
@@ -110,9 +110,9 @@ const baseUrl = 'http://localhost:8080';
           'persistent://public/default/test-partitioned-topic-1-partition-3',
         ]);
 
-        const deleteNonPartitionedTopicRes = await httpRequest(nonPartitionedTopicAdminURL, { method: 'DELETE' });
+        const deleteNonPartitionedTopicRes = await httpUtils.request(nonPartitionedTopicAdminURL, { method: 'DELETE' });
         expect(deleteNonPartitionedTopicRes.statusCode).toBe(204);
-        const deletePartitionedTopicRes = await httpRequest(partitionedTopicAdminURL, { method: 'DELETE' });
+        const deletePartitionedTopicRes = await httpUtils.request(partitionedTopicAdminURL, { method: 'DELETE' });
         expect(deletePartitionedTopicRes.statusCode).toBe(204);
 
         await client.close();
