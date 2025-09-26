@@ -181,6 +181,17 @@ export interface TopicMetadata {
   numPartitions: number;
 }
 
+/**
+ * @callback MessageRouter
+ * @description When producing messages to a partitioned topic, this router is used to select the
+ * target partition for each message. The router only works when the `messageRoutingMode` is set to
+ * `CustomPartition`. Please note that `getTopicName()` cannot be called on the `message`, otherwise
+ * the behavior will be undefined because the topic is unknown before sending the message.
+ * @param message The message to be routed.
+ * @param topicMetadata Metadata for the partitioned topic the message is being routed to.
+ * @returns {number} The index of the target partition (must be a number between 0 and
+ * topicMetadata.numPartitions - 1).
+ */
 export type MessageRouter = (message: Message, topicMetadata: TopicMetadata) => number;
 
 export interface SchemaInfo {
