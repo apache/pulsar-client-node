@@ -185,9 +185,9 @@ export interface TopicMetadata {
  * A custom message router function that can be implemented by the user.
  * @param message The message to be routed.
  * @param topicMetadata Metadata for the topic.
- * @returns The partition index to send the message to, or a Promise that resolves to it.
+ * @returns The partition index to send the message to.
  */
-export type MessageRouter = (message: ProducerMessage, topicMetadata: TopicMetadata) => number | Promise<number>;
+export type MessageRouter = (message: ProducerMessage, topicMetadata: TopicMetadata) => number;
 
 export interface SchemaInfo {
   schemaType: SchemaType;
