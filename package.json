@@ -4,6 +4,9 @@
   "description": "Pulsar Node.js client",
   "main": "index.js",
   "types": "index.d.ts",
+  "resolutions": {
+    "minimatch": "^9.0.0"
+  },
   "directories": {
     "src": "src",
     "example": "examples"
