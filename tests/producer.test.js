@@ -18,6 +18,9 @@
  */
 
 const Pulsar = require('../index');
+const httpRequest = require('./http_utils');
+
+const adminUrl = 'http://localhost:8080';
 
 (() => {
   describe('Producer', () => {
@@ -155,6 +158,63 @@ const Pulsar = require('../index');
         ).rejects.toThrow('Failed to send message: ResultProducerFenced');
         await producer2.close();
       });
+    });
+    describe('Message Routing', () => {
+      test('Custom Message Router', async () => {
+        const topic = `test-custom-router-${Date.now()}`;
+        const numPartitions = 3;
+
+        // Create a partitioned topic via admin REST API
+        const partitionedTopicAdminURL = `${adminUrl}/admin/v2/persistent/public/default/${topic}/partitions`;
+        const response = await httpRequest(
+          partitionedTopicAdminURL, {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            data: numPartitions,
+            method: 'PUT',
+          },
+        );
+        expect(response.statusCode).toBe(204);
+
+        const producer = await client.createProducer({
+          topic: topic,
+          batchingMaxMessages: 2,
+          messageRouter: (message, topicMetadata) => {
+              console.log(`key: ${message.getPartitionKey()}, partitions: ${topicMetadata.numPartitions}`);
+              return parseInt(message.getPartitionKey()) % topicMetadata.numPartitions;
+          },
+          messageRoutingMode: 'CustomPartition',
+        });
+
+        const promises = [];
+        const numMessages = 5;
+        for (let i = 0; i < numMessages; i += 1) {
+            const sendPromise = producer.send({
+                partitionKey: `${i}`,
+                data: Buffer.from(`msg-${i}`),
+            }).then(msgId => {
+                // You can log the result here inside the .then()
+                console.log(`Message sent: ${msgId}`);
+                return msgId; // Pass the result along
+            });
+
+            await sendPromise;
+            promises.push(sendPromise);
+        }
+        try {
+            const allMsgIds = await Promise.all(promises);
+            console.log(`All messages have been sent. IDs: ${allMsgIds.join(', ')}`);
+            for (let i = 0; i < allMsgIds.length; i += 1) {
+                // The message id string is in the format of "entryId,ledgerId,partition,batchIndex"
+                const partition = Number(allMsgIds[i].toString().split(',')[2])
+                assert(partition === i % numPartitions);
+            }
+        } catch (error) {
+            console.error("One or more messages failed to send:", error);
+        }
+
+      }, 30000);
     });
   });
 })();
