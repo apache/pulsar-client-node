@@ -225,7 +225,6 @@ const adminUrl = 'http://localhost:8080';
         console.log(`Successfully received and verified ${receivedMessages.size} messages from ${expectedPartitionName}.`);
         await producer.close();
         await consumer.close();
-        await client.close();
       }, 30000);
 
       test('Custom Message Router Exception', async () => {
@@ -248,7 +247,6 @@ const adminUrl = 'http://localhost:8080';
         ).rejects.toThrow('Custom router error');
 
         await producer.close();
-        await client.close();
       }, 30000);
     });
   });
