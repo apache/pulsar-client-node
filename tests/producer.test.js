@@ -162,7 +162,6 @@ const adminUrl = 'http://localhost:8080';
     describe('Message Routing', () => {
       test('Custom Message Router', async () => {
         // 1. Define a partitioned topic and a custom router
-        const targetPartition = 1;
         const partitionedTopicName = `test-custom-router-${Date.now()}`;
         const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
         const numPartitions = 10;
@@ -182,10 +181,36 @@ const adminUrl = 'http://localhost:8080';
         // 204 No Content is success for PUT create
         expect(createPartitionedTopicRes.statusCode).toBe(204);
 
+        const routingKey = 'user-id-12345';
+        const simpleHash = (str) => {
+          let hash = 0;
+          /* eslint-disable no-bitwise */
+          for (let i = 0; i < str.length; i += 1) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash &= hash;
+          }
+          /* eslint-disable no-bitwise */
+          return Math.abs(hash);
+        };
+        const expectedPartition = simpleHash(routingKey) % numPartitions;
+        console.log(`Routing key '${routingKey}' will be sent to partition: ${expectedPartition}`);
+
         // 2. Create a producer with the custom message router
         const producer = await client.createProducer({
-          topic: partitionedTopic, // Note: For producer, use the base topic name
-          messageRouter: (message, topicMetadata) => targetPartition,
+          topic: partitionedTopic,
+          messageRouter: (message, topicMetadata) => {
+            // Get the routingKey from the message properties
+            const key = message.properties.routingKey;
+            if (key) {
+              // Use the metadata to get the number of partitions
+              const numPartitionsAvailable = topicMetadata.numPartitions;
+              // Calculate the target partition
+              return simpleHash(key) % numPartitionsAvailable;
+            }
+            // Fallback to a default partition if no key is provided
+            return 0;
+          },
           messageRoutingMode: 'CustomPartition',
         });
 
@@ -203,6 +228,9 @@ const adminUrl = 'http://localhost:8080';
           const msg = `message-${i}`;
           producer.send({
             data: Buffer.from(msg),
+            properties: {
+              routingKey,
+            },
           });
         }
         await producer.flush();
@@ -210,12 +238,12 @@ const adminUrl = 'http://localhost:8080';
 
         // 5. Receive messages and assert they all come from the target partition
         const receivedMessages = new Set();
-        const expectedPartitionName = `${partitionedTopic}-partition-${targetPartition}`;
+        const expectedPartitionName = `${partitionedTopic}-partition-${expectedPartition}`;
 
         for (let i = 0; i < numMessages; i += 1) {
           const msg = await consumer.receive(10000);
           // eslint-disable-next-line no-underscore-dangle
-          expect(msg.getProperties().__partition__).toBe(String(targetPartition));
+          expect(msg.getProperties().__partition__).toBe(String(expectedPartition));
           expect(msg.getTopicName()).toBe(expectedPartitionName);
           receivedMessages.add(msg.getData().toString());
           await consumer.acknowledge(msg);
@@ -235,7 +263,7 @@ const adminUrl = 'http://localhost:8080';
         // 2. Create a producer with the custom message router
         const producer = await client.createProducer({
           topic: partitionedTopic, // Note: For producer, use the base topic name
-          messageRouter: (message, topicMetadata) => {
+          messageRouter: () => {
             throw new Error('Custom router error');
           },
           messageRoutingMode: 'CustomPartition',
