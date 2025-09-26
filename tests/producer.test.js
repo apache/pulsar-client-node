@@ -18,7 +18,7 @@
  */
 
 const Pulsar = require('../index');
-const httpRequest = require('./http_utils');
+const httpUtils = require('./http_utils');
 
 (() => {
   describe('Producer', () => {
@@ -161,16 +161,14 @@ const httpRequest = require('./http_utils');
       test('Custom Message Router', async () => {
         const topic = `test-custom-router-${Date.now()}`;
         const numPartitions = 3;
-        const response = await httpRequest.createPartitionedTopic(topic, numPartitions);
+        const response = await httpUtils.createPartitionedTopic(topic, numPartitions);
         expect(response.statusCode).toBe(204);
 
         const producer = await client.createProducer({
           topic,
           batchingMaxMessages: 2,
-          messageRouter: (message, topicMetadata) => {
-            console.log(`key: ${message.getPartitionKey()}, partitions: ${topicMetadata.numPartitions}`);
-            return parseInt(message.getPartitionKey(), 10) % topicMetadata.numPartitions;
-          },
+          messageRouter: (message, topicMetadata) => parseInt(message.getPartitionKey(), 10)
+            % topicMetadata.numPartitions,
           messageRoutingMode: 'CustomPartition',
         });
 
@@ -195,6 +193,22 @@ const httpRequest = require('./http_utils');
         } catch (error) {
           console.error('One or more messages failed to send:', error);
         }
+      }, 30000);
+      test('Exception in router', async () => {
+        const topic = `test-exception-in-router-${Date.now()}`;
+        const numPartitions = 2;
+        const response = await httpUtils.createPartitionedTopic(topic, numPartitions);
+        expect(response.statusCode).toBe(204);
+        const producer = await client.createProducer({
+          topic,
+          messageRouter: (message, topicMetadata) => {
+            throw new Error('Custom error in message router');
+          },
+          messageRoutingMode: 'CustomPartition',
+        });
+        await expect(
+          producer.send({ data: Buffer.from('test') }),
+        ).rejects.toThrow('Failed to send message: UnknownError');
       }, 30000);
     });
   });

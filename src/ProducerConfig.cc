@@ -19,6 +19,7 @@
 #include "SchemaInfo.h"
 #include "ProducerConfig.h"
 #include "Message.h"
+#include <cstdio>
 #include <map>
 #include "napi-inl.h"
 #include "napi.h"
@@ -98,7 +99,13 @@ static int choosePartition(pulsar_message_t* msg, pulsar_topic_metadata_t* metad
   Napi::Object jsTopicMetadata = Napi::Object::New(env);
   jsTopicMetadata.Set("numPartitions", Napi::Number::New(env, numPartitions));
 
-  return router->Call({jsMessage, jsTopicMetadata}).ToNumber().Int32Value();
+  try {
+    return router->Call({jsMessage, jsTopicMetadata}).ToNumber().Int32Value();
+  } catch (const Napi::Error& e) {
+    // TODO: how to handle the error properly? For now, return an invalid partition to fail the send
+    fprintf(stderr, "Error when calling messageRouter: %s\n", e.what());
+    return numPartitions;
+  }
 }
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
