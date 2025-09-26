@@ -230,7 +230,7 @@ const adminUrl = 'http://localhost:8080';
 
       test('Custom Message Router Exception', async () => {
         // 1. Define a partitioned topic and a custom router
-        const partitionedTopicName = `test-custom-router-${Date.now()}`;
+        const partitionedTopicName = `test-custom-router-failed-${Date.now()}`;
         const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
 
         // 2. Create a producer with the custom message router
