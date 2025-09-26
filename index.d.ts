@@ -181,18 +181,7 @@ export interface TopicMetadata {
   numPartitions: number;
 }
 
-/**
- * A custom message router interface that can be implemented by the user.
- */
-export interface MessageRouter {
-  /**
-   * Choose a partition for the given message.
-   * @param message The message to be routed.
-   * @param topicMetadata Metadata for the topic.
-   * @returns The partition index to send the message to.
-   */
-  getPartition(message: Message, topicMetadata: TopicMetadata): number;
-}
+export type MessageRouter = (message: Message, topicMetadata: TopicMetadata) => number;
 
 export interface SchemaInfo {
   schemaType: SchemaType;
