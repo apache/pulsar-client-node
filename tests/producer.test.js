@@ -20,8 +20,6 @@
 const Pulsar = require('../index');
 const httpRequest = require('./http_utils');
 
-const adminUrl = 'http://localhost:8080';
-
 (() => {
   describe('Producer', () => {
     let client;
@@ -163,18 +161,7 @@ const adminUrl = 'http://localhost:8080';
       test('Custom Message Router', async () => {
         const topic = `test-custom-router-${Date.now()}`;
         const numPartitions = 3;
-
-        // Create a partitioned topic via admin REST API
-        const partitionedTopicAdminURL = `${adminUrl}/admin/v2/persistent/public/default/${topic}/partitions`;
-        const response = await httpRequest(
-          partitionedTopicAdminURL, {
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            data: numPartitions,
-            method: 'PUT',
-          },
-        );
+        const response = await httpRequest.createPartitionedTopic(topic, numPartitions);
         expect(response.statusCode).toBe(204);
 
         const producer = await client.createProducer({

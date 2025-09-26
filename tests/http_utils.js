@@ -42,4 +42,18 @@ const request = (url, { headers, data = {}, method }) => new Promise((resolve, r
   req.end();
 });
 
-module.exports = request;
+function createPartitionedTopic(topic, numPartitions) {
+  const url = `http://localhost:8080/admin/v2/persistent/public/default/${topic}/partitions`;
+  return request(url, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: numPartitions,
+    method: 'PUT',
+  });
+}
+
+module.exports = {
+  createPartitionedTopic,
+  request,
+};
