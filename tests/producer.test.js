@@ -20,6 +20,11 @@
 const Pulsar = require('../index');
 const httpUtils = require('./http_utils');
 
+function getPartition(msgId) {
+  // The message id string is in the format of "entryId,ledgerId,partition,batchIndex"
+  return Number(msgId.toString().split(',')[2]);
+}
+
 (() => {
   describe('Producer', () => {
     let client;
@@ -187,7 +192,7 @@ const httpUtils = require('./http_utils');
           console.log(`All messages have been sent. IDs: ${allMsgIds.join(', ')}`);
           for (let i = 0; i < allMsgIds.length; i += 1) {
             // The message id string is in the format of "entryId,ledgerId,partition,batchIndex"
-            const partition = Number(allMsgIds[i].toString().split(',')[2]);
+            const partition = getPartition(allMsgIds[i]);
             expect(i % numPartitions).toBe(partition);
           }
         } catch (error) {
@@ -209,6 +214,29 @@ const httpUtils = require('./http_utils');
         await expect(
           producer.send({ data: Buffer.from('test') }),
         ).rejects.toThrow('Failed to send message: UnknownError');
+      }, 30000);
+      test('Not CustomPartition', async () => {
+        const topic = `test-not-custom-part-${Date.now()}`;
+        const numPartitions = 2;
+        const response = await httpUtils.createPartitionedTopic(topic, numPartitions);
+        expect(response.statusCode).toBe(204);
+
+        let index = 0;
+        const producer = await client.createProducer({
+          topic,
+          messageRouter: (_, topicMetadata) => {
+            const result = index % topicMetadata.numPartitions;
+            index += 1;
+            return result;
+          },
+          messageRoutingMode: 'UseSinglePartition',
+        });
+        const partitions = new Set();
+        for (let i = 0; i < 10; i += 1) {
+          const msgId = await producer.send({ data: Buffer.from('msg') });
+          partitions.add(getPartition(msgId));
+        }
+        expect(partitions.size).toBe(1);
       }, 30000);
     });
   });

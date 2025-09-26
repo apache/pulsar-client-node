@@ -157,8 +157,10 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     pulsar_producer_configuration_set_block_if_queue_full(this->cProducerConfig.get(), blockIfQueueFull);
   }
 
+  bool useCustomPartition = false;
   if (producerConfig.Has(CFG_ROUTING_MODE) && producerConfig.Get(CFG_ROUTING_MODE).IsString()) {
     std::string messageRoutingMode = producerConfig.Get(CFG_ROUTING_MODE).ToString().Utf8Value();
+    useCustomPartition = (messageRoutingMode == "CustomPartition");
     if (MESSAGE_ROUTING_MODE.count(messageRoutingMode))
       pulsar_producer_configuration_set_partitions_routing_mode(this->cProducerConfig.get(),
                                                                 MESSAGE_ROUTING_MODE.at(messageRoutingMode));
@@ -251,15 +253,12 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     this->cProducerConfig.get()->conf.setBatchingType(PRODUCER_BATCHING_TYPE.at(batchingType));
   }
 
-  if (producerConfig.Has(CFG_MESSAGE_ROUTER)) {
+  if (useCustomPartition && producerConfig.Has(CFG_MESSAGE_ROUTER)) {
     auto value = producerConfig.Get(CFG_MESSAGE_ROUTER);
     if (value.IsFunction()) {
       messageRouter = Napi::Persistent(value.As<Napi::Function>());
       pulsar_producer_configuration_set_message_router(this->cProducerConfig.get(), choosePartition,
                                                        &messageRouter);
-    } else {
-      Napi::TypeError::New(producerConfig.Env(), "messageRouter should be a function")
-          .ThrowAsJavaScriptException();
     }
   }
 }
