@@ -178,11 +178,11 @@ const adminUrl = 'http://localhost:8080';
         expect(response.statusCode).toBe(204);
 
         const producer = await client.createProducer({
-          topic: topic,
+          topic,
           batchingMaxMessages: 2,
           messageRouter: (message, topicMetadata) => {
-              console.log(`key: ${message.getPartitionKey()}, partitions: ${topicMetadata.numPartitions}`);
-              return parseInt(message.getPartitionKey()) % topicMetadata.numPartitions;
+            console.log(`key: ${message.getPartitionKey()}, partitions: ${topicMetadata.numPartitions}`);
+            return parseInt(message.getPartitionKey(), 10) % topicMetadata.numPartitions;
           },
           messageRoutingMode: 'CustomPartition',
         });
@@ -190,30 +190,24 @@ const adminUrl = 'http://localhost:8080';
         const promises = [];
         const numMessages = 5;
         for (let i = 0; i < numMessages; i += 1) {
-            const sendPromise = producer.send({
-                partitionKey: `${i}`,
-                data: Buffer.from(`msg-${i}`),
-            }).then(msgId => {
-                // You can log the result here inside the .then()
-                console.log(`Message sent: ${msgId}`);
-                return msgId; // Pass the result along
-            });
-
-            await sendPromise;
-            promises.push(sendPromise);
+          const sendPromise = producer.send({
+            partitionKey: `${i}`,
+            data: Buffer.from(`msg-${i}`),
+          });
+          await sendPromise;
+          promises.push(sendPromise);
         }
         try {
-            const allMsgIds = await Promise.all(promises);
-            console.log(`All messages have been sent. IDs: ${allMsgIds.join(', ')}`);
-            for (let i = 0; i < allMsgIds.length; i += 1) {
-                // The message id string is in the format of "entryId,ledgerId,partition,batchIndex"
-                const partition = Number(allMsgIds[i].toString().split(',')[2])
-                assert(partition === i % numPartitions);
-            }
+          const allMsgIds = await Promise.all(promises);
+          console.log(`All messages have been sent. IDs: ${allMsgIds.join(', ')}`);
+          for (let i = 0; i < allMsgIds.length; i += 1) {
+            // The message id string is in the format of "entryId,ledgerId,partition,batchIndex"
+            const partition = Number(allMsgIds[i].toString().split(',')[2]);
+            expect(i % numPartitions).toBe(partition);
+          }
         } catch (error) {
-            console.error("One or more messages failed to send:", error);
+          console.error('One or more messages failed to send:', error);
         }
-
       }, 30000);
     });
   });
