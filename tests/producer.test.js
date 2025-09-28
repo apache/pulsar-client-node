@@ -239,5 +239,79 @@ function getPartition(msgId) {
         expect(partitions.size).toBe(1);
       }, 30000);
     });
+    describe('Batching', () => {
+      function getBatchIndex(msgId) {
+        const parts = msgId.toString().split(':');
+        if (parts.length > 3) {
+          return Number(parts[3]);
+        }
+        return -1;
+      }
+
+      test('should batch messages based on max allowed size in bytes', async () => {
+        const topicName = `persistent://public/default/test-batch-size-in-bytes-${Date.now()}`;
+        const subName = 'subscription-name';
+        const numOfMessages = 30;
+        const prefix = '12345678'; // 8 bytes message prefix
+
+        let producer;
+        let consumer;
+
+        try {
+          // 1. Setup Producer with batching enabled and size limit
+          producer = await client.createProducer({
+            topic: topicName,
+            compressionType: 'LZ4',
+            batchingEnabled: true,
+            batchingMaxMessages: 10000,
+            batchingMaxAllowedSizeInBytes: 20,
+          });
+
+          // 2. Setup Consumer
+          consumer = await client.subscribe({
+            topic: topicName,
+            subscription: subName,
+          });
+
+          // 3. Send messages asynchronously
+          const sendPromises = [];
+          for (let i = 0; i < numOfMessages; i += 1) {
+            const messageContent = prefix + i;
+            const msg = {
+              data: Buffer.from(messageContent),
+              properties: { msgIndex: String(i) },
+            };
+            sendPromises.push(producer.send(msg));
+          }
+          await producer.flush();
+          await Promise.all(sendPromises);
+
+          // 4. Receive messages and run assertions
+          let receivedCount = 0;
+          for (let i = 0; i < numOfMessages; i += 1) {
+            const receivedMsg = await consumer.receive(5000);
+            const expectedMessageContent = prefix + i;
+
+            // Assert that batchIndex is 0 or 1, since batch size should be 2
+            const batchIndex = getBatchIndex(receivedMsg.getMessageId());
+            expect(batchIndex).toBeLessThan(2);
+
+            // Assert message properties and content
+            expect(receivedMsg.getProperties().msgIndex).toBe(String(i));
+            expect(receivedMsg.getData().toString()).toBe(expectedMessageContent);
+
+            await consumer.acknowledge(receivedMsg);
+            receivedCount += 1;
+          }
+
+          // 5. Final check on the number of consumed messages
+          expect(receivedCount).toBe(numOfMessages);
+        } finally {
+          // 6. Cleanup
+          if (producer) await producer.close();
+          if (consumer) await consumer.close();
+        }
+      }, 30000);
+    });
   });
 })();

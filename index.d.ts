@@ -69,6 +69,7 @@ export interface ProducerConfig {
   accessMode?: ProducerAccessMode;
   batchingType?: ProducerBatchType;
   messageRouter?: MessageRouter;
+  batchingMaxAllowedSizeInBytes?: number;
 }
 
 export class Producer {
