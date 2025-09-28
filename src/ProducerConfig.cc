@@ -40,6 +40,7 @@ static const std::string CFG_COMPRESS_TYPE = "compressionType";
 static const std::string CFG_BATCH_ENABLED = "batchingEnabled";
 static const std::string CFG_BATCH_MAX_DELAY = "batchingMaxPublishDelayMs";
 static const std::string CFG_BATCH_MAX_MSG = "batchingMaxMessages";
+static const std::string CFG_BATCH_MAX_ALLOWED_SIZE_IN_BYTES = "batchingMaxAllowedSizeInBytes";
 static const std::string CFG_SCHEMA = "schema";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
@@ -198,6 +199,16 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     if (batchingMaxMessages > 0) {
       pulsar_producer_configuration_set_batching_max_messages(this->cProducerConfig.get(),
                                                               batchingMaxMessages);
+    }
+  }
+
+  if (producerConfig.Has(CFG_BATCH_MAX_ALLOWED_SIZE_IN_BYTES) &&
+      producerConfig.Get(CFG_BATCH_MAX_ALLOWED_SIZE_IN_BYTES).IsNumber()) {
+    int64_t batchingMaxAllowedSizeInBytes =
+        producerConfig.Get(CFG_BATCH_MAX_ALLOWED_SIZE_IN_BYTES).ToNumber().Int64Value();
+    if (batchingMaxAllowedSizeInBytes > 0) {
+      pulsar_producer_configuration_set_batching_max_allowed_size_in_bytes(
+          this->cProducerConfig.get(), (unsigned long)batchingMaxAllowedSizeInBytes);
     }
   }
 
