@@ -18,8 +18,14 @@
  */
 #include "SchemaInfo.h"
 #include "ProducerConfig.h"
+#include "Message.h"
+#include <cstdio>
 #include <map>
+#include "napi-inl.h"
+#include "napi.h"
 #include "pulsar/ProducerConfiguration.h"
+#include "pulsar/c/message.h"
+#include "pulsar/c/message_router.h"
 
 static const std::string CFG_TOPIC = "topic";
 static const std::string CFG_PRODUCER_NAME = "producerName";
@@ -42,6 +48,7 @@ static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 static const std::string CFG_CHUNK_ENABLED = "chunkingEnabled";
 static const std::string CFG_ACCESS_MODE = "accessMode";
 static const std::string CFG_BATCHING_TYPE = "batchingType";
+static const std::string CFG_MESSAGE_ROUTER = "messageRouter";
 
 struct _pulsar_producer_configuration {
   pulsar::ProducerConfiguration conf;
@@ -81,6 +88,25 @@ static std::map<std::string, pulsar::ProducerConfiguration::BatchingType> PRODUC
     {"DefaultBatching", pulsar::ProducerConfiguration::DefaultBatching},
     {"KeyBasedBatching", pulsar::ProducerConfiguration::KeyBasedBatching},
 };
+
+static int choosePartition(pulsar_message_t* msg, pulsar_topic_metadata_t* metadata, void* ctx) {
+  auto router = static_cast<Napi::FunctionReference*>(ctx);
+  const auto& env = router->Env();
+  auto jsMessage = Message::NewInstance(Napi::Object::New(env),
+                                        std::shared_ptr<pulsar_message_t>(msg, [](pulsar_message_t*) {}));
+  int numPartitions = pulsar_topic_metadata_get_num_partitions(metadata);
+
+  Napi::Object jsTopicMetadata = Napi::Object::New(env);
+  jsTopicMetadata.Set("numPartitions", Napi::Number::New(env, numPartitions));
+
+  try {
+    return router->Call({jsMessage, jsTopicMetadata}).ToNumber().Int32Value();
+  } catch (const Napi::Error& e) {
+    // TODO: how to handle the error properly? For now, return an invalid partition to fail the send
+    fprintf(stderr, "Error when calling messageRouter: %s\n", e.what());
+    return numPartitions;
+  }
+}
 
 ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   this->cProducerConfig = std::shared_ptr<pulsar_producer_configuration_t>(
@@ -131,8 +157,10 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
     pulsar_producer_configuration_set_block_if_queue_full(this->cProducerConfig.get(), blockIfQueueFull);
   }
 
+  bool useCustomPartition = false;
   if (producerConfig.Has(CFG_ROUTING_MODE) && producerConfig.Get(CFG_ROUTING_MODE).IsString()) {
     std::string messageRoutingMode = producerConfig.Get(CFG_ROUTING_MODE).ToString().Utf8Value();
+    useCustomPartition = (messageRoutingMode == "CustomPartition");
     if (MESSAGE_ROUTING_MODE.count(messageRoutingMode))
       pulsar_producer_configuration_set_partitions_routing_mode(this->cProducerConfig.get(),
                                                                 MESSAGE_ROUTING_MODE.at(messageRoutingMode));
@@ -223,6 +251,15 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   std::string batchingType = producerConfig.Get(CFG_BATCHING_TYPE).ToString().Utf8Value();
   if (PRODUCER_BATCHING_TYPE.count(batchingType)) {
     this->cProducerConfig.get()->conf.setBatchingType(PRODUCER_BATCHING_TYPE.at(batchingType));
+  }
+
+  if (useCustomPartition && producerConfig.Has(CFG_MESSAGE_ROUTER)) {
+    auto value = producerConfig.Get(CFG_MESSAGE_ROUTER);
+    if (value.IsFunction()) {
+      messageRouter = Napi::Persistent(value.As<Napi::Function>());
+      pulsar_producer_configuration_set_message_router(this->cProducerConfig.get(), choosePartition,
+                                                       &messageRouter);
+    }
   }
 }
 

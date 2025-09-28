@@ -19,7 +19,7 @@
 
 const lodash = require('lodash');
 const Pulsar = require('../index');
-const httpRequest = require('./http_utils');
+const httpUtils = require('./http_utils');
 
 const baseUrl = 'http://localhost:8080';
 
@@ -81,7 +81,7 @@ const baseUrl = 'http://localhost:8080';
       const partitionedTopicName = 'test-reader-partitioned-topic';
       const partitionedTopic = `persistent://public/default/${partitionedTopicName}`;
       const partitionedTopicAdminURL = `${baseUrl}/admin/v2/persistent/public/default/${partitionedTopicName}/partitions`;
-      const createPartitionedTopicRes = await httpRequest(
+      const createPartitionedTopicRes = await httpUtils.request(
         partitionedTopicAdminURL, {
           headers: {
             'Content-Type': 'text/plain',
