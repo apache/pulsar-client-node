@@ -261,6 +261,7 @@ function getPartition(msgId) {
           // 1. Setup Producer with batching enabled and size limit
           producer = await client.createProducer({
             topic: topicName,
+            messageRoutingMode: 'UseSinglePartition',
             compressionType: 'LZ4',
             batchingEnabled: true,
             batchingMaxMessages: 10000,
