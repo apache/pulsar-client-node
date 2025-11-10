@@ -181,10 +181,9 @@ jobs:
       - name: Test NAPI file in linux_musl containers
         if: matrix.image == 'linux_musl'
         run: |
-          ./tests/load-test.sh node:16-alpine3.15 ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:18-alpine3.15 ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:19-alpine3.15 ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:22-alpine3.22 ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:18-alpine ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:19-alpine ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:22-alpine ${{matrix.cpu.platform}}
 
   windows-napi:
     name: Build NAPI windows - Node ${{matrix.nodejs}} - ${{matrix.arch}}
