@@ -27,6 +27,8 @@ export interface ClientConfig {
   concurrentLookupRequest?: number;
   useTls?: boolean;
   tlsTrustCertsFilePath?: string;
+  tlsCertificateFilePath?: string;
+  tlsPrivateKeyFilePath?: string;
   tlsValidateHostname?: boolean;
   tlsAllowInsecureConnection?: boolean;
   statsIntervalInSeconds?: number;

@@ -39,6 +39,8 @@ static const std::string CFG_USE_TLS = "useTls";
 static const std::string CFG_TLS_TRUST_CERT = "tlsTrustCertsFilePath";
 static const std::string CFG_TLS_VALIDATE_HOSTNAME = "tlsValidateHostname";
 static const std::string CFG_TLS_ALLOW_INSECURE = "tlsAllowInsecureConnection";
+static const std::string CFG_TLS_CERT_FILE = "tlsCertificateFilePath";
+static const std::string CFG_TLS_PRIVATE_KEY_FILE = "tlsPrivateKeyFilePath";
 static const std::string CFG_STATS_INTERVAL = "statsIntervalInSeconds";
 static const std::string CFG_LOG = "log";
 static const std::string CFG_LOG_LEVEL = "logLevel";
@@ -194,6 +196,18 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     Napi::String tlsTrustCertsFilePath = clientConfig.Get(CFG_TLS_TRUST_CERT).ToString();
     pulsar_client_configuration_set_tls_trust_certs_file_path(cClientConfig.get(),
                                                               tlsTrustCertsFilePath.Utf8Value().c_str());
+  }
+
+  if (clientConfig.Has(CFG_TLS_CERT_FILE) && clientConfig.Get(CFG_TLS_CERT_FILE).IsString()) {
+    Napi::String tlsCertFilePath = clientConfig.Get(CFG_TLS_CERT_FILE).ToString();
+    pulsar_client_configuration_set_tls_certificate_file_path(cClientConfig.get(),
+                                                              tlsCertFilePath.Utf8Value().c_str());
+  }
+
+  if (clientConfig.Has(CFG_TLS_PRIVATE_KEY_FILE) && clientConfig.Get(CFG_TLS_PRIVATE_KEY_FILE).IsString()) {
+    Napi::String tlsPrivateKeyFilePath = clientConfig.Get(CFG_TLS_PRIVATE_KEY_FILE).ToString();
+    pulsar_client_configuration_set_tls_private_key_file_path(cClientConfig.get(),
+                                                              tlsPrivateKeyFilePath.Utf8Value().c_str());
   }
 
   if (clientConfig.Has(CFG_TLS_VALIDATE_HOSTNAME) &&
