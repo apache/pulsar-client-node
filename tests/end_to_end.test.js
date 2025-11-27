@@ -34,6 +34,10 @@ const Pulsar = require('../index');
         operationTimeoutSeconds: 30,
         connectionTimeoutMs: 20000,
         listenerName,
+        ...(serviceUrl.startsWith('pulsar+ssl://') || serviceUrl.startsWith('https://') ? {
+          tlsCertificateFilePath: `${__dirname}/certificate/server.crt`,
+          tlsPrivateKeyFilePath: `${__dirname}/certificate/server.key`,
+        } : {}),
       });
 
       const topic = 'persistent://public/default/produce-consume';
