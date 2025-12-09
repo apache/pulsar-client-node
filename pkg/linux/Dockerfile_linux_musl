@@ -19,7 +19,7 @@
 
 ARG NODE_VERSION
 
-FROM node:${NODE_VERSION}-alpine3.15
+FROM node:${NODE_VERSION}-alpine3.19
 
 RUN apk add \
       bash \
