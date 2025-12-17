@@ -288,11 +288,14 @@ export class AuthenticationBasic {
   });
 }
 
+export interface EncryptionKeyInfo {
+  key: Buffer;
+  metadata: { [key: string]: string };
+}
+
 export class CryptoKeyReader {
-  constructor(params: {
-    publicKeys: { [key: string]: string };
-    privateKeys: { [key: string]: string };
-  });
+  getPublicKey(keyName: string, metadata: { [key: string]: string }): EncryptionKeyInfo;
+  getPrivateKey(keyName: string, metadata: { [key: string]: string }): EncryptionKeyInfo;
 }
 
 export enum LogLevel {

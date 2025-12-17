@@ -18,7 +18,42 @@
  */
 
 const path = require('path');
+const fs = require('fs');
 const Pulsar = require('../index');
+
+class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
+  constructor(publicKeys, privateKeys) {
+    super();
+    this.publicKeys = publicKeys;
+    this.privateKeys = privateKeys;
+  }
+
+  getPublicKey(keyName, _metadata) {
+    const keyPath = this.publicKeys[keyName];
+    if (keyPath) {
+      try {
+        const key = fs.readFileSync(keyPath);
+        return { key, metadata: {} };
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+
+  getPrivateKey(keyName, _metadata) {
+    const keyPath = this.privateKeys[keyName];
+    if (keyPath) {
+      try {
+        const key = fs.readFileSync(keyPath);
+        return { key, metadata: {} };
+      } catch (e) {
+        return null;
+      }
+    }
+    return null;
+  }
+}
 
 (() => {
   describe('Encryption', () => {
@@ -40,14 +75,10 @@ const Pulsar = require('../index');
     test('End-to-End Encryption', async () => {
       const topic = `persistent://public/default/test-encryption-${Date.now()}`;
 
-      const cryptoKeyReader = new Pulsar.CryptoKeyReader({
-        publicKeys: {
-          'my-key': publicKeyPath,
-        },
-        privateKeys: {
-          'my-key': privateKeyPath,
-        },
-      });
+      const cryptoKeyReader = new MyCryptoKeyReader(
+        { 'my-key': publicKeyPath },
+        { 'my-key': privateKeyPath },
+      );
 
       const producer = await client.createProducer({
         topic,

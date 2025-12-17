@@ -22,6 +22,7 @@
 
 #include <napi.h>
 #include <pulsar/CryptoKeyReader.h>
+#include <thread>
 
 class CryptoKeyReader : public Napi::ObjectWrap<CryptoKeyReader> {
  public:
@@ -33,7 +34,6 @@ class CryptoKeyReader : public Napi::ObjectWrap<CryptoKeyReader> {
 
  private:
   static Napi::FunctionReference constructor;
-  std::shared_ptr<pulsar::CryptoKeyReader> cCryptoKeyReader;
 };
 
 #endif
