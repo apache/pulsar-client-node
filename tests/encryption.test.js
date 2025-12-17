@@ -107,5 +107,46 @@ class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
       await producer.close();
       await consumer.close();
     });
+
+    test('Decryption Failure', async () => {
+      const topic = `persistent://public/default/test-decryption-failure-${Date.now()}`;
+
+      const cryptoKeyReader = new MyCryptoKeyReader(
+        { 'my-key': publicKeyPath },
+        { 'my-key': privateKeyPath },
+      );
+
+      const producer = await client.createProducer({
+        topic,
+        encryptionKeys: ['my-key'],
+        cryptoKeyReader,
+        cryptoFailureAction: 'FAIL',
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub-decryption-failure',
+        cryptoFailureAction: 'CONSUME',
+        subscriptionInitialPosition: 'Earliest',
+      });
+
+      const msgContent = 'my-secret-message';
+      await producer.send({
+        data: Buffer.from(msgContent),
+      });
+
+      const msg = await consumer.receive();
+      expect(msg.getData().toString()).not.toBe(msgContent);
+
+      const encCtx = msg.getEncryptionContext();
+      expect(encCtx).not.toBeNull();
+      expect(encCtx.isDecryptionFailed).toBe(true);
+      expect(encCtx.keys).toBeDefined();
+      expect(encCtx.keys.length).toBeGreaterThan(0);
+
+      await consumer.acknowledge(msg);
+      await producer.close();
+      await consumer.close();
+    });
   });
 })();

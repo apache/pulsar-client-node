@@ -174,6 +174,7 @@ export class Message {
   getPartitionKey(): string;
   getOrderingKey(): string;
   getProducerName(): string;
+  getEncryptionContext(): EncryptionContext | null;
 }
 
 export class MessageId {
@@ -200,6 +201,22 @@ export interface TopicMetadata {
  * topicMetadata.numPartitions - 1).
  */
 export type MessageRouter = (message: Message, topicMetadata: TopicMetadata) => number;
+
+export interface EncryptionKey {
+  key: string;
+  value: string;
+  metadata: { [key: string]: string };
+}
+
+export interface EncryptionContext {
+  keys: EncryptionKey[];
+  param: string;
+  algorithm: string;
+  compressionType: CompressionType;
+  uncompressedMessageSize: number;
+  batchSize: number;
+  isDecryptionFailed: boolean;
+}
 
 export interface SchemaInfo {
   schemaType: SchemaType;

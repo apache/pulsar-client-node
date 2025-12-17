@@ -20,6 +20,14 @@
 #include "Message.h"
 #include "MessageId.h"
 #include <pulsar/c/message.h>
+#include <pulsar/Message.h>
+#include <pulsar/MessageBuilder.h>
+#include <pulsar/EncryptionContext.h>
+
+struct _pulsar_message {
+  pulsar::MessageBuilder builder;
+  pulsar::Message message;
+};
 
 static const std::string CFG_DATA = "data";
 static const std::string CFG_PROPS = "properties";
@@ -47,7 +55,8 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getRedeliveryCount", &Message::GetRedeliveryCount),
        InstanceMethod("getPartitionKey", &Message::GetPartitionKey),
        InstanceMethod("getOrderingKey", &Message::GetOrderingKey),
-       InstanceMethod("getProducerName", &Message::GetProducerName)});
+       InstanceMethod("getProducerName", &Message::GetProducerName),
+       InstanceMethod("getEncryptionContext", &Message::GetEncryptionContext)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -154,6 +163,57 @@ Napi::Value Message::GetProducerName(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   return Napi::String::New(env, pulsar_message_get_producer_name(this->cMessage.get()));
+}
+
+Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+
+  auto encCtxOpt = this->cMessage.get()->message.getEncryptionContext();
+  if (!encCtxOpt) {
+    return env.Null();
+  }
+
+  // getEncryptionContext returns std::optional<const EncryptionContext*>
+  const pulsar::EncryptionContext *encCtxPtr = *encCtxOpt;
+  if (!encCtxPtr) {
+    return env.Null();
+  }
+  const pulsar::EncryptionContext &encCtx = *encCtxPtr;
+
+  if (encCtx.keys().empty() && encCtx.param().empty() && encCtx.algorithm().empty()) {
+    return env.Null();
+  }
+
+  Napi::Object obj = Napi::Object::New(env);
+
+  Napi::Array keys = Napi::Array::New(env);
+  int i = 0;
+  for (const auto &keyInfo : encCtx.keys()) {
+    Napi::Object keyObj = Napi::Object::New(env);
+    keyObj.Set("key", Napi::String::New(env, keyInfo.key));
+    keyObj.Set("value", Napi::String::New(env, keyInfo.value));
+
+    Napi::Object metadataObj = Napi::Object::New(env);
+    for (const auto &meta : keyInfo.metadata) {
+      metadataObj.Set(meta.first, Napi::String::New(env, meta.second));
+    }
+    keyObj.Set("metadata", metadataObj);
+
+    keys.Set(i++, keyObj);
+  }
+  obj.Set("keys", keys);
+
+  obj.Set("param", Napi::String::New(env, encCtx.param()));
+  obj.Set("algorithm", Napi::String::New(env, encCtx.algorithm()));
+  obj.Set("compressionType", Napi::Number::New(env, (int)encCtx.compressionType()));
+  obj.Set("uncompressedMessageSize", Napi::Number::New(env, encCtx.uncompressedMessageSize()));
+  obj.Set("batchSize", Napi::Number::New(env, encCtx.batchSize()));
+  obj.Set("isDecryptionFailed", Napi::Boolean::New(env, encCtx.isDecryptionFailed()));
+
+  return obj;
 }
 
 bool Message::ValidateCMessage(Napi::Env env) {
