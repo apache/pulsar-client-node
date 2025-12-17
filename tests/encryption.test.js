@@ -33,7 +33,7 @@ class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
     if (keyPath) {
       try {
         const key = fs.readFileSync(keyPath);
-        return { key, metadata: {} };
+        return { key, _metadata };
       } catch (e) {
         return null;
       }
@@ -46,7 +46,7 @@ class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
     if (keyPath) {
       try {
         const key = fs.readFileSync(keyPath);
-        return { key, metadata: {} };
+        return { key, _metadata };
       } catch (e) {
         return null;
       }
