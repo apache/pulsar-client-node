@@ -17,25 +17,23 @@
  * under the License.
  */
 
-#include "Message.h"
-#include "MessageId.h"
-#include "Authentication.h"
-#include "Producer.h"
-#include "Consumer.h"
-#include "Client.h"
-#include "Reader.h"
-#include "CryptoKeyReader.h"
+#ifndef CRYPTO_KEY_READER_H
+#define CRYPTO_KEY_READER_H
+
 #include <napi.h>
+#include <pulsar/CryptoKeyReader.h>
 
-Napi::Object InitAll(Napi::Env env, Napi::Object exports) {
-  Message::Init(env, exports);
-  MessageId::Init(env, exports);
-  Authentication::Init(env, exports);
-  Producer::Init(env, exports);
-  Consumer::Init(env, exports);
-  Reader::Init(env, exports);
-  CryptoKeyReader::Init(env, exports);
-  return Client::Init(env, exports);
-}
+class CryptoKeyReader : public Napi::ObjectWrap<CryptoKeyReader> {
+ public:
+  static void Init(Napi::Env env, Napi::Object exports);
+  static Napi::Object NewInstance(const Napi::CallbackInfo &info);
+  CryptoKeyReader(const Napi::CallbackInfo &info);
+  ~CryptoKeyReader();
+  std::shared_ptr<pulsar::CryptoKeyReader> GetCCryptoKeyReader();
 
-NODE_API_MODULE(NODE_GYP_MODULE_NAME, InitAll)
+ private:
+  static Napi::FunctionReference constructor;
+  std::shared_ptr<pulsar::CryptoKeyReader> cCryptoKeyReader;
+};
+
+#endif

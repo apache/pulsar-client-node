@@ -65,6 +65,8 @@ export interface ProducerConfig {
   properties?: { [key: string]: string };
   publicKeyPath?: string;
   encryptionKey?: string;
+  encryptionKeys?: string[];
+  cryptoKeyReader?: CryptoKeyReader;
   cryptoFailureAction?: ProducerCryptoFailureAction;
   chunkingEnabled?: boolean;
   schema?: SchemaInfo;
@@ -99,6 +101,7 @@ export interface ConsumerConfig {
   listener?: (message: Message, consumer: Consumer) => void;
   readCompacted?: boolean;
   privateKeyPath?: string;
+  cryptoKeyReader?: CryptoKeyReader;
   cryptoFailureAction?: ConsumerCryptoFailureAction;
   maxPendingChunkedMessage?: number;
   autoAckOldestChunkedMessageOnQueueFull?: number;
@@ -282,6 +285,13 @@ export class AuthenticationBasic {
   constructor(params: {
     username: string;
     password: string;
+  });
+}
+
+export class CryptoKeyReader {
+  constructor(params: {
+    publicKeys: { [key: string]: string };
+    privateKeys: { [key: string]: string };
   });
 }
 

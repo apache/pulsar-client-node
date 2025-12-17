@@ -20,6 +20,7 @@
 #include "ConsumerConfig.h"
 #include "Consumer.h"
 #include "SchemaInfo.h"
+#include "CryptoKeyReader.h"
 #include "Message.h"
 #include "pulsar/ConsumerConfiguration.h"
 #include <pulsar/c/consumer_configuration.h>
@@ -60,6 +61,7 @@ static const std::string CFG_KEY_SHARED_POLICY = "keySharedPolicy";
 static const std::string CFG_KEY_SHARED_POLICY_MODE = "keyShareMode";
 static const std::string CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER = "allowOutOfOrderDelivery";
 static const std::string CFG_KEY_SHARED_POLICY_STICKY_RANGES = "stickyRanges";
+static const std::string CFG_CRYPTO_KEY_READER = "cryptoKeyReader";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -249,13 +251,21 @@ void ConsumerConfig::InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred,
     std::string privateKeyPath = consumerConfig.Get(CFG_PRIVATE_KEY_PATH).ToString().Utf8Value();
     pulsar_consumer_configuration_set_default_crypto_key_reader(
         this->cConsumerConfig.get(), publicKeyPath.c_str(), privateKeyPath.c_str());
-    if (consumerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
-        consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
-      std::string cryptoFailureAction = consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
-      if (CONSUMER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction)) {
-        pulsar_consumer_configuration_set_crypto_failure_action(
-            this->cConsumerConfig.get(), CONSUMER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
-      }
+  }
+
+  if (consumerConfig.Has(CFG_CRYPTO_KEY_READER) && consumerConfig.Get(CFG_CRYPTO_KEY_READER).IsObject()) {
+    Napi::Object cryptoKeyReaderObj = consumerConfig.Get(CFG_CRYPTO_KEY_READER).As<Napi::Object>();
+    CryptoKeyReader *cryptoKeyReader = Napi::ObjectWrap<CryptoKeyReader>::Unwrap(cryptoKeyReaderObj);
+    this->cConsumerConfig.get()->consumerConfiguration.setCryptoKeyReader(
+        cryptoKeyReader->GetCCryptoKeyReader());
+  }
+
+  if (consumerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
+      consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
+    std::string cryptoFailureAction = consumerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
+    if (CONSUMER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction)) {
+      pulsar_consumer_configuration_set_crypto_failure_action(
+          this->cConsumerConfig.get(), CONSUMER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
     }
   }
 
