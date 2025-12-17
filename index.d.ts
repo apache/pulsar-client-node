@@ -170,6 +170,7 @@ export class Message {
   getRedeliveryCount(): number;
   getPartitionKey(): string;
   getOrderingKey(): string;
+  getProducerName(): string;
 }
 
 export class MessageId {

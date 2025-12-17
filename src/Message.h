@@ -45,6 +45,7 @@ class Message : public Napi::ObjectWrap<Message> {
   Napi::Value GetEventTimestamp(const Napi::CallbackInfo &info);
   Napi::Value GetPartitionKey(const Napi::CallbackInfo &info);
   Napi::Value GetOrderingKey(const Napi::CallbackInfo &info);
+  Napi::Value GetProducerName(const Napi::CallbackInfo &info);
   Napi::Value GetRedeliveryCount(const Napi::CallbackInfo &info);
   bool ValidateCMessage(Napi::Env env);
 

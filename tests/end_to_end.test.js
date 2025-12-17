@@ -40,11 +40,13 @@ const Pulsar = require('../index');
         } : {}),
       });
 
+      const producerName = 'test-producer';
       const topic = 'persistent://public/default/produce-consume';
       const producer = await client.createProducer({
         topic,
         sendTimeoutMs: 30000,
         batchingEnabled: true,
+        producerName,
       });
       expect(producer).not.toBeNull();
 
@@ -70,6 +72,7 @@ const Pulsar = require('../index');
       for (let i = 0; i < 10; i += 1) {
         const msg = await consumer.receive();
         consumer.acknowledge(msg);
+        expect(msg.getProducerName()).toBe(producerName);
         results.push(msg.getData().toString());
       }
       expect(lodash.difference(messages, results)).toEqual([]);
