@@ -22,7 +22,6 @@
 #include <pulsar/EncryptionKeyInfo.h>
 #include <thread>
 #include <future>
-#include <iostream>
 
 class CryptoKeyReaderWrapper : public pulsar::CryptoKeyReader {
  public:
@@ -46,18 +45,9 @@ class CryptoKeyReaderWrapper : public pulsar::CryptoKeyReader {
   }
 
  private:
-  mutable Napi::ObjectReference jsObject_;
+  Napi::ObjectReference jsObject_;
   Napi::ThreadSafeFunction tsfn_;
   std::thread::id mainThreadId_;
-
-  struct CallbackData {
-    std::string method;
-    std::string keyName;
-    std::map<std::string, std::string> metadata;
-    std::shared_ptr<std::promise<pulsar::Result>> promise;
-    pulsar::EncryptionKeyInfo* encKeyInfo;
-    Napi::ObjectReference* jsObjectRef;
-  };
 
   static void parseEncryptionKeyInfo(const Napi::Object& obj, pulsar::EncryptionKeyInfo& info) {
     if (obj.Has("key") && obj.Get("key").IsBuffer()) {
@@ -77,80 +67,59 @@ class CryptoKeyReaderWrapper : public pulsar::CryptoKeyReader {
     }
   }
 
+  pulsar::Result callJsMethod(Napi::Env env, const std::string& method, const std::string& keyName,
+                              const std::map<std::string, std::string>& metadata,
+                              pulsar::EncryptionKeyInfo& encKeyInfo) const {
+    Napi::HandleScope scope(env);
+
+    if (jsObject_.IsEmpty()) {
+      return pulsar::Result::ResultCryptoError;
+    }
+    Napi::Object obj = jsObject_.Value();
+
+    if (!obj.Has(method)) {
+      return pulsar::Result::ResultCryptoError;
+    }
+    Napi::Value funcVal = obj.Get(method);
+    if (!funcVal.IsFunction()) {
+      return pulsar::Result::ResultCryptoError;
+    }
+    Napi::Function func = funcVal.As<Napi::Function>();
+
+    Napi::Object metadataObj = Napi::Object::New(env);
+    for (const auto& kv : metadata) {
+      metadataObj.Set(kv.first, kv.second);
+    }
+
+    try {
+      Napi::Value result = func.Call(obj, {Napi::String::New(env, keyName), metadataObj});
+      if (result.IsObject()) {
+        parseEncryptionKeyInfo(result.As<Napi::Object>(), encKeyInfo);
+        return pulsar::Result::ResultOk;
+      }
+    } catch (const Napi::Error& e) {
+      return pulsar::Result::ResultCryptoError;
+    } catch (...) {
+      return pulsar::Result::ResultCryptoError;
+    }
+    return pulsar::Result::ResultCryptoError;
+  }
+
   pulsar::Result executeCallback(const std::string& method, const std::string& keyName,
                                  std::map<std::string, std::string>& metadata,
                                  pulsar::EncryptionKeyInfo& encKeyInfo) const {
     if (std::this_thread::get_id() == mainThreadId_) {
-      Napi::Env env = jsObject_.Env();
-      Napi::HandleScope scope(env);
-
-      if (jsObject_.IsEmpty()) {
-        return pulsar::Result::ResultCryptoError;
-      }
-      Napi::Object obj = jsObject_.Value();
-
-      if (!obj.Has(method)) {
-        return pulsar::Result::ResultCryptoError;
-      }
-      Napi::Value funcVal = obj.Get(method);
-      if (!funcVal.IsFunction()) {
-        return pulsar::Result::ResultCryptoError;
-      }
-      Napi::Function func = funcVal.As<Napi::Function>();
-
-      Napi::Object metadataObj = Napi::Object::New(env);
-      for (const auto& kv : metadata) {
-        metadataObj.Set(kv.first, kv.second);
-      }
-
-      try {
-        Napi::Value result = func.Call(obj, {Napi::String::New(env, keyName), metadataObj});
-        if (result.IsObject()) {
-          parseEncryptionKeyInfo(result.As<Napi::Object>(), encKeyInfo);
-          return pulsar::Result::ResultOk;
-        }
-      } catch (const Napi::Error& e) {
-        return pulsar::Result::ResultCryptoError;
-      }
-      return pulsar::Result::ResultCryptoError;
+      return callJsMethod(jsObject_.Env(), method, keyName, metadata, encKeyInfo);
     } else {
       auto promise = std::make_shared<std::promise<pulsar::Result>>();
       auto future = promise->get_future();
 
-      auto* data = new CallbackData{method, keyName, metadata, promise, &encKeyInfo, &jsObject_};
-
-      napi_status status =
-          tsfn_.BlockingCall(data, [](Napi::Env env, Napi::Function jsCallback, void* context) {
-            CallbackData* data = static_cast<CallbackData*>(context);
-
-            Napi::HandleScope scope(env);
-            Napi::Object obj = data->jsObjectRef->Value();
-
-            pulsar::Result res = pulsar::Result::ResultCryptoError;
-            if (obj.Has(data->method) && obj.Get(data->method).IsFunction()) {
-              Napi::Function func = obj.Get(data->method).As<Napi::Function>();
-              Napi::Object metadataObj = Napi::Object::New(env);
-              for (const auto& kv : data->metadata) {
-                metadataObj.Set(kv.first, kv.second);
-              }
-
-              try {
-                Napi::Value result = func.Call(obj, {Napi::String::New(env, data->keyName), metadataObj});
-                if (result.IsObject()) {
-                  parseEncryptionKeyInfo(result.As<Napi::Object>(), *data->encKeyInfo);
-                  res = pulsar::Result::ResultOk;
-                }
-              } catch (...) {
-                res = pulsar::Result::ResultCryptoError;
-              }
-            }
-
-            data->promise->set_value(res);
-            delete data;
-          });
+      napi_status status = tsfn_.BlockingCall([this, promise, &method, &keyName, &metadata, &encKeyInfo](
+                                                  Napi::Env env, Napi::Function jsCallback) {
+        promise->set_value(callJsMethod(env, method, keyName, metadata, encKeyInfo));
+      });
 
       if (status != napi_ok) {
-        delete data;
         return pulsar::Result::ResultCryptoError;
       }
 

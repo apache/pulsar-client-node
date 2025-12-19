@@ -204,13 +204,13 @@ export type MessageRouter = (message: Message, topicMetadata: TopicMetadata) => 
 
 export interface EncryptionKey {
   key: string;
-  value: string;
+  value: Buffer;
   metadata: { [key: string]: string };
 }
 
 export interface EncryptionContext {
   keys: EncryptionKey[];
-  param: string;
+  param: Buffer;
   algorithm: string;
   compressionType: CompressionType;
   uncompressedMessageSize: number;

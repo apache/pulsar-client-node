@@ -194,7 +194,7 @@ Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
   for (const auto &keyInfo : encCtx.keys()) {
     Napi::Object keyObj = Napi::Object::New(env);
     keyObj.Set("key", Napi::String::New(env, keyInfo.key));
-    keyObj.Set("value", Napi::String::New(env, keyInfo.value));
+    keyObj.Set("value", Napi::Buffer<char>::Copy(env, keyInfo.value.c_str(), keyInfo.value.length()));
 
     Napi::Object metadataObj = Napi::Object::New(env);
     for (const auto &meta : keyInfo.metadata) {
@@ -206,7 +206,7 @@ Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
   }
   obj.Set("keys", keys);
 
-  obj.Set("param", Napi::String::New(env, encCtx.param()));
+  obj.Set("param", Napi::Buffer<char>::Copy(env, encCtx.param().c_str(), encCtx.param().length()));
   obj.Set("algorithm", Napi::String::New(env, encCtx.algorithm()));
   obj.Set("compressionType", Napi::Number::New(env, (int)encCtx.compressionType()));
   obj.Set("uncompressedMessageSize", Napi::Number::New(env, encCtx.uncompressedMessageSize()));

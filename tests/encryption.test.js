@@ -143,6 +143,8 @@ class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
       expect(encCtx.isDecryptionFailed).toBe(true);
       expect(encCtx.keys).toBeDefined();
       expect(encCtx.keys.length).toBeGreaterThan(0);
+      expect(encCtx.keys[0].value).toBeInstanceOf(Buffer);
+      expect(encCtx.param).toBeInstanceOf(Buffer);
 
       await consumer.acknowledge(msg);
       await producer.close();

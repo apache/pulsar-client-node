@@ -22,7 +22,6 @@
 
 #include <napi.h>
 #include <pulsar/CryptoKeyReader.h>
-#include <thread>
 
 class CryptoKeyReader : public Napi::ObjectWrap<CryptoKeyReader> {
  public:
