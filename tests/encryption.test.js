@@ -102,8 +102,77 @@ class MyCryptoKeyReader extends Pulsar.CryptoKeyReader {
 
       const msg = await consumer.receive();
       expect(msg.getData().toString()).toBe(msgContent);
+      const encCtx = msg.getEncryptionContext();
+      expect(encCtx).not.toBeNull();
+      expect(encCtx.isDecryptionFailed).toBe(false);
+      expect(encCtx.keys).toBeDefined();
+      expect(encCtx.keys.length).toBeGreaterThan(0);
+      expect(encCtx.keys[0].value).toBeInstanceOf(Buffer);
+      expect(encCtx.param).toBeInstanceOf(Buffer);
+      expect(encCtx.algorithm).toBe('');
+      expect(encCtx.compressionType).toBe('None');
+      expect(encCtx.uncompressedMessageSize).toBe(0);
+      expect(encCtx.batchSize).toBe(1);
 
       await consumer.acknowledge(msg);
+      await producer.close();
+      await consumer.close();
+    });
+
+    test('End-to-End Encryption with Batching and Compression', async () => {
+      const topic = `persistent://public/default/test-encryption-batch-compress-${Date.now()}`;
+
+      const cryptoKeyReader = new MyCryptoKeyReader(
+        { 'my-key': publicKeyPath },
+        { 'my-key': privateKeyPath },
+      );
+
+      const producer = await client.createProducer({
+        topic,
+        encryptionKeys: ['my-key'],
+        cryptoKeyReader,
+        cryptoFailureAction: 'FAIL',
+        batchingEnabled: true,
+        batchingMaxMessages: 10,
+        batchingMaxPublishDelayMs: 100,
+        compressionType: 'Zlib',
+      });
+
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub-encryption-batch-compress',
+        cryptoKeyReader,
+        cryptoFailureAction: 'CONSUME',
+        subscriptionInitialPosition: 'Earliest',
+      });
+
+      const numMessages = 10;
+      const sendPromises = [];
+      for (let i = 0; i < numMessages; i += 1) {
+        sendPromises.push(producer.send({
+          data: Buffer.from(`message-${i}`),
+        }));
+      }
+      await Promise.all(sendPromises);
+
+      for (let i = 0; i < numMessages; i += 1) {
+        const msg = await consumer.receive();
+        expect(msg.getData().toString()).toBe(`message-${i}`);
+        const encCtx = msg.getEncryptionContext();
+        expect(encCtx).not.toBeNull();
+        expect(encCtx.isDecryptionFailed).toBe(false);
+        expect(encCtx.keys).toBeDefined();
+        expect(encCtx.keys.length).toBeGreaterThan(0);
+        expect(encCtx.keys[0].value).toBeInstanceOf(Buffer);
+        expect(encCtx.param).toBeInstanceOf(Buffer);
+        expect(encCtx.algorithm).toBe('');
+        expect(encCtx.compressionType).toBe('Zlib');
+        expect(encCtx.uncompressedMessageSize).toBeGreaterThan(0);
+        expect(encCtx.batchSize).toBe(numMessages);
+
+        await consumer.acknowledge(msg);
+      }
+
       await producer.close();
       await consumer.close();
     });

@@ -333,6 +333,7 @@ export type HashingScheme =
   'JavaStringHash';
 
 export type CompressionType =
+  'None' |
   'Zlib' |
   'LZ4' |
   'ZSTD' |

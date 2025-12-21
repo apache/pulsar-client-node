@@ -23,6 +23,7 @@
 #include <pulsar/Message.h>
 #include <pulsar/MessageBuilder.h>
 #include <pulsar/EncryptionContext.h>
+#include <map>
 
 struct _pulsar_message {
   pulsar::MessageBuilder builder;
@@ -39,6 +40,12 @@ static const std::string CFG_DELIVER_AFTER = "deliverAfter";
 static const std::string CFG_DELIVER_AT = "deliverAt";
 static const std::string CFG_DISABLE_REPLICATION = "disableReplication";
 static const std::string CFG_ORDERING_KEY = "orderingKey";
+
+static const std::map<pulsar::CompressionType, std::string> COMPRESSION_TYPE_MAP = {
+    {pulsar::CompressionNone, "None"},     {pulsar::CompressionLZ4, "LZ4"},
+    {pulsar::CompressionZLib, "Zlib"},     {pulsar::CompressionZSTD, "ZSTD"},
+    {pulsar::CompressionSNAPPY, "SNAPPY"},
+};
 
 Napi::FunctionReference Message::constructor;
 
@@ -183,12 +190,7 @@ Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
   }
   const pulsar::EncryptionContext &encCtx = *encCtxPtr;
 
-  if (encCtx.keys().empty() && encCtx.param().empty() && encCtx.algorithm().empty()) {
-    return env.Null();
-  }
-
   Napi::Object obj = Napi::Object::New(env);
-
   Napi::Array keys = Napi::Array::New(env);
   int i = 0;
   for (const auto &keyInfo : encCtx.keys()) {
@@ -208,7 +210,9 @@ Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
 
   obj.Set("param", Napi::Buffer<char>::Copy(env, encCtx.param().c_str(), encCtx.param().length()));
   obj.Set("algorithm", Napi::String::New(env, encCtx.algorithm()));
-  obj.Set("compressionType", Napi::Number::New(env, (int)encCtx.compressionType()));
+  const auto it = COMPRESSION_TYPE_MAP.find(encCtx.compressionType());
+  std::string compressionTypeStr = (it != COMPRESSION_TYPE_MAP.end()) ? it->second : "None";
+  obj.Set("compressionType", Napi::String::New(env, compressionTypeStr));
   obj.Set("uncompressedMessageSize", Napi::Number::New(env, encCtx.uncompressedMessageSize()));
   obj.Set("batchSize", Napi::Number::New(env, encCtx.batchSize()));
   obj.Set("isDecryptionFailed", Napi::Boolean::New(env, encCtx.isDecryptionFailed()));
