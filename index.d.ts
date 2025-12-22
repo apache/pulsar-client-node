@@ -65,6 +65,8 @@ export interface ProducerConfig {
   properties?: { [key: string]: string };
   publicKeyPath?: string;
   encryptionKey?: string;
+  encryptionKeys?: string[];
+  cryptoKeyReader?: CryptoKeyReader;
   cryptoFailureAction?: ProducerCryptoFailureAction;
   chunkingEnabled?: boolean;
   schema?: SchemaInfo;
@@ -99,6 +101,7 @@ export interface ConsumerConfig {
   listener?: (message: Message, consumer: Consumer) => void;
   readCompacted?: boolean;
   privateKeyPath?: string;
+  cryptoKeyReader?: CryptoKeyReader;
   cryptoFailureAction?: ConsumerCryptoFailureAction;
   maxPendingChunkedMessage?: number;
   autoAckOldestChunkedMessageOnQueueFull?: number;
@@ -171,6 +174,7 @@ export class Message {
   getPartitionKey(): string;
   getOrderingKey(): string;
   getProducerName(): string;
+  getEncryptionContext(): EncryptionContext | null;
 }
 
 export class MessageId {
@@ -197,6 +201,22 @@ export interface TopicMetadata {
  * topicMetadata.numPartitions - 1).
  */
 export type MessageRouter = (message: Message, topicMetadata: TopicMetadata) => number;
+
+export interface EncryptionKey {
+  key: string;
+  value: Buffer;
+  metadata: { [key: string]: string };
+}
+
+export interface EncryptionContext {
+  keys: EncryptionKey[];
+  param: Buffer;
+  algorithm: string;
+  compressionType: CompressionType;
+  uncompressedMessageSize: number;
+  batchSize: number;
+  isDecryptionFailed: boolean;
+}
 
 export interface SchemaInfo {
   schemaType: SchemaType;
@@ -285,6 +305,16 @@ export class AuthenticationBasic {
   });
 }
 
+export interface EncryptionKeyInfo {
+  key: Buffer;
+  metadata: { [key: string]: string };
+}
+
+export class CryptoKeyReader {
+  getPublicKey(keyName: string, metadata: { [key: string]: string }): EncryptionKeyInfo;
+  getPrivateKey(keyName: string, metadata: { [key: string]: string }): EncryptionKeyInfo;
+}
+
 export enum LogLevel {
   DEBUG = 0,
   INFO = 1,
@@ -303,6 +333,7 @@ export type HashingScheme =
   'JavaStringHash';
 
 export type CompressionType =
+  'None' |
   'Zlib' |
   'LZ4' |
   'ZSTD' |

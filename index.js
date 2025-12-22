@@ -37,6 +37,7 @@ const Pulsar = {
   Client,
   Message: PulsarBinding.Message,
   MessageId: PulsarBinding.MessageId,
+  CryptoKeyReader: PulsarBinding.CryptoKeyReader,
   AuthenticationTls,
   AuthenticationAthenz,
   AuthenticationToken,

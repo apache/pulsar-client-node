@@ -20,6 +20,15 @@
 #include "Message.h"
 #include "MessageId.h"
 #include <pulsar/c/message.h>
+#include <pulsar/Message.h>
+#include <pulsar/MessageBuilder.h>
+#include <pulsar/EncryptionContext.h>
+#include <map>
+
+struct _pulsar_message {
+  pulsar::MessageBuilder builder;
+  pulsar::Message message;
+};
 
 static const std::string CFG_DATA = "data";
 static const std::string CFG_PROPS = "properties";
@@ -31,6 +40,12 @@ static const std::string CFG_DELIVER_AFTER = "deliverAfter";
 static const std::string CFG_DELIVER_AT = "deliverAt";
 static const std::string CFG_DISABLE_REPLICATION = "disableReplication";
 static const std::string CFG_ORDERING_KEY = "orderingKey";
+
+static const std::map<pulsar::CompressionType, std::string> COMPRESSION_TYPE_MAP = {
+    {pulsar::CompressionNone, "None"},     {pulsar::CompressionLZ4, "LZ4"},
+    {pulsar::CompressionZLib, "Zlib"},     {pulsar::CompressionZSTD, "ZSTD"},
+    {pulsar::CompressionSNAPPY, "SNAPPY"},
+};
 
 Napi::FunctionReference Message::constructor;
 
@@ -47,7 +62,8 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getRedeliveryCount", &Message::GetRedeliveryCount),
        InstanceMethod("getPartitionKey", &Message::GetPartitionKey),
        InstanceMethod("getOrderingKey", &Message::GetOrderingKey),
-       InstanceMethod("getProducerName", &Message::GetProducerName)});
+       InstanceMethod("getProducerName", &Message::GetProducerName),
+       InstanceMethod("getEncryptionContext", &Message::GetEncryptionContext)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -154,6 +170,54 @@ Napi::Value Message::GetProducerName(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   return Napi::String::New(env, pulsar_message_get_producer_name(this->cMessage.get()));
+}
+
+Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+
+  auto encCtxOpt = this->cMessage.get()->message.getEncryptionContext();
+  if (!encCtxOpt) {
+    return env.Null();
+  }
+
+  // getEncryptionContext returns std::optional<const EncryptionContext*>
+  const pulsar::EncryptionContext *encCtxPtr = *encCtxOpt;
+  if (!encCtxPtr) {
+    return env.Null();
+  }
+  const pulsar::EncryptionContext &encCtx = *encCtxPtr;
+
+  Napi::Object obj = Napi::Object::New(env);
+  Napi::Array keys = Napi::Array::New(env);
+  int i = 0;
+  for (const auto &keyInfo : encCtx.keys()) {
+    Napi::Object keyObj = Napi::Object::New(env);
+    keyObj.Set("key", Napi::String::New(env, keyInfo.key));
+    keyObj.Set("value", Napi::Buffer<char>::Copy(env, keyInfo.value.c_str(), keyInfo.value.length()));
+
+    Napi::Object metadataObj = Napi::Object::New(env);
+    for (const auto &meta : keyInfo.metadata) {
+      metadataObj.Set(meta.first, Napi::String::New(env, meta.second));
+    }
+    keyObj.Set("metadata", metadataObj);
+
+    keys.Set(i++, keyObj);
+  }
+  obj.Set("keys", keys);
+
+  obj.Set("param", Napi::Buffer<char>::Copy(env, encCtx.param().c_str(), encCtx.param().length()));
+  obj.Set("algorithm", Napi::String::New(env, encCtx.algorithm()));
+  const auto it = COMPRESSION_TYPE_MAP.find(encCtx.compressionType());
+  std::string compressionTypeStr = (it != COMPRESSION_TYPE_MAP.end()) ? it->second : "None";
+  obj.Set("compressionType", Napi::String::New(env, compressionTypeStr));
+  obj.Set("uncompressedMessageSize", Napi::Number::New(env, encCtx.uncompressedMessageSize()));
+  obj.Set("batchSize", Napi::Number::New(env, encCtx.batchSize()));
+  obj.Set("isDecryptionFailed", Napi::Boolean::New(env, encCtx.isDecryptionFailed()));
+
+  return obj;
 }
 
 bool Message::ValidateCMessage(Napi::Env env) {

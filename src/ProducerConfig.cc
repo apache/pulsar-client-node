@@ -18,6 +18,7 @@
  */
 #include "SchemaInfo.h"
 #include "ProducerConfig.h"
+#include "CryptoKeyReader.h"
 #include "Message.h"
 #include <cstdio>
 #include <map>
@@ -45,6 +46,8 @@ static const std::string CFG_SCHEMA = "schema";
 static const std::string CFG_PROPS = "properties";
 static const std::string CFG_PUBLIC_KEY_PATH = "publicKeyPath";
 static const std::string CFG_ENCRYPTION_KEY = "encryptionKey";
+static const std::string CFG_ENCRYPTION_KEYS = "encryptionKeys";
+static const std::string CFG_CRYPTO_KEY_READER = "cryptoKeyReader";
 static const std::string CFG_CRYPTO_FAILURE_ACTION = "cryptoFailureAction";
 static const std::string CFG_CHUNK_ENABLED = "chunkingEnabled";
 static const std::string CFG_ACCESS_MODE = "accessMode";
@@ -67,10 +70,8 @@ static const std::map<std::string, pulsar_hashing_scheme> HASHING_SCHEME = {
 };
 
 static std::map<std::string, pulsar_compression_type> COMPRESSION_TYPE = {
-    {"Zlib", pulsar_CompressionZLib},
-    {"LZ4", pulsar_CompressionLZ4},
-    {"ZSTD", pulsar_CompressionZSTD},
-    {"SNAPPY", pulsar_CompressionSNAPPY},
+    {"None", pulsar_CompressionNone}, {"Zlib", pulsar_CompressionZLib},     {"LZ4", pulsar_CompressionLZ4},
+    {"ZSTD", pulsar_CompressionZSTD}, {"SNAPPY", pulsar_CompressionSNAPPY},
 };
 
 static std::map<std::string, pulsar_producer_crypto_failure_action> PRODUCER_CRYPTO_FAILURE_ACTION = {
@@ -239,13 +240,30 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
       std::string encryptionKey = producerConfig.Get(CFG_ENCRYPTION_KEY).ToString().Utf8Value();
       pulsar_producer_configuration_set_encryption_key(this->cProducerConfig.get(), encryptionKey.c_str());
     }
-    if (producerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
-        producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
-      std::string cryptoFailureAction = producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
-      if (PRODUCER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction))
-        pulsar_producer_configuration_set_crypto_failure_action(
-            this->cProducerConfig.get(), PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
+  }
+
+  if (producerConfig.Has(CFG_ENCRYPTION_KEYS) && producerConfig.Get(CFG_ENCRYPTION_KEYS).IsArray()) {
+    Napi::Array keys = producerConfig.Get(CFG_ENCRYPTION_KEYS).As<Napi::Array>();
+    for (uint32_t i = 0; i < keys.Length(); i++) {
+      if (keys.Get(i).IsString()) {
+        std::string key = keys.Get(i).ToString().Utf8Value();
+        this->cProducerConfig.get()->conf.addEncryptionKey(key);
+      }
     }
+  }
+
+  if (producerConfig.Has(CFG_CRYPTO_KEY_READER) && producerConfig.Get(CFG_CRYPTO_KEY_READER).IsObject()) {
+    Napi::Object cryptoKeyReaderObj = producerConfig.Get(CFG_CRYPTO_KEY_READER).As<Napi::Object>();
+    CryptoKeyReader* cryptoKeyReader = Napi::ObjectWrap<CryptoKeyReader>::Unwrap(cryptoKeyReaderObj);
+    this->cProducerConfig.get()->conf.setCryptoKeyReader(cryptoKeyReader->GetCCryptoKeyReader());
+  }
+
+  if (producerConfig.Has(CFG_CRYPTO_FAILURE_ACTION) &&
+      producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).IsString()) {
+    std::string cryptoFailureAction = producerConfig.Get(CFG_CRYPTO_FAILURE_ACTION).ToString().Utf8Value();
+    if (PRODUCER_CRYPTO_FAILURE_ACTION.count(cryptoFailureAction))
+      pulsar_producer_configuration_set_crypto_failure_action(
+          this->cProducerConfig.get(), PRODUCER_CRYPTO_FAILURE_ACTION.at(cryptoFailureAction));
   }
 
   if (producerConfig.Has(CFG_CHUNK_ENABLED) && producerConfig.Get(CFG_CHUNK_ENABLED).IsBoolean()) {

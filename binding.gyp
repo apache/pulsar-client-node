@@ -41,7 +41,8 @@
         "src/ConsumerConfig.cc",
         "src/Reader.cc",
         "src/ReaderConfig.cc",
-        "src/ThreadSafeDeferred.cc"
+        "src/ThreadSafeDeferred.cc",
+        "src/CryptoKeyReader.cc"
       ],
       'conditions': [
         ['OS=="mac"', {
