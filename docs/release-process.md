@@ -240,7 +240,7 @@ $ svn mv -m 'Release Pulsar Node.js client 1.X.0' \
   https://dist.apache.org/repos/dist/dev/pulsar/pulsar-client-node/pulsar-client-node-1.X.0-rc.1 \
   https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/pulsar-client-node-1.X.0
 
-# Remove the old releases (if any)
+# Remove the last old releases (if any)
 # We only need the latest release there, older releases are available through the Apache archive
 $ svn rm -m 'Remove the old release' \
   https://dist.apache.org/repos/dist/release/pulsar/pulsar-client-node/pulsar-client-node-1.Y.0
@@ -278,7 +278,8 @@ guaranteed at-least-once delivery of messages, automatic cursor management for
 subscribers, and cross-datacenter replication.
 
 For Pulsar Node.js client release details and downloads, visit:
-https://www.npmjs.com/package/pulsar-client
+- https://pulsar.apache.org/download/#pulsar-nodejs-client
+- https://www.npmjs.com/package/pulsar-client
 
 Release Notes are at:
 https://github.com/apache/pulsar-client-node/releases
