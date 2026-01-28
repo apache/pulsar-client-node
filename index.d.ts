@@ -36,6 +36,7 @@ export interface ClientConfig {
   log?: (level: LogLevel, file: string, line: number, message: string) => void;
   logLevel?: LogLevel;
   connectionTimeoutMs?: number;
+  description?: string;
 }
 
 export class Client {

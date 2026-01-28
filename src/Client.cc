@@ -46,6 +46,7 @@ static const std::string CFG_LOG = "log";
 static const std::string CFG_LOG_LEVEL = "logLevel";
 static const std::string CFG_LISTENER_NAME = "listenerName";
 static const std::string CFG_CONNECTION_TIMEOUT = "connectionTimeoutMs";
+static const std::string CFG_DESCRIPTION = "description";
 
 LogCallback *Client::logCallback = nullptr;
 
@@ -231,6 +232,13 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     Napi::String listenerName = clientConfig.Get(CFG_LISTENER_NAME).ToString();
     pulsar_client_configuration_set_listener_name(cClientConfig.get(), listenerName.Utf8Value().c_str());
   }
+
+  // Set client description to identify this as the Node.js client
+  std::string description = "node";
+  if (clientConfig.Has(CFG_DESCRIPTION) && clientConfig.Get(CFG_DESCRIPTION).IsString()) {
+    description = clientConfig.Get(CFG_DESCRIPTION).ToString().Utf8Value();
+  }
+  cClientConfig.get()->conf.setDescription(description);
 
   try {
     this->cClient = std::shared_ptr<pulsar_client_t>(
