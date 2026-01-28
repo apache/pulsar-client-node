@@ -27,7 +27,10 @@
       "include_dirs": [
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
-      "defines": ["NAPI_VERSION=4"],
+      "defines": [
+        "NAPI_VERSION=4",
+        "PULSAR_CLIENT_NODE_VERSION=\"<!(node -e \\\"require('./package.json').version\\\")\""
+      ],
       "sources": [
         "src/addon.cc",
         "src/Message.cc",

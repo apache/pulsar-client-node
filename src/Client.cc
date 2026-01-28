@@ -27,6 +27,7 @@
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
 #include "pulsar/ClientConfiguration.h"
+#include <sstream>
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
 static const std::string CFG_AUTH = "authentication";
@@ -46,7 +47,6 @@ static const std::string CFG_LOG = "log";
 static const std::string CFG_LOG_LEVEL = "logLevel";
 static const std::string CFG_LISTENER_NAME = "listenerName";
 static const std::string CFG_CONNECTION_TIMEOUT = "connectionTimeoutMs";
-static const std::string CFG_DESCRIPTION = "description";
 
 LogCallback *Client::logCallback = nullptr;
 
@@ -233,18 +233,17 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     pulsar_client_configuration_set_listener_name(cClientConfig.get(), listenerName.Utf8Value().c_str());
   }
 
-  // Set client description to identify this as the Node.js client
-  std::string description = "node";
-  if (clientConfig.Has(CFG_DESCRIPTION) && clientConfig.Get(CFG_DESCRIPTION).IsString()) {
-    description = clientConfig.Get(CFG_DESCRIPTION).ToString().Utf8Value();
-  }
-  cClientConfig.get()->conf.setDescription(description);
+  // Set client description to identify this as a Node.js client
+  // Using the Node.js client version from package.json
+  std::ostringstream oss;
+  oss << "node-client-v" << PULSAR_CLIENT_NODE_VERSION;
+  cClientConfig.get()->conf.setDescription(oss.str());
 
-  try {
-    this->cClient = std::shared_ptr<pulsar_client_t>(
-        pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
+   try {
+     this->cClient = std::shared_ptr<pulsar_client_t>(
+         pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
   } catch (const std::exception &e) {
-    Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
+     Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
   }
 }
 
