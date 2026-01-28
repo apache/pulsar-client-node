@@ -26,7 +26,8 @@
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
-#include "pulsar/ClientConfiguration.h"
+#include "PulsarWrapper.h"
+#include "version.h"
 #include <sstream>
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
@@ -234,16 +235,16 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   }
 
   // Set client description to identify this as a Node.js client
-  // Using the Node.js client version from package.json
+  // Using Node.js client version from package.json
   std::ostringstream oss;
   oss << "node-client-v" << PULSAR_CLIENT_NODE_VERSION;
-  cClientConfig.get()->conf.setDescription(oss.str());
+  pulsar::PulsarWrapper::setClientDescription(cClientConfig.get()->conf, oss.str());
 
-   try {
-     this->cClient = std::shared_ptr<pulsar_client_t>(
-         pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
+  try {
+    this->cClient = std::shared_ptr<pulsar_client_t>(
+        pulsar_client_create(serviceUrl.Utf8Value().c_str(), cClientConfig.get()), pulsar_client_free);
   } catch (const std::exception &e) {
-     Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
+    Napi::Error::New(env, e.what()).ThrowAsJavaScriptException();
   }
 }
 

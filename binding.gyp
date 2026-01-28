@@ -28,8 +28,15 @@
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
       "defines": [
-        "NAPI_VERSION=4",
-        "PULSAR_CLIENT_NODE_VERSION=\"<!(node -e \\\"require('./package.json').version\\\")\""
+        "NAPI_VERSION=4"
+      ],
+      "actions": [
+        {
+          "action_name": "get_version",
+          "inputs": ["package.json"],
+          "outputs": ["src/version.h"],
+          "action": ["python3", "scripts/generate_version.py"]
+        }
       ],
       "sources": [
         "src/addon.cc",
@@ -45,7 +52,8 @@
         "src/Reader.cc",
         "src/ReaderConfig.cc",
         "src/ThreadSafeDeferred.cc",
-        "src/CryptoKeyReader.cc"
+        "src/CryptoKeyReader.cc",
+        "src/PulsarWrapper.cc"
       ],
       'conditions': [
         ['OS=="mac"', {
