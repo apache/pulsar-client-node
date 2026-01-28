@@ -26,9 +26,11 @@
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
-#include "PulsarWrapper.h"
-#include "version.h"
+#include <pulsar/ClientConfiguration.h>
 #include <sstream>
+
+// Add wrapper for accessing private setDescription
+#include "PulsarWrapper.h"
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
 static const std::string CFG_AUTH = "authentication";

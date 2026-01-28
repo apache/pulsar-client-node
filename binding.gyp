@@ -1,4 +1,3 @@
-#
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
 # distributed with this work for additional information
@@ -28,15 +27,8 @@
         "<!@(node -p \"require('node-addon-api').include\")",
       ],
       "defines": [
-        "NAPI_VERSION=4"
-      ],
-      "actions": [
-        {
-          "action_name": "get_version",
-          "inputs": ["package.json"],
-          "outputs": ["src/version.h"],
-          "action": ["python3", "scripts/generate_version.py"]
-        }
+        "NAPI_VERSION=4",
+        "PULSAR_CLIENT_NODE_VERSION=\"1.17.0-rc.0\""
       ],
       "sources": [
         "src/addon.cc",
@@ -52,8 +44,7 @@
         "src/Reader.cc",
         "src/ReaderConfig.cc",
         "src/ThreadSafeDeferred.cc",
-        "src/CryptoKeyReader.cc",
-        "src/PulsarWrapper.cc"
+        "src/CryptoKeyReader.cc"
       ],
       'conditions': [
         ['OS=="mac"', {
@@ -63,7 +54,7 @@
             'MACOSX_DEPLOYMENT_TARGET': '11.0',
             'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',
             'OTHER_CFLAGS': [
-                "-fPIC",
+              "-fPIC",
             ]
           },
           "dependencies": [
@@ -88,8 +79,7 @@
                 "-lpulsar"
               ]
             }]
-          ],
-        }],
+        },
         ['OS=="win"', {
           "defines": [
             "_HAS_EXCEPTIONS=1",
@@ -109,7 +99,7 @@
           "dependencies": [
             "<!(node -p \"require('node-addon-api').gyp\")"
           ]
-        }],
+        },
         ['OS=="linux"', {
           "ldflags": [
             "-Wl,--exclude-libs,ALL"
@@ -120,19 +110,17 @@
           "conditions": [
             ['"<!(test -e <(module_root_dir)/pkg/linux/pulsar-cpp && echo true || echo false)"=="true"', {
               "include_dirs": [
-                "<(module_root_dir)/pkg/linux/pulsar-cpp/include"
+                  "<(module_root_dir)/pkg/linux/pulsar-cpp/include"
               ],
               "libraries": [
-                "<(module_root_dir)/pkg/linux/pulsar-cpp/lib/libpulsarwithdeps.a"
-              ]
+                  "<(module_root_dir)/pkg/linux/pulsar-cpp/lib/libpulsarwithdeps.a"
+                ]
             }, {
               "libraries": [
                 "-lpulsar"
-              ]
+                ]
             }]
-          ],
-        }]
-      ]
+        }],
     },
     {
       "target_name": "action_after_build",
