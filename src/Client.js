@@ -49,7 +49,7 @@ class Client {
   }
 
   close() {
-    this.client.close();
+    return this.client.close();
   }
 
   static setLogHandler(params) {
