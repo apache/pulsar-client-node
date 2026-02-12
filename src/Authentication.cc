@@ -77,7 +77,7 @@ char *TokenSupplier(void *ctx) {
 
   future.wait();
 
-  char *token = (char *)malloc(dataPtr->token.size());
+  char *token = (char *)malloc(dataPtr->token.size() + 1);
   strcpy(token, dataPtr->token.c_str());
   return token;
 }
