@@ -1,0 +1,1 @@
+#define PULSAR_CLIENT_NODE_VERSION "1.17.0-rc.0"

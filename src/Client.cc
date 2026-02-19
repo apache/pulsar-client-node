@@ -26,7 +26,11 @@
 #include <pulsar/c/client.h>
 #include <pulsar/c/client_configuration.h>
 #include <pulsar/c/result.h>
-#include "pulsar/ClientConfiguration.h"
+#include <pulsar/ClientConfiguration.h>
+#include <sstream>
+
+// Add wrapper for accessing private setDescription
+#include "PulsarWrapper.h"
 
 static const std::string CFG_SERVICE_URL = "serviceUrl";
 static const std::string CFG_AUTH = "authentication";
@@ -231,6 +235,12 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     Napi::String listenerName = clientConfig.Get(CFG_LISTENER_NAME).ToString();
     pulsar_client_configuration_set_listener_name(cClientConfig.get(), listenerName.Utf8Value().c_str());
   }
+
+  // Set client description to identify this as a Node.js client
+  // Using Node.js client version from package.json
+  std::ostringstream oss;
+  oss << "node-client-v" << PULSAR_CLIENT_NODE_VERSION;
+  pulsar::PulsarWrapper::setClientDescription(cClientConfig.get()->conf, oss.str());
 
   try {
     this->cClient = std::shared_ptr<pulsar_client_t>(
