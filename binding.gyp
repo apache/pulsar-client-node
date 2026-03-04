@@ -49,7 +49,7 @@
           'xcode_settings': {
             'GCC_ENABLE_CPP_EXCEPTIONS': 'YES',
             'GCC_ENABLE_CPP_RTTI': 'YES',
-            'MACOSX_DEPLOYMENT_TARGET': '11.0',
+            'MACOSX_DEPLOYMENT_TARGET': '13.0',
             'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++17',
             'OTHER_CFLAGS': [
                 "-fPIC",

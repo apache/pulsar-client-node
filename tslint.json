@@ -4,6 +4,7 @@
     "semicolon": false,
     "no-unnecessary-class": false,
     "no-relative-import-in-test": false,
-    "strict-export-declare-modifiers": false
+    "strict-export-declare-modifiers": false,
+    "no-redundant-jsdoc": false
   }
 }
