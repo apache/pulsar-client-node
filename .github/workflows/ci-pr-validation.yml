@@ -37,10 +37,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Use Python ${{ matrix.python }}
         uses: actions/setup-python@v3
@@ -61,10 +61,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
 
       - name: Use yarn install
         run: |
@@ -82,7 +82,7 @@ jobs:
           - x64
           - arm64
         nodejs:
-          - 18
+          - 22
         python:
           - "3.10"
         include:
@@ -136,7 +136,7 @@ jobs:
           - 'linux_glibc'
           - 'linux_musl'
         nodejs:
-          - 18
+          - 22
         cpu:
           - {arch: 'x86_64', platform: 'x86_64'}
           - {arch: 'aarch64', platform: 'arm64'}
@@ -197,7 +197,7 @@ jobs:
           - x64
           - x86
         nodejs:
-          - 18
+          - 22
         python:
           - "3.10"
     steps:
@@ -261,10 +261,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           cache: 'npm'
       - name: Use Python ${{ matrix.python }}
         uses: actions/setup-python@v3
@@ -299,10 +299,10 @@ jobs:
           
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js 18
+      - name: Use Node.js 22
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: 22
           cache: 'npm'
 
       - name: Use Python ${{ matrix.python }}
