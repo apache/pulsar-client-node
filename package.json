@@ -25,7 +25,7 @@
     "clean": "node-pre-gyp clean",
     "lint": "clang-format-lint src/*.cc src/*.h && eslint --ext .js .",
     "format": "clang-format-lint --fix src/*.cc src/*.h && eslint --fix --ext .js .",
-    "dtslint": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
     "license:report": "mkdir -p report && license-checker --json > report/licenses.json",
     "license:checkheader": "license-check-and-add check",
     "license:addheader": "license-check-and-add add",
