@@ -35,7 +35,6 @@ static const std::string CFG_OP_TIMEOUT = "operationTimeoutSeconds";
 static const std::string CFG_IO_THREADS = "ioThreads";
 static const std::string CFG_LISTENER_THREADS = "messageListenerThreads";
 static const std::string CFG_CONCURRENT_LOOKUP = "concurrentLookupRequest";
-static const std::string CFG_USE_TLS = "useTls";
 static const std::string CFG_TLS_TRUST_CERT = "tlsTrustCertsFilePath";
 static const std::string CFG_TLS_VALIDATE_HOSTNAME = "tlsValidateHostname";
 static const std::string CFG_TLS_ALLOW_INSECURE = "tlsAllowInsecureConnection";
@@ -185,11 +184,6 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     if (concurrentLookupRequest > 0) {
       pulsar_client_configuration_set_concurrent_lookup_request(cClientConfig.get(), concurrentLookupRequest);
     }
-  }
-
-  if (clientConfig.Has(CFG_USE_TLS) && clientConfig.Get(CFG_USE_TLS).IsBoolean()) {
-    Napi::Boolean useTls = clientConfig.Get(CFG_USE_TLS).ToBoolean();
-    pulsar_client_configuration_set_use_tls(cClientConfig.get(), useTls.Value());
   }
 
   if (clientConfig.Has(CFG_TLS_TRUST_CERT) && clientConfig.Get(CFG_TLS_TRUST_CERT).IsString()) {
