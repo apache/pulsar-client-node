@@ -84,7 +84,6 @@ import Pulsar = require('./index');
     ioThreads: 4,
     messageListenerThreads: 4,
     concurrentLookupRequest: 100,
-    useTls: false,
     tlsTrustCertsFilePath: '/path/to/ca-cert.pem',
     tlsValidateHostname: false,
     tlsAllowInsecureConnection: false,

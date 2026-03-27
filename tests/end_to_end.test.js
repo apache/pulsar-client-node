@@ -1409,14 +1409,15 @@ const Pulsar = require('../index');
         });
       }
 
-      // 2. Verify message order (based on key dictionary order)
+      // 2. Verify message order follows the first sequence id per key-based batch,
+      // matching pulsar-client-cpp#546.
       const expected = [
+        { key: 'A', value: '0' },
+        { key: 'A', value: '5' },
         { key: 'B', value: '1' },
         { key: 'B', value: '3' },
         { key: 'C', value: '2' },
         { key: 'C', value: '4' },
-        { key: 'A', value: '0' },
-        { key: 'A', value: '5' },
       ];
 
       expect(received).toEqual(expected);
@@ -1438,17 +1439,18 @@ const Pulsar = require('../index');
 
       // 2. Receive messages and verify their order and keys
       const msg1 = await receiveAndAck();
-      expect(msg1.getData().toString()).toBe('2');
-      expect(msg1.getOrderingKey().toString()).toBe('B');
+      expect(msg1.getData().toString()).toBe('0');
+      expect(msg1.getOrderingKey().toString()).toBe('A');
+      expect(msg1.getPartitionKey()).toBe('B');
 
       const msg2 = await receiveAndAck();
-      expect(msg2.getData().toString()).toBe('0');
-      expect(msg2.getOrderingKey()).toBe('A');
-      expect(msg2.getPartitionKey()).toBe('B');
+      expect(msg2.getData().toString()).toBe('1');
+      expect(msg2.getOrderingKey().toString()).toBe('A');
+      expect(msg2.getPartitionKey()).toBe('');
 
       const msg3 = await receiveAndAck();
-      expect(msg3.getData().toString()).toBe('1');
-      expect(msg3.getOrderingKey().toString()).toBe('A');
+      expect(msg3.getData().toString()).toBe('2');
+      expect(msg3.getOrderingKey().toString()).toBe('B');
     });
   });
 })();
