@@ -53,6 +53,13 @@ for artifact in data['artifacts']:
     name = artifact['name']
     url = artifact['archive_download_url']
 
+    # docker/build-push-action uploads build records as auxiliary artifacts.
+    # They are not release packages and break the staging flow if we try to
+    # unpack them alongside the platform tarballs.
+    if name.endswith('.dockerbuild'):
+        print(f'Skipping auxiliary artifact {name}')
+        continue
+
     print(f'Downloading {name} from {url}')
     artifact_response = requests.get(url, headers=headers, stream=True)
     artifact_response.raise_for_status()
@@ -65,8 +72,15 @@ for artifact in data['artifacts']:
     try:
         dest_dir = os.path.join(dest_path, name)
         Path(dest_dir).mkdir(parents=True, exist_ok=True)
-        with zipfile.ZipFile(tmp_zip_path, 'r') as z:
-            z.extractall(dest_dir)
+        try:
+            with zipfile.ZipFile(tmp_zip_path, 'r') as z:
+                z.extractall(dest_dir)
+        except zipfile.BadZipFile as exc:
+            raise RuntimeError(
+                f'Artifact {name} is not a ZIP archive. '
+                'This usually means the workflow uploaded a non-release '
+                'auxiliary artifact that should be filtered out.'
+            ) from exc
     finally:
         os.unlink(tmp_zip_path)
 
