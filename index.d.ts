@@ -25,7 +25,6 @@ export interface ClientConfig {
   ioThreads?: number;
   messageListenerThreads?: number;
   concurrentLookupRequest?: number;
-  useTls?: boolean;
   tlsTrustCertsFilePath?: string;
   tlsCertificateFilePath?: string;
   tlsPrivateKeyFilePath?: string;
