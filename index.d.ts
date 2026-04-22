@@ -110,6 +110,7 @@ export interface ConsumerConfig {
   deadLetterPolicy?: DeadLetterPolicy;
   batchReceivePolicy?: ConsumerBatchReceivePolicy;
   keySharedPolicy?: KeySharedPolicy;
+  replicateSubscriptionState?: boolean;
 }
 
 export class Consumer {

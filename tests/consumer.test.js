@@ -173,6 +173,27 @@ const Pulsar = require('../index');
     });
 
     describe('Features', () => {
+      test('Replicate subscription state', async () => {
+        const topicName = 'persistent://public/default/test-replicate-subscription-state';
+        const producer = await client.createProducer({
+          topic: topicName,
+        });
+        const consumer = await client.subscribe({
+          topic: topicName,
+          subscription: 'test-replicate-subscription-state-sub',
+          replicateSubscriptionState: true,
+        });
+
+        const msg = 'test-replicate-subscription-state-msg';
+        await producer.send({ data: Buffer.from(msg) });
+        const received = await consumer.receive();
+        expect(received.getData().toString()).toBe(msg);
+        await consumer.acknowledge(received);
+
+        await producer.close();
+        await consumer.close();
+      });
+
       test('Batch index ack', async () => {
         const topicName = 'test-batch-index-ack';
         const producer = await client.createProducer({
