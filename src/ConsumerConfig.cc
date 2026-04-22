@@ -62,6 +62,7 @@ static const std::string CFG_KEY_SHARED_POLICY_MODE = "keyShareMode";
 static const std::string CFG_KEY_SHARED_POLICY_ALLOW_OUT_OF_ORDER = "allowOutOfOrderDelivery";
 static const std::string CFG_KEY_SHARED_POLICY_STICKY_RANGES = "stickyRanges";
 static const std::string CFG_CRYPTO_KEY_READER = "cryptoKeyReader";
+static const std::string CFG_REPLICATE_SUBSCRIPTION_STATE = "replicateSubscriptionState";
 
 static const std::map<std::string, pulsar_consumer_type> SUBSCRIPTION_TYPE = {
     {"Exclusive", pulsar_ConsumerExclusive},
@@ -399,6 +400,13 @@ void ConsumerConfig::InitConfig(std::shared_ptr<ThreadSafeDeferred> deferred,
       cppKeySharedPolicy.setStickyRanges(stickyRanges);
     }
     this->cConsumerConfig.get()->consumerConfiguration.setKeySharedPolicy(cppKeySharedPolicy);
+  }
+
+  if (consumerConfig.Has(CFG_REPLICATE_SUBSCRIPTION_STATE) &&
+      consumerConfig.Get(CFG_REPLICATE_SUBSCRIPTION_STATE).IsBoolean()) {
+    bool replicateSubscriptionState = consumerConfig.Get(CFG_REPLICATE_SUBSCRIPTION_STATE).ToBoolean();
+    this->cConsumerConfig.get()->consumerConfiguration.setReplicateSubscriptionStateEnabled(
+        replicateSubscriptionState);
   }
 }
 
