@@ -59,8 +59,7 @@ SchemaInfo::SchemaInfo(const Napi::Object &schemaInfo)
     std::string typeStr = schemaInfo.Get(CFG_SCHEMA_TYPE).ToString().Utf8Value();
     auto it = SCHEMA_TYPE.find(typeStr);
     if (it == SCHEMA_TYPE.end()) {
-      Napi::TypeError::New(schemaInfo.Env(), "Unknown schemaType: " + typeStr)
-          .ThrowAsJavaScriptException();
+      Napi::TypeError::New(schemaInfo.Env(), "Unknown schemaType: " + typeStr).ThrowAsJavaScriptException();
       return;
     }
     this->name = typeStr;
