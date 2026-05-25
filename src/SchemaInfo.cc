@@ -56,8 +56,15 @@ static const std::map<std::string, pulsar::SchemaType> SCHEMA_TYPE = {
 SchemaInfo::SchemaInfo(const Napi::Object &schemaInfo)
     : schemaType(static_cast<pulsar::SchemaType>(-1)), name("BYTES"), schema() {
   if (schemaInfo.Has(CFG_SCHEMA_TYPE) && schemaInfo.Get(CFG_SCHEMA_TYPE).IsString()) {
-    this->name = schemaInfo.Get(CFG_SCHEMA_TYPE).ToString().Utf8Value();
-    this->schemaType = SCHEMA_TYPE.at(schemaInfo.Get(CFG_SCHEMA_TYPE).ToString().Utf8Value());
+    std::string typeStr = schemaInfo.Get(CFG_SCHEMA_TYPE).ToString().Utf8Value();
+    auto it = SCHEMA_TYPE.find(typeStr);
+    if (it == SCHEMA_TYPE.end()) {
+      Napi::TypeError::New(schemaInfo.Env(), "Unknown schemaType: " + typeStr)
+          .ThrowAsJavaScriptException();
+      return;
+    }
+    this->name = typeStr;
+    this->schemaType = it->second;
   }
   if (schemaInfo.Has(CFG_NAME) && schemaInfo.Get(CFG_NAME).IsString()) {
     this->name = schemaInfo.Get(CFG_NAME).ToString().Utf8Value();

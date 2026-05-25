@@ -17,8 +17,6 @@
  * under the License.
  */
 
-require('protobufjs/ext/descriptor');
-
 const protobuf = require('protobufjs');
 const descriptor = require('protobufjs/ext/descriptor');
 
