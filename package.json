@@ -61,13 +61,13 @@
     "license-checker": "^25.0.1",
     "lodash": "^4.17.21",
     "typedoc": "^0.23.28",
-    "typescript": "^4.9.5",
-    "protobufjs": "^8.4.2"
+    "typescript": "^4.9.5"
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.3",
     "bindings": "^1.5.0",
-    "node-addon-api": "^4.3.0"
+    "node-addon-api": "^4.3.0",
+    "protobufjs": "^8.4.2"
   },
   "binary": {
     "module_name": "pulsar",
