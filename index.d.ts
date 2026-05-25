@@ -225,6 +225,21 @@ export interface SchemaInfo {
   properties?: Record<string, string>;
 }
 
+export namespace ProtobufNativeSchema {
+  interface CreateSchemaInfoFromRootOptions {
+    root: any;
+    rootMessageTypeName: string;
+    rootFileDescriptorName: string;
+    schemaType?: 'ProtobufNative';
+    syntax?: 'proto3' | 'proto2' | string;
+    name?: string;
+    properties?: Record<string, string>;
+  }
+
+  function createRootFromJson(rootJson: Record<string, unknown>): any;
+  function createSchemaInfoFromRoot(options: CreateSchemaInfoFromRootOptions): SchemaInfo;
+}
+
 export interface DeadLetterPolicy {
   deadLetterTopic: string;
   maxRedeliverCount?: number;
@@ -385,6 +400,7 @@ export type SchemaType =
   'Float32' |
   'Float64' |
   'KeyValue' |
+  'ProtobufNative' |
   'Bytes' |
   'AutoConsume' |
   'AutoPublish';

@@ -61,7 +61,8 @@
     "license-checker": "^25.0.1",
     "lodash": "^4.17.21",
     "typedoc": "^0.23.28",
-    "typescript": "^4.9.5"
+    "typescript": "^4.9.5",
+    "protobufjs": "^8.4.2"
   },
   "dependencies": {
     "@mapbox/node-pre-gyp": "^2.0.3",
