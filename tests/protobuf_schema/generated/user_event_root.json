@@ -1,0 +1,33 @@
+{
+  "nested": {
+    "pulsar": {
+      "nested": {
+        "example": {
+          "nested": {
+            "UserEvent": {
+              "fields": {
+                "id": {
+                  "type": "string",
+                  "id": 1
+                },
+                "name": {
+                  "type": "string",
+                  "id": 2
+                },
+                "age": {
+                  "type": "int32",
+                  "id": 3
+                },
+                "tags": {
+                  "rule": "repeated",
+                  "type": "string",
+                  "id": 4
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

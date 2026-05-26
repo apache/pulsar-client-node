@@ -24,6 +24,7 @@ const AuthenticationToken = require('./src/AuthenticationToken');
 const AuthenticationOauth2 = require('./src/AuthenticationOauth2');
 const AuthenticationBasic = require('./src/AuthenticationBasic');
 const Client = require('./src/Client');
+const ProtobufNativeSchema = require('./src/ProtobufNativeSchema');
 
 const LogLevel = {
   DEBUG: 0,
@@ -43,6 +44,7 @@ const Pulsar = {
   AuthenticationToken,
   AuthenticationOauth2,
   AuthenticationBasic,
+  ProtobufNativeSchema,
   LogLevel,
 };
 

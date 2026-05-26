@@ -20,9 +20,13 @@
 #ifndef SCHEMA_INFO_H
 #define SCHEMA_INFO_H
 
+#include <map>
+#include <memory>
 #include <napi.h>
-#include <pulsar/c/producer_configuration.h>
+#include <pulsar/Schema.h>
 #include <pulsar/c/consumer_configuration.h>
+#include <pulsar/c/producer_configuration.h>
+#include <string>
 
 class SchemaInfo {
  public:
@@ -32,10 +36,10 @@ class SchemaInfo {
   void SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfiguration);
 
  private:
-  pulsar_schema_type cSchemaType;
+  pulsar::SchemaType schemaType;
   std::string name;
   std::string schema;
-  pulsar_string_map_t *cProperties;
+  std::map<std::string, std::string> properties;
 };
 
 #endif
