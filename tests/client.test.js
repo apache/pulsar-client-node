@@ -26,9 +26,11 @@ const baseUrl = 'http://localhost:8080';
   describe('Client', () => {
     describe('CreateFailedByUrlSetIncorrect', () => {
       test('No Set Url', async () => {
+        const expectedError = 'Service URL is required and must be specified as a string '
+          + 'unless serviceUrlProvider is configured';
         await expect(() => new Pulsar.Client({
           operationTimeoutSeconds: 30,
-        })).toThrow('Service URL is required and must be specified as a string');
+        })).toThrow(expectedError);
       });
 
       test('Set empty url', async () => {
@@ -50,6 +52,17 @@ const baseUrl = 'http://localhost:8080';
           serviceUrl: -1,
           operationTimeoutSeconds: 30,
         })).toThrow('Service URL is required and must be specified as a string');
+      });
+
+      test('Set both service url and service url provider', async () => {
+        await expect(() => new Pulsar.Client({
+          serviceUrl: 'pulsar://localhost:6650',
+          serviceUrlProvider: {
+            primary: 'pulsar://localhost:6650',
+            secondary: ['pulsar://localhost:6651'],
+          },
+          operationTimeoutSeconds: 30,
+        })).toThrow('Only one of serviceUrl or serviceUrlProvider can be configured');
       });
     });
     describe('test getPartitionsForTopic', () => {

@@ -22,6 +22,7 @@
 
 #include <napi.h>
 #include <pulsar/c/client.h>
+#include <vector>
 
 struct LogMessage {
   pulsar_logger_level_t level;
@@ -54,7 +55,7 @@ class Client : public Napi::ObjectWrap<Client> {
   std::shared_ptr<pulsar_client_t> cClient;
   std::shared_ptr<pulsar_client_configuration_t> cClientConfig;
   pulsar_logger_level_t logLevel = pulsar_logger_level_t::pulsar_INFO;
-  Napi::ObjectReference authRef_;
+  std::vector<Napi::ObjectReference> authRefs_;
 
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);
   Napi::Value Subscribe(const Napi::CallbackInfo &info);
