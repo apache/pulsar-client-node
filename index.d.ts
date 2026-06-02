@@ -18,8 +18,12 @@
  */
 /// <reference types="node" />
 
-export interface ClientConfig {
-  serviceUrl: string;
+export type ClientConfig = ClientConfigBase & (
+  { serviceUrl: string; serviceUrlProvider?: never } |
+  { serviceUrl?: never; serviceUrlProvider: AutoClusterFailoverConfig }
+);
+
+export interface ClientConfigBase {
   authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken | AuthenticationOauth2 | AuthenticationBasic;
   operationTimeoutSeconds?: number;
   ioThreads?: number;
@@ -35,6 +39,20 @@ export interface ClientConfig {
   log?: (level: LogLevel, file: string, line: number, message: string) => void;
   logLevel?: LogLevel;
   connectionTimeoutMs?: number;
+}
+
+export type ServiceInfo = string | {
+  serviceUrl: string;
+  authentication?: AuthenticationTls | AuthenticationAthenz | AuthenticationToken | AuthenticationOauth2 | AuthenticationBasic;
+  tlsTrustCertsFilePath?: string;
+};
+
+export interface AutoClusterFailoverConfig {
+  primary: ServiceInfo;
+  secondary: ServiceInfo[];
+  checkIntervalMs?: number;
+  failoverThreshold?: number;
+  switchBackThreshold?: number;
 }
 
 export class Client {
