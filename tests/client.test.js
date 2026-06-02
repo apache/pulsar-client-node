@@ -53,6 +53,17 @@ const baseUrl = 'http://localhost:8080';
           operationTimeoutSeconds: 30,
         })).toThrow('Service URL is required and must be specified as a string');
       });
+
+      test('Set both service url and service url provider', async () => {
+        await expect(() => new Pulsar.Client({
+          serviceUrl: 'pulsar://localhost:6650',
+          serviceUrlProvider: {
+            primary: 'pulsar://localhost:6650',
+            secondary: ['pulsar://localhost:6651'],
+          },
+          operationTimeoutSeconds: 30,
+        })).toThrow('Only one of serviceUrl or serviceUrlProvider can be configured');
+      });
     });
     describe('test getPartitionsForTopic', () => {
       test('GetPartitions for empty topic', async () => {

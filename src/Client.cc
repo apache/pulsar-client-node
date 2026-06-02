@@ -316,11 +316,17 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
     return;
   }
 
-  if (!hasServiceUrlProvider && (!hasServiceUrl || !clientConfig.Get(CFG_SERVICE_URL).IsString() ||
-                                 clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty())) {
+  if (!hasServiceUrlProvider && !hasServiceUrl) {
     Napi::Error::New(env,
                      "Service URL is required and must be specified as a string unless serviceUrlProvider "
                      "is configured")
+        .ThrowAsJavaScriptException();
+    return;
+  }
+
+  if (hasServiceUrl && (!clientConfig.Get(CFG_SERVICE_URL).IsString() ||
+                        clientConfig.Get(CFG_SERVICE_URL).ToString().Utf8Value().empty())) {
+    Napi::Error::New(env, "Service URL is required and must be specified as a string")
         .ThrowAsJavaScriptException();
     return;
   }
@@ -361,10 +367,12 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
   if (clientConfig.Has(CFG_AUTH) && clientConfig.Get(CFG_AUTH).IsObject()) {
     Napi::Object obj = clientConfig.Get(CFG_AUTH).ToObject();
     if (obj.Has(CFG_AUTH_PROP) && obj.Get(CFG_AUTH_PROP).IsObject()) {
-      this->authRefs_.emplace_back(Napi::Persistent(obj.Get(CFG_AUTH_PROP).As<Napi::Object>()));
-      Authentication *auth = Authentication::Unwrap(this->authRefs_.back().Value());
-      pulsar_client_configuration_set_auth(cClientConfig.get(), auth->GetCAuthentication());
-      defaultAuthentication = auth->GetCAuthentication()->auth;
+      auto auth = BuildAuthenticationPtr(obj, this->authRefs_);
+      if (!auth.has_value()) {
+        return;
+      }
+      cClientConfig.get()->conf.setAuth(auth.value());
+      defaultAuthentication = auth.value();
     }
   }
 
@@ -452,11 +460,11 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
         return;
       }
 
-      pulsar_client_t *rawClient = new pulsar_client_t;
+      std::unique_ptr<pulsar_client_t> rawClient(new pulsar_client_t);
       rawClient->client.reset(new pulsar::Client(
           pulsar::Client::create(std::move(serviceInfoProvider), cClientConfig.get()->conf)));
-      this->cClient =
-          std::shared_ptr<pulsar_client_t>(rawClient, [](pulsar_client_t *client) { delete client; });
+      this->cClient = std::shared_ptr<pulsar_client_t>(rawClient.release(),
+                                                       [](pulsar_client_t *client) { delete client; });
     } else {
       Napi::String serviceUrl = clientConfig.Get(CFG_SERVICE_URL).ToString();
       this->cClient = std::shared_ptr<pulsar_client_t>(

@@ -51,7 +51,7 @@ const waitForHttpOk = async (url, timeoutMs = 60000) => {
       await new Promise((resolve, reject) => {
         const request = http.get(url, (response) => {
           response.resume();
-          if (response.statusCode >= 200 && response.statusCode < 500) {
+          if (response.statusCode >= 200 && response.statusCode < 300) {
             resolve();
           } else {
             reject(new Error(`Unexpected status code ${response.statusCode}`));
@@ -144,7 +144,7 @@ const startStandaloneCluster = async ({ clusterName, webPort, brokerPort }) => {
     `data/bookkeeper-${clusterName}`,
   ]);
   try {
-    await waitForHttpOk(`http://localhost:${webPort}/metrics`);
+    await waitForHttpOk(`http://localhost:${webPort}/admin/v2/clusters`);
   } catch (e) {
     const logs = await getStandaloneLogs(containerId);
     throw new Error(`${e.message}\nStandalone logs for ${clusterName}:\n${logs}`);
