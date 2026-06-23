@@ -192,6 +192,8 @@ export class Message {
   getPartitionKey(): string;
   getOrderingKey(): string;
   getProducerName(): string;
+  isReplicated(): boolean;
+  getReplicatedFrom(): string;
   getEncryptionContext(): EncryptionContext | null;
 }
 

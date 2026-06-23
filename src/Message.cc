@@ -63,6 +63,8 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getPartitionKey", &Message::GetPartitionKey),
        InstanceMethod("getOrderingKey", &Message::GetOrderingKey),
        InstanceMethod("getProducerName", &Message::GetProducerName),
+       InstanceMethod("isReplicated", &Message::IsReplicated),
+       InstanceMethod("getReplicatedFrom", &Message::GetReplicatedFrom),
        InstanceMethod("getEncryptionContext", &Message::GetEncryptionContext)});
 
   constructor = Napi::Persistent(func);
@@ -170,6 +172,29 @@ Napi::Value Message::GetProducerName(const Napi::CallbackInfo &info) {
     return env.Null();
   }
   return Napi::String::New(env, pulsar_message_get_producer_name(this->cMessage.get()));
+}
+
+Napi::Value Message::IsReplicated(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+
+  const char *replicatedFrom = pulsar_message_get_replicated_from(this->cMessage.get());
+  return Napi::Boolean::New(env, replicatedFrom && replicatedFrom[0] != '\0');
+}
+
+Napi::Value Message::GetReplicatedFrom(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (!ValidateCMessage(env)) {
+    return env.Null();
+  }
+
+  const char *replicatedFrom = pulsar_message_get_replicated_from(this->cMessage.get());
+  if (!replicatedFrom) {
+    return Napi::String::New(env, "");
+  }
+  return Napi::String::New(env, replicatedFrom);
 }
 
 Napi::Value Message::GetEncryptionContext(const Napi::CallbackInfo &info) {
