@@ -297,6 +297,8 @@ import Pulsar = require('./index');
   const publishTime: number = message1.getPublishTimestamp();
   const eventTime: number = message1.getEventTimestamp();
   const redeliveryCount: number = message1.getRedeliveryCount();
+  const isReplicated: boolean = message1.isReplicated();
+  const replicatedFrom: string = message1.getReplicatedFrom();
   const partitionKey: string = message1.getPartitionKey();
 
   const message3: Pulsar.Message = await reader1.readNext();

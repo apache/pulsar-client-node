@@ -73,6 +73,8 @@ const Pulsar = require('../index');
         const msg = await consumer.receive();
         consumer.acknowledge(msg);
         expect(msg.getProducerName()).toBe(producerName);
+        expect(msg.isReplicated()).toBe(false);
+        expect(msg.getReplicatedFrom()).toBe('');
         results.push(msg.getData().toString());
       }
       expect(lodash.difference(messages, results)).toEqual([]);
