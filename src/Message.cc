@@ -63,7 +63,7 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getPartitionKey", &Message::GetPartitionKey),
        InstanceMethod("getOrderingKey", &Message::GetOrderingKey),
        InstanceMethod("getProducerName", &Message::GetProducerName),
-       InstanceMethod("isReplicated", &Message::GetIsReplicated),
+       InstanceMethod("isReplicated", &Message::IsReplicated),
        InstanceMethod("getReplicatedFrom", &Message::GetReplicatedFrom),
        InstanceMethod("getEncryptionContext", &Message::GetEncryptionContext)});
 
@@ -174,7 +174,7 @@ Napi::Value Message::GetProducerName(const Napi::CallbackInfo &info) {
   return Napi::String::New(env, pulsar_message_get_producer_name(this->cMessage.get()));
 }
 
-Napi::Value Message::GetIsReplicated(const Napi::CallbackInfo &info) {
+Napi::Value Message::IsReplicated(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   if (!ValidateCMessage(env)) {
     return env.Null();
