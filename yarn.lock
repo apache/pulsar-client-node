@@ -3638,9 +3638,9 @@ prompts@^2.0.1:
     sisteransi "^1.0.5"
 
 protobufjs@^8.4.2:
-  version "8.4.2"
-  resolved "https://registry.npmjs.org/protobufjs/-/protobufjs-8.4.2.tgz"
-  integrity sha512-64rfNzkWOZAIazXzpBFPWq6F9up6gMvTzjE2oWIzApx2N/dqVUEE7+bCn2+40780dFVtKOUab8QfxJ6KJDWbqA==
+  version "8.6.0"
+  resolved "https://registry.yarnpkg.com/protobufjs/-/protobufjs-8.6.0.tgz#e00025013abd8f5eb69f9a43b06641066fdeb168"
+  integrity sha512-PIOO89BMGMXGz2333TVv/OqPNVWm7w30ll/4FtLbtLBaonzJMYwTbAZSSlobjIy9MoUgIAxSVUpK7aP7EpTtkg==
   dependencies:
     long "^5.3.2"
 
