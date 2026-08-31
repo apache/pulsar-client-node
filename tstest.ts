@@ -66,6 +66,16 @@ import Pulsar = require('./index');
     scope: "scope"
   });
 
+  const authOauth2Tls: Pulsar.AuthenticationOauth2 = new Pulsar.AuthenticationOauth2({
+    type: "client_credentials",
+    tokenEndpointAuthMethod: "tls_client_auth",
+    issuer_url: "issuer-url",
+    tls_cert_file: "certificate-file-path",
+    tls_key_file: "private-key-file-path",
+    audience: "audience",
+    scope: "scope"
+  });
+
   const authToken: Pulsar.AuthenticationToken = new Pulsar.AuthenticationToken({
     token: async () => {
       return 'foobar';
