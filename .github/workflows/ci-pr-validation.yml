@@ -173,10 +173,10 @@ jobs:
       - name: Test NAPI file in linux_glibc containers
         if: matrix.image == 'linux_glibc'
         run: |
-          ./tests/load-test.sh node:16-bullseye ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:18-bullseye ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:19-bullseye ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:22-bullseye ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:16-bookworm ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:18-bookworm ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:19-bookworm ${{matrix.cpu.platform}}
+          ./tests/load-test.sh node:22-bookworm ${{matrix.cpu.platform}}
 
       - name: Test NAPI file in linux_musl containers
         if: matrix.image == 'linux_musl'
