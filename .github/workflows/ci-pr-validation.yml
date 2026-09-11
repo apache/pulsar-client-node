@@ -175,14 +175,12 @@ jobs:
         run: |
           ./tests/load-test.sh node:16-bookworm ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:18-bookworm ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:19-bookworm ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:22-bookworm ${{matrix.cpu.platform}}
 
       - name: Test NAPI file in linux_musl containers
         if: matrix.image == 'linux_musl'
         run: |
           ./tests/load-test.sh node:18-alpine ${{matrix.cpu.platform}}
-          ./tests/load-test.sh node:19-alpine ${{matrix.cpu.platform}}
           ./tests/load-test.sh node:22-alpine ${{matrix.cpu.platform}}
 
   windows-napi:
