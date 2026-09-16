@@ -324,10 +324,13 @@ export class AuthenticationToken {
 export class AuthenticationOauth2 {
   constructor(params: {
     type: string;
+    tokenEndpointAuthMethod?: 'client_secret_post' | 'tls_client_auth';
     issuer_url: string;
     client_id?: string;
     client_secret?: string;
     private_key?: string;
+    tls_cert_file?: string;
+    tls_key_file?: string;
     audience?: string;
     scope?: string;
   });
