@@ -36,14 +36,14 @@ jobs:
           - "3.10"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 18
 
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           
@@ -60,9 +60,13 @@ jobs:
     timeout-minutes: 120
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+      - name: Check ASF action allowlist
+        uses: apache/infrastructure-actions/allowlist-check@main
+        with:
+          scan-glob: '.github/**/*.y*ml'
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 18
 
@@ -92,15 +96,15 @@ jobs:
             # macos-14 is used for arm64
             os: macos-14
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.nodejs }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.nodejs }}
           cache: 'npm'
           
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
 
@@ -143,16 +147,16 @@ jobs:
 
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v7
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@06116385d9baf250c9f4dcb4858b16962ea869c3
+        uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
 
       - name: Setup Docker Buildx
-        uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
       - name: Build Linux Docker image
-        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           file: ./pkg/linux/Dockerfile_${{matrix.image}}
           load: true
@@ -199,22 +203,22 @@ jobs:
         python:
           - "3.10"
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Use Node.js ${{ matrix.nodejs }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: ${{ matrix.nodejs }}
           architecture: ${{ matrix.arch }}
           cache: 'npm'
 
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
 
       - name: Cache CPP Client
         id: cache-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v6
         with:
           path: pkg/windows/
           key: ${{ runner.os }}-${{ matrix.arch }}-${{ hashFiles('pulsar-client-cpp.txt') }}
@@ -258,14 +262,14 @@ jobs:
           - "3.10"
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 18
           cache: 'npm'
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
       - name: Install CPP lib
@@ -296,15 +300,15 @@ jobs:
           - "3.10"
           
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - name: Use Node.js 18
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v7
         with:
           node-version: 18
           cache: 'npm'
 
       - name: Use Python ${{ matrix.python }}
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
           
