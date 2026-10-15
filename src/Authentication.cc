@@ -26,8 +26,6 @@ static const std::string PARAM_TOKEN = "token";
 static const std::string PARAM_USERNAME = "username";
 static const std::string PARAM_PASSWORD = "password";
 
-void FinalizeTokenSupplierCallback(Napi::Env env, TokenSupplierCallback *cb, void *) { delete cb; }
-
 struct TokenSupplierProxyData {
   std::function<void(void)> callback;
   std::string token;
@@ -134,14 +132,16 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
         }
 
         if (obj.Get(PARAM_TOKEN).IsFunction()) {
-          this->tokenSupplier = new TokenSupplierCallback();
+          this->tokenSupplier = std::make_shared<TokenSupplierCallback>();
+          std::shared_ptr<TokenSupplierCallback> tokenSupplier = this->tokenSupplier;
           Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
               obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(), "Token Supplier Callback", 1, 1,
-              (void *)NULL, FinalizeTokenSupplierCallback, this->tokenSupplier);
+              [tokenSupplier](Napi::Env) { tokenSupplier->finalized = true; });
           this->tokenSupplier->callback = std::move(callback);
+          this->tokenSupplier->callback.Unref(env);
 
           this->cAuthentication =
-              pulsar_authentication_token_create_with_supplier(&TokenSupplier, this->tokenSupplier);
+              pulsar_authentication_token_create_with_supplier(&TokenSupplier, this->tokenSupplier.get());
           return;
         }
       }
@@ -178,7 +178,7 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
 }
 
 Authentication::~Authentication() {
-  if (this->tokenSupplier != nullptr) {
+  if (this->tokenSupplier != nullptr && !this->tokenSupplier->finalized) {
     this->tokenSupplier->callback.Release();
   }
   if (this->cAuthentication != nullptr) {

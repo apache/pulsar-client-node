@@ -20,6 +20,7 @@
 #ifndef AUTH_H
 #define AUTH_H
 
+#include <memory>
 #include <napi.h>
 #include <pulsar/c/authentication.h>
 #include "TokenSupplier.h"
@@ -35,7 +36,7 @@ class Authentication : public Napi::ObjectWrap<Authentication> {
   static Napi::FunctionReference constructor;
   pulsar_authentication_t *cAuthentication;
 
-  TokenSupplierCallback *tokenSupplier;
+  std::shared_ptr<TokenSupplierCallback> tokenSupplier;
 };
 
 #endif
