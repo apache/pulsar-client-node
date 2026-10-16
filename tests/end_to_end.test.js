@@ -178,6 +178,70 @@ const Pulsar = require('../index');
       await client.close();
     });
 
+    test('getSchemaVersion', async () => {
+      const client = new Pulsar.Client({
+        serviceUrl: 'pulsar://localhost:6650',
+        operationTimeoutSeconds: 30,
+      });
+
+      const schemaV1 = {
+        schemaType: 'Json',
+        schema: JSON.stringify({
+          type: 'record',
+          name: 'User',
+          fields: [{ name: 'name', type: 'string' }],
+        }),
+      };
+      // Compatible evolution of schemaV1: adds a field with a default.
+      const schemaV2 = {
+        schemaType: 'Json',
+        schema: JSON.stringify({
+          type: 'record',
+          name: 'User',
+          fields: [
+            { name: 'name', type: 'string' },
+            { name: 'age', type: 'int', default: 0 },
+          ],
+        }),
+      };
+
+      const topic = `persistent://public/default/schema-version-${Date.now()}`;
+      const consumer = await client.subscribe({
+        topic,
+        subscription: 'sub1',
+        schema: schemaV1,
+      });
+
+      const producerV1 = await client.createProducer({ topic, schema: schemaV1 });
+      await producerV1.send({ data: Buffer.from(JSON.stringify({ name: 'alice' })) });
+      const msgV1 = await consumer.receive();
+      consumer.acknowledge(msgV1);
+
+      const producerV2 = await client.createProducer({ topic, schema: schemaV2 });
+      await producerV2.send({ data: Buffer.from(JSON.stringify({ name: 'bob', age: 30 })) });
+      const msgV2 = await consumer.receive();
+      consumer.acknowledge(msgV2);
+
+      expect(msgV1.getSchemaVersion()).toBe(0);
+      expect(msgV2.getSchemaVersion()).toBe(1);
+
+      const bytesTopic = `persistent://public/default/schema-version-bytes-${Date.now()}`;
+      const bytesConsumer = await client.subscribe({ topic: bytesTopic, subscription: 'sub1' });
+      const bytesProducer = await client.createProducer({ topic: bytesTopic });
+      await bytesProducer.send({ data: Buffer.from('no-schema') });
+      const bytesMsg = await bytesConsumer.receive();
+      bytesConsumer.acknowledge(bytesMsg);
+
+      expect(bytesMsg.getSchemaVersion()).toBeNull();
+
+      await producerV1.close();
+      await producerV2.close();
+      await consumer.close();
+      await bytesProducer.close();
+      await bytesConsumer.close();
+      await client.close();
+    });
+
     test('Produce/Consume Listener', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
