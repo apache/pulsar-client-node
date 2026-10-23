@@ -62,7 +62,8 @@ static const std::string CFG_LOG_LEVEL = "logLevel";
 static const std::string CFG_LISTENER_NAME = "listenerName";
 static const std::string CFG_CONNECTION_TIMEOUT = "connectionTimeoutMs";
 
-LogCallback *Client::logCallback = nullptr;
+std::shared_ptr<LogCallback> Client::logCallback;
+std::mutex Client::logMutex;
 
 struct _pulsar_client_configuration {
   pulsar::ClientConfiguration conf;
@@ -259,27 +260,34 @@ static std::unique_ptr<pulsar::ServiceInfoProvider> BuildServiceInfoProvider(
 void Client::SetLogHandler(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   Napi::HandleScope scope(env);
-  Napi::Value jsFunction = info[0];
+  ConfigureLogHandler(info[0]);
+}
 
-  if (jsFunction.IsNull()) {
-    if (Client::logCallback != nullptr) {
-      Client::logCallback->callback.Release();
-      delete Client::logCallback;
-      Client::logCallback = nullptr;
-    }
-  } else if (jsFunction.IsFunction()) {
-    Napi::ThreadSafeFunction logFunction =
-        Napi::ThreadSafeFunction::New(env, jsFunction.As<Napi::Function>(), "Pulsar Logging", 0, 1);
-    logFunction.Unref(env);
-    if (Client::logCallback != nullptr) {
-      Client::logCallback->callback.Release();
-    } else {
-      Client::logCallback = new LogCallback();
-    }
-    Client::logCallback->callback = std::move(logFunction);
-  } else {
+void Client::ConfigureLogHandler(Napi::Value jsFunction) {
+  Napi::Env env = jsFunction.Env();
+  if (!jsFunction.IsNull() && !jsFunction.IsFunction()) {
     Napi::Error::New(env, "Client log handler must be a function or null").ThrowAsJavaScriptException();
+    return;
   }
+
+  std::shared_ptr<LogCallback> next;
+  if (jsFunction.IsFunction()) {
+    next = std::make_shared<LogCallback>();
+    next->callback = Napi::ThreadSafeFunction::New(env, jsFunction.As<Napi::Function>(), "Pulsar Logging", 0,
+                                                   1, [next](Napi::Env) {
+                                                     std::lock_guard<std::mutex> lock(logMutex);
+                                                     if (logCallback == next) {
+                                                       logCallback.reset();
+                                                     }
+                                                   });
+    next->callback.Unref(env);
+  }
+
+  std::lock_guard<std::mutex> lock(logMutex);
+  if (logCallback != nullptr) {
+    logCallback->callback.Release();
+  }
+  logCallback = std::move(next);
 }
 
 Napi::FunctionReference Client::constructor;
@@ -352,16 +360,7 @@ Client::Client(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Client>(info) 
 
   // log config option should be deprecated in favour of static setLogHandler method
   if (clientConfig.Has(CFG_LOG) && clientConfig.Get(CFG_LOG).IsFunction()) {
-    Napi::ThreadSafeFunction logFunction = Napi::ThreadSafeFunction::New(
-        env, clientConfig.Get(CFG_LOG).As<Napi::Function>(), "Pulsar Logging", 0, 1);
-    logFunction.Unref(env);
-
-    if (Client::logCallback != nullptr) {
-      Client::logCallback->callback.Release();
-    } else {
-      Client::logCallback = new LogCallback();
-    }
-    Client::logCallback->callback = std::move(logFunction);
+    ConfigureLogHandler(clientConfig.Get(CFG_LOG));
   }
 
   if (clientConfig.Has(CFG_AUTH) && clientConfig.Get(CFG_AUTH).IsObject()) {
@@ -535,7 +534,10 @@ void LogMessageProxy(Napi::Env env, Napi::Function jsCallback, struct LogMessage
 
 void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line, const char *message,
                         void *ctx) {
-  LogCallback *logCallback = Client::logCallback;
+  // The logging TSFN uses maxQueueSize = 0, so BlockingCall does not wait
+  // for JS to drain the queue while logMutex is held.
+  std::lock_guard<std::mutex> lock(logMutex);
+  auto logCallback = Client::logCallback;
 
   if (logCallback == nullptr) {
     return;
@@ -547,8 +549,13 @@ void Client::LogMessage(pulsar_logger_level_t level, const char *file, int line,
 
   struct LogMessage *logMessage = new struct LogMessage(level, std::string(file), line, std::string(message));
 
-  logCallback->callback.BlockingCall(logMessage, LogMessageProxy);
-  logCallback->callback.Release();
+  napi_status status = logCallback->callback.BlockingCall(logMessage, LogMessageProxy);
+  if (status != napi_ok) {
+    delete logMessage;
+  }
+  if (status != napi_closing) {
+    logCallback->callback.Release();
+  }
 }
 
 Napi::Value Client::Close(const Napi::CallbackInfo &info) {
