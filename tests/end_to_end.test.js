@@ -178,7 +178,7 @@ const Pulsar = require('../index');
       await client.close();
     });
 
-    test('getSchemaVersion', async () => {
+    test('getLongSchemaVersion', async () => {
       const client = new Pulsar.Client({
         serviceUrl: 'pulsar://localhost:6650',
         operationTimeoutSeconds: 30,
@@ -222,8 +222,8 @@ const Pulsar = require('../index');
       const msgV2 = await consumer.receive();
       consumer.acknowledge(msgV2);
 
-      expect(msgV1.getSchemaVersion()).toBe(0);
-      expect(msgV2.getSchemaVersion()).toBe(1);
+      expect(msgV1.getLongSchemaVersion()).toBe(0);
+      expect(msgV2.getLongSchemaVersion()).toBe(1);
 
       const bytesTopic = `persistent://public/default/schema-version-bytes-${Date.now()}`;
       const bytesConsumer = await client.subscribe({ topic: bytesTopic, subscription: 'sub1' });
@@ -232,7 +232,7 @@ const Pulsar = require('../index');
       const bytesMsg = await bytesConsumer.receive();
       bytesConsumer.acknowledge(bytesMsg);
 
-      expect(bytesMsg.getSchemaVersion()).toBeNull();
+      expect(bytesMsg.getLongSchemaVersion()).toBeNull();
 
       await producerV1.close();
       await producerV2.close();

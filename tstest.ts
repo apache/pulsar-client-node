@@ -309,7 +309,7 @@ import Pulsar = require('./index');
   const redeliveryCount: number = message1.getRedeliveryCount();
   const isReplicated: boolean = message1.isReplicated();
   const replicatedFrom: string = message1.getReplicatedFrom();
-  const schemaVersion: number | null = message1.getSchemaVersion();
+  const schemaVersion: number | null = message1.getLongSchemaVersion();
   const partitionKey: string = message1.getPartitionKey();
 
   const message3: Pulsar.Message = await reader1.readNext();

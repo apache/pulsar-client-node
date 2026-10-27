@@ -65,7 +65,7 @@ Napi::Object Message::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("getProducerName", &Message::GetProducerName),
        InstanceMethod("isReplicated", &Message::IsReplicated),
        InstanceMethod("getReplicatedFrom", &Message::GetReplicatedFrom),
-       InstanceMethod("getSchemaVersion", &Message::GetSchemaVersion),
+       InstanceMethod("getLongSchemaVersion", &Message::GetLongSchemaVersion),
        InstanceMethod("getEncryptionContext", &Message::GetEncryptionContext)});
 
   constructor = Napi::Persistent(func);
@@ -198,7 +198,7 @@ Napi::Value Message::GetReplicatedFrom(const Napi::CallbackInfo &info) {
   return Napi::String::New(env, replicatedFrom);
 }
 
-Napi::Value Message::GetSchemaVersion(const Napi::CallbackInfo &info) {
+Napi::Value Message::GetLongSchemaVersion(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
   if (!ValidateCMessage(env)) {
     return env.Null();

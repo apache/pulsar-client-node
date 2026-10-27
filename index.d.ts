@@ -198,7 +198,7 @@ export class Message {
    * The version of the schema the producer used to serialize this message,
    * or `null` if the message carries no schema version.
    */
-  getSchemaVersion(): number | null;
+  getLongSchemaVersion(): number | null;
   getEncryptionContext(): EncryptionContext | null;
 }
 
