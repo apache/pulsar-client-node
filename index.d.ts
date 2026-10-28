@@ -194,6 +194,11 @@ export class Message {
   getProducerName(): string;
   isReplicated(): boolean;
   getReplicatedFrom(): string;
+  /**
+   * The version of the schema the producer used to serialize this message,
+   * or `null` if the message carries no schema version.
+   */
+  getLongSchemaVersion(): number | null;
   getEncryptionContext(): EncryptionContext | null;
 }
 

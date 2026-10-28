@@ -48,6 +48,7 @@ class Message : public Napi::ObjectWrap<Message> {
   Napi::Value GetProducerName(const Napi::CallbackInfo &info);
   Napi::Value IsReplicated(const Napi::CallbackInfo &info);
   Napi::Value GetReplicatedFrom(const Napi::CallbackInfo &info);
+  Napi::Value GetLongSchemaVersion(const Napi::CallbackInfo &info);
   Napi::Value GetRedeliveryCount(const Napi::CallbackInfo &info);
   Napi::Value GetEncryptionContext(const Napi::CallbackInfo &info);
   bool ValidateCMessage(Napi::Env env);
