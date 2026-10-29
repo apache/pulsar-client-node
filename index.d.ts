@@ -62,6 +62,11 @@ export class Client {
   subscribe(config: ConsumerConfig): Promise<Consumer>;
   createReader(config: ReaderConfig): Promise<Reader>;
   getPartitionsForTopic(topic: string): Promise<string[]>;
+  /**
+   * Fetch the schema registered for `topic` at `version`, such as the writer schema of a
+   * message from `Message.getLongSchemaVersion()`.
+   */
+  getSchemaInfo(topic: string, version: number): Promise<SchemaInfo>;
   close(): Promise<null>;
 }
 

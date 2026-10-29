@@ -22,6 +22,7 @@
 #include "Consumer.h"
 #include "Producer.h"
 #include "Reader.h"
+#include "SchemaInfo.h"
 #include "ThreadSafeDeferred.h"
 #include <pulsar/AutoClusterFailover.h>
 #include <pulsar/Client.h>
@@ -293,7 +294,7 @@ Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("createProducer", &Client::CreateProducer),
        InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("createReader", &Client::CreateReader),
        InstanceMethod("getPartitionsForTopic", &Client::GetPartitionsForTopic),
-       InstanceMethod("close", &Client::Close)});
+       InstanceMethod("getSchemaInfo", &Client::GetSchemaInfo), InstanceMethod("close", &Client::Close)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -519,6 +520,37 @@ Napi::Value Client::GetPartitionsForTopic(const Napi::CallbackInfo &info) {
       },
 
       ctx);
+
+  return deferred->Promise();
+}
+
+Napi::Value Client::GetSchemaInfo(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  if (info.Length() < 2 || !info[0].IsString() || !info[1].IsNumber()) {
+    Napi::TypeError::New(env, "getSchemaInfo expects a topic (string) and a schema version (number)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  std::string topic = info[0].As<Napi::String>().Utf8Value();
+  int64_t version = info[1].As<Napi::Number>().Int64Value();
+  auto deferred = ThreadSafeDeferred::New(env);
+
+  this->cClient.get()->client->getSchemaInfoAsync(
+      topic, version, [deferred](pulsar::Result result, const pulsar::SchemaInfo &schemaInfo) {
+        if (result != pulsar::ResultOk) {
+          deferred->Reject(std::string("Failed to get schema info: ") + pulsar::strResult(result));
+          return;
+        }
+        auto schemaTypeName = SchemaInfo::GetSchemaTypeName(schemaInfo.getSchemaType());
+        if (!schemaTypeName) {
+          deferred->Reject("Failed to get schema info: unsupported schema type " +
+                           std::to_string(static_cast<int>(schemaInfo.getSchemaType())));
+          return;
+        }
+        deferred->Resolve([schemaInfo, schemaTypeName](const Napi::Env env) {
+          return SchemaInfo::NewObject(env, *schemaTypeName, schemaInfo);
+        });
+      });
 
   return deferred->Promise();
 }

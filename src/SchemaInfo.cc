@@ -93,4 +93,27 @@ void SchemaInfo::SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration
       pulsar::SchemaInfo(this->schemaType, this->name, this->schema, this->properties));
 }
 
+std::optional<std::string> SchemaInfo::GetSchemaTypeName(pulsar::SchemaType schemaType) {
+  for (const auto &entry : SCHEMA_TYPE) {
+    if (entry.second == schemaType) {
+      return entry.first;
+    }
+  }
+  return std::nullopt;
+}
+
+Napi::Object SchemaInfo::NewObject(Napi::Env env, const std::string &schemaTypeName,
+                                   const pulsar::SchemaInfo &schemaInfo) {
+  Napi::Object obj = Napi::Object::New(env);
+  obj.Set(CFG_SCHEMA_TYPE, Napi::String::New(env, schemaTypeName));
+  obj.Set(CFG_NAME, Napi::String::New(env, schemaInfo.getName()));
+  obj.Set(CFG_SCHEMA, Napi::String::New(env, schemaInfo.getSchema()));
+  Napi::Object props = Napi::Object::New(env);
+  for (const auto &prop : schemaInfo.getProperties()) {
+    props.Set(prop.first, Napi::String::New(env, prop.second));
+  }
+  obj.Set(CFG_PROPS, props);
+  return obj;
+}
+
 SchemaInfo::~SchemaInfo() {}

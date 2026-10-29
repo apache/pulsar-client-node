@@ -131,5 +131,80 @@ const baseUrl = 'http://localhost:8080';
         await client.close();
       });
     });
+
+    describe('test getSchemaInfo', () => {
+      test('Client/getSchemaInfo', async () => {
+        const client = new Pulsar.Client({
+          serviceUrl: 'pulsar://localhost:6650',
+          operationTimeoutSeconds: 30,
+        });
+
+        const definitionV1 = {
+          type: 'record',
+          name: 'User',
+          fields: [{ name: 'name', type: 'string' }],
+        };
+        // Compatible evolution of definitionV1: adds a field with a default.
+        const definitionV2 = {
+          type: 'record',
+          name: 'User',
+          fields: [
+            { name: 'name', type: 'string' },
+            { name: 'age', type: 'int', default: 0 },
+          ],
+        };
+
+        const topic = `persistent://public/default/get-schema-info-${Date.now()}`;
+        const consumer = await client.subscribe({
+          topic,
+          subscription: 'sub1',
+          schema: { schemaType: 'Avro', schema: JSON.stringify(definitionV1) },
+        });
+        const producerV1 = await client.createProducer({
+          topic,
+          schema: { schemaType: 'Avro', schema: JSON.stringify(definitionV1) },
+        });
+        const producerV2 = await client.createProducer({
+          topic,
+          schema: { schemaType: 'Avro', schema: JSON.stringify(definitionV2) },
+        });
+        // The payloads are not decoded here, only the schema version each message carries.
+        await producerV1.send({ data: Buffer.from('v1') });
+        await producerV2.send({ data: Buffer.from('v2') });
+        const msgV1 = await consumer.receive();
+        const msgV2 = await consumer.receive();
+        consumer.acknowledge(msgV1);
+        consumer.acknowledge(msgV2);
+
+        const schemaV1 = await client.getSchemaInfo(topic, msgV1.getLongSchemaVersion());
+        const schemaV2 = await client.getSchemaInfo(topic, msgV2.getLongSchemaVersion());
+        expect(schemaV1.schemaType).toBe('Avro');
+        expect(JSON.parse(schemaV1.schema)).toEqual(definitionV1);
+        expect(schemaV2.schemaType).toBe('Avro');
+        expect(JSON.parse(schemaV2.schema)).toEqual(definitionV2);
+
+        await expect(client.getSchemaInfo(topic, 99))
+          .rejects.toThrow('Failed to get schema info: ');
+
+        await producerV1.close();
+        await producerV2.close();
+        await consumer.close();
+        await client.close();
+      });
+
+      test('Invalid arguments', async () => {
+        const client = new Pulsar.Client({
+          serviceUrl: 'pulsar://localhost:6650',
+          operationTimeoutSeconds: 30,
+        });
+
+        expect(() => client.getSchemaInfo('persistent://public/default/my-topic'))
+          .toThrow('getSchemaInfo expects a topic (string) and a schema version (number)');
+        expect(() => client.getSchemaInfo('persistent://public/default/my-topic', '0'))
+          .toThrow('getSchemaInfo expects a topic (string) and a schema version (number)');
+
+        await client.close();
+      });
+    });
   });
 })();
