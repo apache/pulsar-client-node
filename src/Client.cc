@@ -33,6 +33,7 @@
 #include <pulsar/c/result.h>
 #include "pulsar/ClientConfiguration.h"
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -526,17 +527,23 @@ Napi::Value Client::GetPartitionsForTopic(const Napi::CallbackInfo &info) {
 
 Napi::Value Client::GetSchemaInfo(const Napi::CallbackInfo &info) {
   Napi::Env env = info.Env();
-  if (info.Length() < 2 || !info[0].IsString() || !info[1].IsNumber()) {
-    Napi::TypeError::New(env, "getSchemaInfo expects a topic (string) and a schema version (number)")
+  constexpr double maxSafeInteger = 9007199254740991;  // Number.MAX_SAFE_INTEGER
+  // Converting a fractional, negative, or non-finite number would silently fetch a different version.
+  bool validVersion = info.Length() >= 2 && info[1].IsNumber();
+  double version = validVersion ? info[1].As<Napi::Number>().DoubleValue() : 0;
+  validVersion = validVersion && version >= 0 && version <= maxSafeInteger && std::trunc(version) == version;
+  if (!info[0].IsString() || !validVersion) {
+    Napi::TypeError::New(env,
+                         "getSchemaInfo expects a topic (string) and a schema version (non-negative integer)")
         .ThrowAsJavaScriptException();
     return env.Null();
   }
   std::string topic = info[0].As<Napi::String>().Utf8Value();
-  int64_t version = info[1].As<Napi::Number>().Int64Value();
   auto deferred = ThreadSafeDeferred::New(env);
 
   this->cClient.get()->client->getSchemaInfoAsync(
-      topic, version, [deferred](pulsar::Result result, const pulsar::SchemaInfo &schemaInfo) {
+      topic, static_cast<int64_t>(version),
+      [deferred](pulsar::Result result, const pulsar::SchemaInfo &schemaInfo) {
         if (result != pulsar::ResultOk) {
           deferred->Reject(std::string("Failed to get schema info: ") + pulsar::strResult(result));
           return;

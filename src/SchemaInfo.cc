@@ -70,6 +70,9 @@ SchemaInfo::SchemaInfo(const Napi::Object &schemaInfo)
   }
   if (schemaInfo.Has(CFG_SCHEMA) && schemaInfo.Get(CFG_SCHEMA).IsString()) {
     this->schema = schemaInfo.Get(CFG_SCHEMA).ToString().Utf8Value();
+  } else if (schemaInfo.Has(CFG_SCHEMA) && schemaInfo.Get(CFG_SCHEMA).IsBuffer()) {
+    Napi::Buffer<char> buffer = schemaInfo.Get(CFG_SCHEMA).As<Napi::Buffer<char>>();
+    this->schema = std::string(buffer.Data(), buffer.Length());
   }
   if (schemaInfo.Has(CFG_PROPS) && schemaInfo.Get(CFG_PROPS).IsObject()) {
     Napi::Object propObj = schemaInfo.Get(CFG_PROPS).ToObject();
@@ -107,10 +110,15 @@ Napi::Object SchemaInfo::NewObject(Napi::Env env, const std::string &schemaTypeN
   Napi::Object obj = Napi::Object::New(env);
   obj.Set(CFG_SCHEMA_TYPE, Napi::String::New(env, schemaTypeName));
   obj.Set(CFG_NAME, Napi::String::New(env, schemaInfo.getName()));
-  obj.Set(CFG_SCHEMA, Napi::String::New(env, schemaInfo.getSchema()));
+  // Schema data is bytes: KeyValue schemas, for one, are binary and would not survive a UTF-8 string.
+  const std::string &schema = schemaInfo.getSchema();
+  obj.Set(CFG_SCHEMA, Napi::Buffer<char>::Copy(env, schema.data(), schema.size()));
   Napi::Object props = Napi::Object::New(env);
   for (const auto &prop : schemaInfo.getProperties()) {
-    props.Set(prop.first, Napi::String::New(env, prop.second));
+    // Define own properties: Set would route a "__proto__" key to the prototype setter and drop it.
+    props.DefineProperty(Napi::PropertyDescriptor::Value(
+        prop.first, Napi::String::New(env, prop.second),
+        static_cast<napi_property_attributes>(napi_writable | napi_enumerable | napi_configurable)));
   }
   obj.Set(CFG_PROPS, props);
   return obj;

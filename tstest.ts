@@ -311,6 +311,7 @@ import Pulsar = require('./index');
   const replicatedFrom: string = message1.getReplicatedFrom();
   const schemaVersion: number | null = message1.getLongSchemaVersion();
   const schemaInfo: Pulsar.SchemaInfo = await client.getSchemaInfo('persistent://public/default/my-topic', 0);
+  const schemaData: Buffer = (await client.getSchemaInfo('persistent://public/default/my-topic', 0)).schema;
   const partitionKey: string = message1.getPartitionKey();
 
   const message3: Pulsar.Message = await reader1.readNext();
