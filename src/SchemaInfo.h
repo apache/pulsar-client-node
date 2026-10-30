@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <napi.h>
+#include <optional>
 #include <pulsar/Schema.h>
 #include <pulsar/c/consumer_configuration.h>
 #include <pulsar/c/producer_configuration.h>
@@ -34,6 +35,9 @@ class SchemaInfo {
   ~SchemaInfo();
   void SetProducerSchema(std::shared_ptr<pulsar_producer_configuration_t> cProducerConfiguration);
   void SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfiguration);
+  static std::optional<std::string> GetSchemaTypeName(pulsar::SchemaType schemaType);
+  static Napi::Object NewObject(Napi::Env env, const std::string &schemaTypeName,
+                                const pulsar::SchemaInfo &schemaInfo);
 
  private:
   pulsar::SchemaType schemaType;

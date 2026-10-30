@@ -62,6 +62,11 @@ export class Client {
   subscribe(config: ConsumerConfig): Promise<Consumer>;
   createReader(config: ReaderConfig): Promise<Reader>;
   getPartitionsForTopic(topic: string): Promise<string[]>;
+  /**
+   * Fetch the schema registered for `topic` at `version`, such as the writer schema of a
+   * message from `Message.getLongSchemaVersion()`. The schema data is returned as raw bytes.
+   */
+  getSchemaInfo(topic: string, version: number): Promise<SchemaInfo & { schema: Buffer }>;
   close(): Promise<null>;
 }
 
@@ -246,7 +251,7 @@ export interface EncryptionContext {
 export interface SchemaInfo {
   schemaType: SchemaType;
   name?: string;
-  schema?: string;
+  schema?: string | Buffer;
   properties?: Record<string, string>;
 }
 

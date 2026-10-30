@@ -22,6 +22,7 @@
 #include "Consumer.h"
 #include "Producer.h"
 #include "Reader.h"
+#include "SchemaInfo.h"
 #include "ThreadSafeDeferred.h"
 #include <pulsar/AutoClusterFailover.h>
 #include <pulsar/Client.h>
@@ -32,6 +33,7 @@
 #include <pulsar/c/result.h>
 #include "pulsar/ClientConfiguration.h"
 #include <chrono>
+#include <cmath>
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -293,7 +295,7 @@ Napi::Object Client::Init(Napi::Env env, Napi::Object exports) {
        InstanceMethod("createProducer", &Client::CreateProducer),
        InstanceMethod("subscribe", &Client::Subscribe), InstanceMethod("createReader", &Client::CreateReader),
        InstanceMethod("getPartitionsForTopic", &Client::GetPartitionsForTopic),
-       InstanceMethod("close", &Client::Close)});
+       InstanceMethod("getSchemaInfo", &Client::GetSchemaInfo), InstanceMethod("close", &Client::Close)});
 
   constructor = Napi::Persistent(func);
   constructor.SuppressDestruct();
@@ -519,6 +521,43 @@ Napi::Value Client::GetPartitionsForTopic(const Napi::CallbackInfo &info) {
       },
 
       ctx);
+
+  return deferred->Promise();
+}
+
+Napi::Value Client::GetSchemaInfo(const Napi::CallbackInfo &info) {
+  Napi::Env env = info.Env();
+  constexpr double maxSafeInteger = 9007199254740991;  // Number.MAX_SAFE_INTEGER
+  // Converting a fractional, negative, or non-finite number would silently fetch a different version.
+  bool validVersion = info.Length() >= 2 && info[1].IsNumber();
+  double version = validVersion ? info[1].As<Napi::Number>().DoubleValue() : 0;
+  validVersion = validVersion && version >= 0 && version <= maxSafeInteger && std::trunc(version) == version;
+  if (!info[0].IsString() || !validVersion) {
+    Napi::TypeError::New(env,
+                         "getSchemaInfo expects a topic (string) and a schema version (non-negative integer)")
+        .ThrowAsJavaScriptException();
+    return env.Null();
+  }
+  std::string topic = info[0].As<Napi::String>().Utf8Value();
+  auto deferred = ThreadSafeDeferred::New(env);
+
+  this->cClient.get()->client->getSchemaInfoAsync(
+      topic, static_cast<int64_t>(version),
+      [deferred](pulsar::Result result, const pulsar::SchemaInfo &schemaInfo) {
+        if (result != pulsar::ResultOk) {
+          deferred->Reject(std::string("Failed to get schema info: ") + pulsar::strResult(result));
+          return;
+        }
+        auto schemaTypeName = SchemaInfo::GetSchemaTypeName(schemaInfo.getSchemaType());
+        if (!schemaTypeName) {
+          deferred->Reject("Failed to get schema info: unsupported schema type " +
+                           std::to_string(static_cast<int>(schemaInfo.getSchemaType())));
+          return;
+        }
+        deferred->Resolve([schemaInfo, schemaTypeName](const Napi::Env env) {
+          return SchemaInfo::NewObject(env, *schemaTypeName, schemaInfo);
+        });
+      });
 
   return deferred->Promise();
 }

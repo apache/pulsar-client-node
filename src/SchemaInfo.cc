@@ -70,6 +70,9 @@ SchemaInfo::SchemaInfo(const Napi::Object &schemaInfo)
   }
   if (schemaInfo.Has(CFG_SCHEMA) && schemaInfo.Get(CFG_SCHEMA).IsString()) {
     this->schema = schemaInfo.Get(CFG_SCHEMA).ToString().Utf8Value();
+  } else if (schemaInfo.Has(CFG_SCHEMA) && schemaInfo.Get(CFG_SCHEMA).IsBuffer()) {
+    Napi::Buffer<char> buffer = schemaInfo.Get(CFG_SCHEMA).As<Napi::Buffer<char>>();
+    this->schema = std::string(buffer.Data(), buffer.Length());
   }
   if (schemaInfo.Has(CFG_PROPS) && schemaInfo.Get(CFG_PROPS).IsObject()) {
     Napi::Object propObj = schemaInfo.Get(CFG_PROPS).ToObject();
@@ -91,6 +94,34 @@ void SchemaInfo::SetProducerSchema(std::shared_ptr<pulsar_producer_configuration
 void SchemaInfo::SetConsumerSchema(std::shared_ptr<pulsar_consumer_configuration_t> cConsumerConfiguration) {
   cConsumerConfiguration->consumerConfiguration.setSchema(
       pulsar::SchemaInfo(this->schemaType, this->name, this->schema, this->properties));
+}
+
+std::optional<std::string> SchemaInfo::GetSchemaTypeName(pulsar::SchemaType schemaType) {
+  for (const auto &entry : SCHEMA_TYPE) {
+    if (entry.second == schemaType) {
+      return entry.first;
+    }
+  }
+  return std::nullopt;
+}
+
+Napi::Object SchemaInfo::NewObject(Napi::Env env, const std::string &schemaTypeName,
+                                   const pulsar::SchemaInfo &schemaInfo) {
+  Napi::Object obj = Napi::Object::New(env);
+  obj.Set(CFG_SCHEMA_TYPE, Napi::String::New(env, schemaTypeName));
+  obj.Set(CFG_NAME, Napi::String::New(env, schemaInfo.getName()));
+  // Schema data is bytes: KeyValue schemas, for one, are binary and would not survive a UTF-8 string.
+  const std::string &schema = schemaInfo.getSchema();
+  obj.Set(CFG_SCHEMA, Napi::Buffer<char>::Copy(env, schema.data(), schema.size()));
+  Napi::Object props = Napi::Object::New(env);
+  for (const auto &prop : schemaInfo.getProperties()) {
+    // Define own properties: Set would route a "__proto__" key to the prototype setter and drop it.
+    props.DefineProperty(Napi::PropertyDescriptor::Value(
+        prop.first, Napi::String::New(env, prop.second),
+        static_cast<napi_property_attributes>(napi_writable | napi_enumerable | napi_configurable)));
+  }
+  obj.Set(CFG_PROPS, props);
+  return obj;
 }
 
 SchemaInfo::~SchemaInfo() {}

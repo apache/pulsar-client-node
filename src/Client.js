@@ -48,6 +48,10 @@ class Client {
     return this.client.getPartitionsForTopic(params);
   }
 
+  getSchemaInfo(topic, version) {
+    return this.client.getSchemaInfo(topic, version);
+  }
+
   close() {
     return this.client.close();
   }
