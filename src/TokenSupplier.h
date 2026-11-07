@@ -24,6 +24,7 @@
 
 struct TokenSupplierCallback {
   Napi::ThreadSafeFunction callback;
+  bool finalized = false;
 
   TokenSupplierCallback() {}
 };
