@@ -292,7 +292,14 @@ ProducerConfig::ProducerConfig(const Napi::Object& producerConfig) : topic("") {
   }
 }
 
-ProducerConfig::~ProducerConfig() {}
+ProducerConfig::~ProducerConfig() {
+  // Release the persistent reference to the JS messageRouter callback. Without
+  // this, every producer created with a custom messageRouter pins the callback
+  // (and everything its closure captures) as a GC root for the lifetime of the
+  // process, long after the producer and its client are closed, leaking memory
+  // per closed producer. Reset() is a no-op when no router was configured.
+  messageRouter.Reset();
+}
 
 std::shared_ptr<pulsar_producer_configuration_t> ProducerConfig::GetCProducerConfig() {
   return this->cProducerConfig;
