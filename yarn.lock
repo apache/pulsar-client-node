@@ -1097,9 +1097,9 @@ bindings@^1.5.0:
     file-uri-to-path "1.0.0"
 
 brace-expansion@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/brace-expansion/-/brace-expansion-2.0.2.tgz"
-  integrity sha512-Jt0vHyM+jmUBqojB7E1NIYadt0vI0Qxjxd2TErW94wDz+E2LAm5vKMXXwg6ZZBTHPuUlDgQHKXvjGBdfcF1ZDQ==
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/brace-expansion/-/brace-expansion-2.1.7.tgz#14ea3836731823bb24740225ea43b941b436f9d1"
+  integrity sha512-uZbew1NqdmPDTMJ8ah1y+b+9QEJrfkXFk3RcTQw3X0jW/xRUvFKsg1CfQdSYGdTbXZWExtU3J3ccxtnfw1Fi0g==
   dependencies:
     balanced-match "^1.0.0"
 
