@@ -145,16 +145,16 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
           this->tokenSupplier = std::make_shared<TokenSupplierCallback>();
           std::shared_ptr<TokenSupplierCallback> tokenSupplier = this->tokenSupplier;
           // An unbounded queue keeps BlockingCall from waiting while the mutex is held.
-          Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
-              obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(), "Token Supplier Callback", 0, 1,
-              [tokenSupplier](Napi::Env) {
-                std::lock_guard<std::mutex> lock(tokenSupplier->mutex);
-                tokenSupplier->finalized = true;
-                for (const auto &request : tokenSupplier->pending) {
-                  request->Complete(std::string());
-                }
-                tokenSupplier->pending.clear();
-              });
+          Napi::ThreadSafeFunction callback =
+              Napi::ThreadSafeFunction::New(obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(),
+                                            "Token Supplier Callback", 0, 1, [tokenSupplier](Napi::Env) {
+                                              std::lock_guard<std::mutex> lock(tokenSupplier->mutex);
+                                              tokenSupplier->finalized = true;
+                                              for (const auto &request : tokenSupplier->pending) {
+                                                request->Complete(std::string());
+                                              }
+                                              tokenSupplier->pending.clear();
+                                            });
           this->tokenSupplier->callback = std::move(callback);
           this->tokenSupplier->callback.Unref(env);
 
