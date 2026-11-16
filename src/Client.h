@@ -20,6 +20,8 @@
 #ifndef CLIENT_H
 #define CLIENT_H
 
+#include <memory>
+#include <mutex>
 #include <napi.h>
 #include <pulsar/c/client.h>
 #include <vector>
@@ -50,13 +52,15 @@ class Client : public Napi::ObjectWrap<Client> {
   ~Client();
 
  private:
-  static LogCallback *logCallback;
+  static std::shared_ptr<LogCallback> logCallback;
+  static std::mutex logMutex;
   static Napi::FunctionReference constructor;
   std::shared_ptr<pulsar_client_t> cClient;
   std::shared_ptr<pulsar_client_configuration_t> cClientConfig;
   pulsar_logger_level_t logLevel = pulsar_logger_level_t::pulsar_INFO;
   std::vector<Napi::ObjectReference> authRefs_;
 
+  static void ConfigureLogHandler(Napi::Value jsFunction);
   Napi::Value CreateProducer(const Napi::CallbackInfo &info);
   Napi::Value Subscribe(const Napi::CallbackInfo &info);
   Napi::Value CreateReader(const Napi::CallbackInfo &info);
