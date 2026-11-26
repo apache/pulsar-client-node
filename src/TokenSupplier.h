@@ -20,10 +20,18 @@
 #ifndef PULSAR_CLIENT_NODE_TOKENSUPPLIER_H
 #define PULSAR_CLIENT_NODE_TOKENSUPPLIER_H
 
+#include <memory>
+#include <mutex>
 #include <napi.h>
+#include <unordered_set>
 
-struct TokenSupplierCallback {
+struct TokenSupplierProxyData;
+
+struct TokenSupplierCallback : std::enable_shared_from_this<TokenSupplierCallback> {
   Napi::ThreadSafeFunction callback;
+  std::mutex mutex;
+  bool finalized = false;
+  std::unordered_set<std::shared_ptr<TokenSupplierProxyData>> pending;
 
   TokenSupplierCallback() {}
 };

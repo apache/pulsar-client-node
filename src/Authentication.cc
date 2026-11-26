@@ -26,59 +26,67 @@ static const std::string PARAM_TOKEN = "token";
 static const std::string PARAM_USERNAME = "username";
 static const std::string PARAM_PASSWORD = "password";
 
-void FinalizeTokenSupplierCallback(Napi::Env env, TokenSupplierCallback *cb, void *) { delete cb; }
+struct TokenSupplierProxyData : std::enable_shared_from_this<TokenSupplierProxyData> {
+  std::promise<std::string> result;
+  bool completed = false;
 
-struct TokenSupplierProxyData {
-  std::function<void(void)> callback;
-  std::string token;
-
-  TokenSupplierProxyData(std::function<void(void)> callback) : callback(callback), token(std::string()) {}
+  // Completion and cancellation both run on the JS thread.
+  void Complete(std::string token) {
+    if (!completed) {
+      completed = true;
+      result.set_value(std::move(token));
+    }
+  }
 };
 
 void TokenSupplierProxy(Napi::Env env, Napi::Function jsCallback, TokenSupplierProxyData *data) {
+  auto request = data->shared_from_this();
   Napi::Value ret = jsCallback.Call({});
   if (ret.IsPromise()) {
     Napi::Promise promise = ret.As<Napi::Promise>();
     Napi::Value thenValue = promise.Get("then");
     if (thenValue.IsFunction()) {
       Napi::Function then = thenValue.As<Napi::Function>();
-      Napi::Function callback = Napi::Function::New(env, [data](const Napi::CallbackInfo &info) {
+      Napi::Function callback = Napi::Function::New(env, [request](const Napi::CallbackInfo &info) {
         Napi::Value value = info[0];
-        if (value.IsString()) {
-          data->token = value.ToString().Utf8Value();
-        }
-        data->callback();
+        request->Complete(value.IsString() ? value.ToString().Utf8Value() : std::string());
       });
       then.Call(promise, {callback});
       return;
     }
   }
-  if (ret.IsString()) {
-    data->token = ret.ToString().Utf8Value();
-  }
-  data->callback();
+  request->Complete(ret.IsString() ? ret.ToString().Utf8Value() : std::string());
 }
 
 char *TokenSupplier(void *ctx) {
-  TokenSupplierCallback *tokenSupplierCallback = (TokenSupplierCallback *)ctx;
-  if (tokenSupplierCallback->callback.Acquire() != napi_ok) {
-    char *empty = (char *)malloc(0);
-    return empty;
+  auto tokenSupplierCallback = static_cast<TokenSupplierCallback *>(ctx)->shared_from_this();
+  auto request = std::make_shared<TokenSupplierProxyData>();
+  auto future = request->result.get_future();
+
+  {
+    std::lock_guard<std::mutex> lock(tokenSupplierCallback->mutex);
+    if (tokenSupplierCallback->finalized || tokenSupplierCallback->callback.Acquire() != napi_ok) {
+      return static_cast<char *>(calloc(1, 1));
+    }
+
+    tokenSupplierCallback->pending.insert(request);
+    napi_status status = tokenSupplierCallback->callback.BlockingCall(request.get(), TokenSupplierProxy);
+    if (status != napi_closing) {
+      tokenSupplierCallback->callback.Release();
+    }
+    if (status != napi_ok) {
+      tokenSupplierCallback->pending.erase(request);
+      return static_cast<char *>(calloc(1, 1));
+    }
   }
 
-  std::promise<void> promise;
-  std::future<void> future = promise.get_future();
-
-  std::unique_ptr<TokenSupplierProxyData> dataPtr(
-      new TokenSupplierProxyData([&promise]() { promise.set_value(); }));
-
-  tokenSupplierCallback->callback.BlockingCall(dataPtr.get(), TokenSupplierProxy);
-  tokenSupplierCallback->callback.Release();
-
-  future.wait();
-
-  char *token = (char *)malloc(dataPtr->token.size() + 1);
-  strcpy(token, dataPtr->token.c_str());
+  std::string value = future.get();
+  {
+    std::lock_guard<std::mutex> lock(tokenSupplierCallback->mutex);
+    tokenSupplierCallback->pending.erase(request);
+  }
+  char *token = (char *)malloc(value.size() + 1);
+  strcpy(token, value.c_str());
   return token;
 }
 
@@ -134,14 +142,24 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
         }
 
         if (obj.Get(PARAM_TOKEN).IsFunction()) {
-          this->tokenSupplier = new TokenSupplierCallback();
-          Napi::ThreadSafeFunction callback = Napi::ThreadSafeFunction::New(
-              obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(), "Token Supplier Callback", 1, 1,
-              (void *)NULL, FinalizeTokenSupplierCallback, this->tokenSupplier);
+          this->tokenSupplier = std::make_shared<TokenSupplierCallback>();
+          std::shared_ptr<TokenSupplierCallback> tokenSupplier = this->tokenSupplier;
+          // An unbounded queue keeps BlockingCall from waiting while the mutex is held.
+          Napi::ThreadSafeFunction callback =
+              Napi::ThreadSafeFunction::New(obj.Env(), obj.Get(PARAM_TOKEN).As<Napi::Function>(),
+                                            "Token Supplier Callback", 0, 1, [tokenSupplier](Napi::Env) {
+                                              std::lock_guard<std::mutex> lock(tokenSupplier->mutex);
+                                              tokenSupplier->finalized = true;
+                                              for (const auto &request : tokenSupplier->pending) {
+                                                request->Complete(std::string());
+                                              }
+                                              tokenSupplier->pending.clear();
+                                            });
           this->tokenSupplier->callback = std::move(callback);
+          this->tokenSupplier->callback.Unref(env);
 
           this->cAuthentication =
-              pulsar_authentication_token_create_with_supplier(&TokenSupplier, this->tokenSupplier);
+              pulsar_authentication_token_create_with_supplier(&TokenSupplier, this->tokenSupplier.get());
           return;
         }
       }
@@ -179,7 +197,10 @@ Authentication::Authentication(const Napi::CallbackInfo &info)
 
 Authentication::~Authentication() {
   if (this->tokenSupplier != nullptr) {
-    this->tokenSupplier->callback.Release();
+    std::lock_guard<std::mutex> lock(this->tokenSupplier->mutex);
+    if (!this->tokenSupplier->finalized) {
+      this->tokenSupplier->callback.Release();
+    }
   }
   if (this->cAuthentication != nullptr) {
     pulsar_authentication_free(this->cAuthentication);
